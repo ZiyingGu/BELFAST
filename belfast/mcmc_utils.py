@@ -1863,6 +1863,7 @@ def save_chains_plot(
     quantiles=None,
     corner_age_type="linear",
     corner_inc_type="degree",
+    save_path='..',
     save_samples=True,
     save_64=False,
     plot_recovered_corner=True,
@@ -2269,7 +2270,7 @@ def save_chains_plot(
     # -------------------------
     # Create results folder
     # -------------------------
-    results_base = os.path.join(os.getcwd(), "results")
+    results_base = os.path.join(save_path, "results")
     os.makedirs(results_base, exist_ok=True)
 
     name_pre = (
