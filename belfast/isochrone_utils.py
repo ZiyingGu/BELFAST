@@ -1172,13 +1172,13 @@ def regularization_on_Mini_from_files(
     print(f"safe_duplicate_count: {safe_duplicate_count}")
     print(f"problematic_duplicate_count: {len(problematic_df)}")
     print(f"problematic duplicated Mini records are saved at: {problematic_path}")
-    print(f"Grids are save at: {save_file}")
+    print(f"Grids are saved at: {os.path.abspath(save_file)}")
     print(
         f"total grid memory: {total_bytes / 1024**2:.2f} MB "
         f"({total_bytes / 1024**3:.2f} GB)"
     )
 
-    return save_file, problematic_df
+    return os.path.abspath(save_file), problematic_df
 
 
 def load_regularized_Mini_interpolator(npz_path, force_float64=False):
@@ -2068,13 +2068,13 @@ def regularization_on_u_from_files(
     print(f"u_save_range: [{u_save_min}, {u_save_max}]")
     print(f"n_u_original: {n_u}")
     print(f"n_u_saved: {len(u_grid)}")
-    print(f"Grids are save at: {save_file}")
+    print(f"Grids are saved at: {os.path.abspath(save_file)}")
     print(
         f"total grid memory: {total_bytes / 1024**2:.2f} MB "
         f"({total_bytes / 1024**3:.2f} GB)"
     )
 
-    return save_file, bad_group_df, duplicated_u_df
+    return os.path.abspath(save_file), bad_group_df, duplicated_u_df
 
 
 def load_regularized_u_interpolator(npz_path, force_float64=False):
@@ -3282,13 +3282,13 @@ def regularization_on_Mini_from_MIST_folders(
     print(f"safe_duplicate_count: {safe_duplicate_count}")
     print(f"problematic_duplicate_count: {len(problematic_df)}")
     print(f"problematic duplicated Mini records are saved at: {problematic_path}")
-    print(f"Grids are saved at: {save_file}")
+    print(f"Grids are saved at: {os.path.abspath(save_file)}")
     print(
         f"total grid memory: {total_bytes / 1024**2:.2f} MB "
         f"({total_bytes / 1024**3:.2f} GB)"
     )
 
-    return str(save_file), problematic_df
+    return os.path.abspath(save_file), problematic_df
 
 
 # ============================================================
