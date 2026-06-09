@@ -9,10 +9,10 @@ import pyarrow.parquet as pq
 import re
 from glob import glob
 from itertools import product
-# from lib.isochrone_utils import read_isochrones, PARSECv2_collect_data, MIST_collect_data, make_model
-from lib.isochrone_utils import PARSECv2_collect_data, load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
-from lib.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
-from lib.PARS_utils import extract_MH, make_limb_darkening_files
+# from belfast.isochrone_utils import read_isochrones, PARSECv2_collect_data, MIST_collect_data, make_model
+from belfast.isochrone_utils import PARSECv2_collect_data, load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
+from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
+from belfast.PARS_utils import extract_MH, make_limb_darkening_files
 
 
 class Target:
@@ -260,6 +260,8 @@ class Target:
             if 'Inclination' not in self.interp_variables_list:
                 self.interp_variables_list.append('Inclination')
         elif METHOD == 'PARS':
+            if 'Inclination' in self.interp_variables_list:
+                self.interp_variables_list.remove('Inclination')
             if PARS_limb_darkening_path is None:
                 raise Exception('PARS_limb_darkening_path must be defined.')
             if PARS_filters is None:

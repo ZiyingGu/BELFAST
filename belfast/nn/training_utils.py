@@ -8,9 +8,9 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from Neural_Network_Model.mlp_regressor import MLPRegressor, save_full_model
-from Neural_Network_Model.loss_utils import get_loss_function
-from Neural_Network_Model.evaluate_model import evaluate_model_deviation, plot_loss_by_deviation_bins
+from belfast.nn.mlp_regressor import MLPRegressor, save_full_model
+from belfast.nn.loss_utils import get_loss_function
+from belfast.nn.evaluate_model import evaluate_model_deviation, plot_loss_by_deviation_bins
 
 
 def make_unique_folder(base_path):

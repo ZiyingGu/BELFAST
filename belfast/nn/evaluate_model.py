@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
-from Neural_Network_Model.mlp_regressor import load_model
+from belfast.nn.mlp_regressor import load_model
 
 
 def evaluate_model_deviation(

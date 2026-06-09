@@ -1,8 +1,8 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from Neural_Network_Model.mlp_regressor import MLPRegressor
-from Neural_Network_Model.loss_utils import get_loss_function
+from belfast.nn.mlp_regressor import MLPRegressor
+from belfast.nn.loss_utils import get_loss_function
 import time
 
 def fine_tune_model(

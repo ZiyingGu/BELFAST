@@ -1,37 +1,15 @@
-# import necessary packages
 import os
-# import copy
 import time
-from astropy import units
-import astropy.constants as ct
-import numpy as np
-# from scipy.stats import uniform
-from scipy.stats import norm
-# from statsmodels.tsa.stattools import acf
-import emcee
-# import arviz as az
-import corner
-from matplotlib import pyplot as plt
-from scipy.interpolate import interp1d
-from pa.lib import star as st
-import torch
-import multiprocess as mp
-import platform
-from datetime import datetime
-from scipy.interpolate import LinearNDInterpolator
-from lib.target_utils import cal_obs_mag, cal_parsec, add_extinction
-# from lib.isochrone_utils import make_model
-
-import warnings
 import math
-
-
+import platform
+import warnings
 from pathlib import Path
-# import os
-# import numpy as np
-# import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+from datetime import datetime
+import numpy as np
+from belfast.target_utils import cal_obs_mag, cal_parsec, add_extinction
 
+GM_SUN = 1.32712440018e20 # unit='m3 / s2'
+R_SUN = 6.957e8 # unit='m'
 
 
 warnings.filterwarnings(
@@ -55,170 +33,6 @@ warnings.filterwarnings(
 )
 target = None
 
-# priors
-
-# import numpy as np
-#
-# def _log_prior_lagged_maxwell(v, alpha, ell, v_max=500.0):
-#     """
-#     Generic log-prior for lagged Maxwellian:
-#         v = ell + Maxwell(alpha)
-#
-#     Parameters
-#     ----------
-#     v : float or array
-#         Equatorial rotational velocity (km/s)
-#     alpha : float
-#         Maxwellian scale parameter
-#     ell : float
-#         Lag (km/s)
-#     v_max : float
-#         Upper cutoff (km/s)
-#     """
-#     v = np.asarray(v, dtype=float)
-#
-#     out = np.full_like(v, -np.inf, dtype=float)
-#     ok = (v >= ell) & (v <= v_max)
-#
-#     x = v[ok] - ell
-#     out[ok] = (
-#         0.5 * np.log(2.0 / np.pi)
-#         + 2.0 * np.log(x)
-#         - 3.0 * np.log(alpha)
-#         - x**2 / (2.0 * alpha**2)
-#     )
-#
-#     return out if out.ndim else float(out)
-#
-# # ---------- individual mass-bin priors ----------
-#
-# def log_prior_Vrot_1d60_to_2d00_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=114.0 / np.sqrt(2.0), ell=46.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_1d70_to_2d10_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=124.0 / np.sqrt(2.0), ell=46.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_1d80_to_2d20_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=128.0 / np.sqrt(2.0), ell=48.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_1d90_to_2d30_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=133.0 / np.sqrt(2.0), ell=44.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d00_to_2d40_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=140.0 / np.sqrt(2.0), ell=45.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d10_to_2d50_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=154.0 / np.sqrt(2.0), ell=27.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d20_to_2d60_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=164.0 / np.sqrt(2.0), ell=18.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d30_to_2d70_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=179.0 / np.sqrt(2.0), ell=12.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d35_to_2d85_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=210.0 / np.sqrt(2.0), ell=0.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d45_to_2d95_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=185.0 / np.sqrt(2.0), ell=14.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d55_to_3d05_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=191.0 / np.sqrt(2.0), ell=20.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d65_to_3d15_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=183.0 / np.sqrt(2.0), ell=24.0, v_max=v_max
-#     )
-#
-# def log_prior_Vrot_2d75_to_3d45_Msun(v, v_max=500.0):
-#     return _log_prior_lagged_maxwell(
-#         v, alpha=201.0 / np.sqrt(2.0), ell=18.0, v_max=v_max
-#     )
-#
-# log_prior_Vrot_dict = {
-#     "1.60-2.00 Msun": log_prior_Vrot_1d60_to_2d00_Msun,
-#     "1.70-2.10 Msun": log_prior_Vrot_1d70_to_2d10_Msun,
-#     "1.80-2.20 Msun": log_prior_Vrot_1d80_to_2d20_Msun,
-#     "1.90-2.30 Msun": log_prior_Vrot_1d90_to_2d30_Msun,
-#     "2.00-2.40 Msun": log_prior_Vrot_2d00_to_2d40_Msun,
-#     "2.10-2.50 Msun": log_prior_Vrot_2d10_to_2d50_Msun,
-#     "2.20-2.60 Msun": log_prior_Vrot_2d20_to_2d60_Msun,
-#     "2.30-2.70 Msun": log_prior_Vrot_2d30_to_2d70_Msun,
-#     "2.35-2.85 Msun": log_prior_Vrot_2d35_to_2d85_Msun,
-#     "2.45-2.95 Msun": log_prior_Vrot_2d45_to_2d95_Msun,
-#     "2.55-3.05 Msun": log_prior_Vrot_2d55_to_3d05_Msun,
-#     "2.65-3.15 Msun": log_prior_Vrot_2d65_to_3d15_Msun,
-#     "2.75-3.45 Msun": log_prior_Vrot_2d75_to_3d45_Msun,
-# }
-#
-#
-# def parse_mass_range(key):
-#     """
-#     key: e.g. '1.60-2.00 Msun'
-#     returns: (m_min, m_max)
-#     """
-#     rng = key.replace("Msun", "").strip()
-#     m_min, m_max = rng.split("-")
-#     return float(m_min), float(m_max)
-#
-#
-# def select_Vrot_prior_by_rough_mass(
-#     rough_mass,
-#     log_prior_Vrot_dict,
-# ):
-#     """
-#     Select the Vrot prior whose mass-bin center is closest to rough_mass,
-#     but ONLY if rough_mass lies within the bin.
-#     If rough_mass is not covered by any bin, return (None, None).
-#     """
-#
-#     best_key = None
-#     best_dist = np.inf
-#
-#     for key in log_prior_Vrot_dict:
-#         m_min, m_max = parse_mass_range(key)
-#
-#         # 必须先在区间内
-#         if not (m_min <= rough_mass <= m_max):
-#             continue
-#
-#         m_center = 0.5 * (m_min + m_max)
-#         dist = abs(rough_mass - m_center)
-#
-#         if dist < best_dist:
-#             best_dist = dist
-#             best_key = key
-#
-#     if best_key is None:
-#         return None, None
-#
-#     return best_key, log_prior_Vrot_dict[best_key]
-
-
-import numpy as np
-from scipy.special import erf
 
 
 def _logsumexp_two(a, b):
@@ -242,6 +56,8 @@ def _maxwell_cdf(x, alpha):
     alpha : float
         Maxwellian scale parameter
     """
+    from scipy.special import erf
+
     x = np.asarray(x, dtype=float)
     z = x / (np.sqrt(2.0) * alpha)
 
@@ -268,6 +84,8 @@ def _log_prior_maxwell_truncated(v, alpha, v_max=500.0):
     v_max : float
         Upper cutoff (km/s)
     """
+    from scipy.stats import norm
+
     v = np.asarray(v, dtype=float)
 
     out = np.full_like(v, -np.inf, dtype=float)
@@ -533,6 +351,7 @@ def log_prior(sampling_variables, verbose=False):
         float: Logarithm of the total prior probability (sum of individual priors).
                Returns -np.inf if any variable is outside allowed limits.
     """
+    from scipy.stats import norm
 
     if isinstance(sampling_variables, list):
         sampling_variables = np.array(sampling_variables)
@@ -919,11 +738,11 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
 
     final_err_mags = np.sqrt(obs_err_mags_new**2 + obs_mags_model_err_extincted**2)
 
-    omega_angular = omega * np.sqrt(ct.GM_sun*Mass/(ct.R_sun * 1.5 * Rpol)**3)
-    vtaneq = (omega_angular*Req*ct.R_sun).to('km/s').value
+    omega_angular = omega * np.sqrt(GM_SUN * Mass / (R_SUN * 1.5 * Rpol)**3)
+    vtaneq = omega_angular * Req * R_SUN / 1000 # km/s
     vsini = vtaneq * np.sin(Inclination)
-    # v_keplerian = np.sqrt(ct.GM_sun * Mass / (ct.R_sun * Req)).to('km/s').value
-    v_critical = np.sqrt(ct.GM_sun * Mass / (ct.R_sun * 1.5 * Rpol)).to('km/s').value
+    # v_keplerian = np.sqrt(GM_SUN * Mass / (R_SUN * Req)) / 1000 # km/s
+    v_critical = np.sqrt(GM_SUN * Mass / (R_SUN * 1.5 * Rpol)) / 1000 # km/s
 
     chi_photo = np.sum(((final_mags - target.obs_mags) / final_err_mags) ** 2)
 
@@ -1005,6 +824,8 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
             lnL (float): Log-likelihood value.
             blobs (list): List of diagnostics including magnitudes, vsini, parallax, chi-squared, vtaneq, Req, Rpol, logL.
     """
+    from scipy.interpolate import interp1d
+    from pa.lib import star as st
 
     if isinstance(sampling_variables, list):
         sampling_variables = np.array(sampling_variables)
@@ -1070,7 +891,6 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
     else:
         raise ValueError('sigma_adjustment_parameter must be any of 0, 1, or 3.')
 
-
     if target.fixed_parameter_indices:
         for idx in sorted(target.fixed_parameter_indices):
             sampling_variables = np.insert(sampling_variables, idx, target.true_values[idx])
@@ -1078,22 +898,22 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
     # logL, Req, Rpol = target.Model_interp(sampling_variables[:len(target.interp_variables_list)])[0]
     if target.iso_name.lower() == 'PARSEC'.lower():
         Mass, omega, logL, Req, Rpol = target.Model_interp(sampling_variables[:len(target.interp_variables_list)]).flatten()
-        omega_angular = omega * np.sqrt(ct.GM_sun*Mass/(ct.R_sun * 1.5 * Rpol)**3)
-        omega_keplerian = np.sqrt(ct.GM_sun * Mass / (ct.R_sun * Req)**3)
+        omega_angular = omega * np.sqrt(GM_SUN * Mass/(R_SUN * 1.5 * Rpol)**3)
+        omega_keplerian = np.sqrt(GM_SUN * Mass / (R_SUN * Req)**3)
         omega_k = omega_angular / omega_keplerian
-        omega_k = omega_k.value
-        v_critical = np.sqrt(ct.GM_sun * Mass / (ct.R_sun * 1.5 * Rpol)).to('km/s').value
+        # omega_k = omega_k.value
+        v_critical = np.sqrt(GM_SUN * Mass / (R_SUN * 1.5 * Rpol)) / 1000 # km/s
     elif target.iso_name.lower() == 'MIST'.lower():
         Mass, omega, logL, Req = target.Model_interp(sampling_variables[:len(target.interp_variables_list)]).flatten()
         Rpol = Req
-        omega_angular = omega * np.sqrt(ct.GM_sun*Mass/(ct.R_sun * Req)**3)
+        omega_angular = omega * np.sqrt(GM_SUN * Mass/(R_SUN * Req)**3)
         omega_k = omega
-        v_critical = np.sqrt(ct.GM_sun*Mass/(ct.R_sun * Req)).to('km/s').value
+        v_critical = np.sqrt(GM_SUN * Mass/(R_SUN * Req)) / 1000 # km/s
 
-    vtaneq = (omega_angular * Req * ct.R_sun).to('km/s').value
+    vtaneq = (omega_angular * Req * R_SUN) / 1000 # km/s
     vsini = vtaneq * np.sin(Inclination)
     distance_pc = cal_parsec(parallax)
-    distance_cm = distance_pc * units.parsec.to('cm')
+    distance_cm = distance_pc * 3.0856775814913674e+18 # pc to cm
 
     output_rearramge_index = [list(target.made_limb_darkening_dict.values())[0].bands.index(band) for band in target.bands_list]
 
@@ -1186,7 +1006,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
     blobs.append(logL)
     blobs.append(lnL0)
     blobs.append(lnL)
-    u = target.interp_u([Mini, logAge, MH, omega_ini, Inclination])
+    u = target.interp_u(sampling_variables[:len(target.interp_variables_list)])
     blobs.append(u)
     unified_blobs = [float(np.squeeze(x)) for x in blobs]
 
@@ -1456,6 +1276,7 @@ def runnning_in_pool(
       3) min(ESS) > 1000
       Stops when either convergence or time limit (max_hours) reached.
     """
+    import emcee
     sampler = emcee.EnsembleSampler(
         target.nwalkers,
         target.ndim,
@@ -1620,6 +1441,9 @@ def run_test_sampling(
     target : object
         Updated target (may include chosen default Vrot prior).
     """
+    import corner
+    import emcee
+    from matplotlib import pyplot as plt
 
     # -------------------------
     # Defaults
@@ -1702,6 +1526,7 @@ def run_test_sampling(
             )
             sampler.run_mcmc(target.initial_states, nsteps_test, progress=progress_flag)
         else:
+            import multiprocess as mp
             with mp.Pool(processes=n_processes) as pool:
                 sampler = emcee.EnsembleSampler(
                     target.nwalkers,
@@ -1944,6 +1769,7 @@ def run_sampling(initial_steps=None,
     Returns:
         emcee.EnsembleSampler: The sampler object containing the full chains.
     """
+    import emcee
 
     start_time_final = time.time()
     if min_length_ratio is not None:
@@ -2006,6 +1832,7 @@ def run_sampling(initial_steps=None,
         sampler = runnning_in_pool(initial_steps, max_hours, emcee_moves, pool, dtype, use_tqdm,
                                    min_length_ratio, max_tau_relative_difference)
     else:
+        import multiprocess as mp
         with mp.Pool(processes=n_processes) as pool:
             sampler = runnning_in_pool(initial_steps, max_hours, emcee_moves, pool, dtype, use_tqdm,
                                        min_length_ratio, max_tau_relative_difference)
@@ -2057,17 +1884,10 @@ def save_chains_plot(
     Expected blob shape:
         (n_steps, n_walkers, n_blob)
     """
-
-    import os
-    import math
-    import warnings
-    from pathlib import Path
-
-    import numpy as np
-    import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import corner
     import emcee
+    from matplotlib import pyplot as plt
 
     # -------------------------
     # Defaults

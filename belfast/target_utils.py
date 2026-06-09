@@ -1,12 +1,4 @@
-# import necessary packages
-from astroquery.simbad import Simbad
-# from astroquery.gaia import Gaia
-from astroquery.vizier import Vizier
-from astropy.coordinates import SkyCoord
-import astropy.units as u
-import pandas as pd
 import numpy as np
-import re
 
 
 def cal_parsec(parallax):
@@ -44,6 +36,7 @@ def cal_abs_mag(obs_mags, obs_err_mags, parallax_obs, parallax_obs_err, max_sigm
     Returns:
         tuple: (abs_mags, abs_err_mags), both flattened arrays.
     """
+
     if max_sigma_adjustment_parameter is not None:
         if isinstance(max_sigma_adjustment_parameter, (float, int)):
             obs_err_mags = np.sqrt(obs_err_mags**2 + max_sigma_adjustment_parameter**2)
@@ -440,6 +433,9 @@ def get_info_from_simbad(name):
     ra_deg = np.nan
     dec_deg = np.nan
 
+    from astroquery.simbad import Simbad
+    from astropy.coordinates import SkyCoord
+
     try:
         if not isinstance(name, str) or name.strip() == "":
             return hip_id, hd_id, gaia_dr3_id, tyc_id, twomass_id, other_id, sp_type, otype, ra_deg, dec_deg
@@ -453,6 +449,8 @@ def get_info_from_simbad(name):
                 except Exception:
                     pass
             s = str(s)
+
+            import re
             s = re.sub(r"\s+", " ", s).strip()
             return s
 
@@ -490,6 +488,7 @@ def get_info_from_simbad(name):
                     ra_str = _norm(ra_val)
                     dec_str = _norm(dec_val)
                     if ra_str is not None and dec_str is not None:
+                        import astropy.units as u
                         coord = SkyCoord(f"{ra_str} {dec_str}", unit=(u.deg, u.deg), frame="icrs")
                         ra_deg = float(coord.ra.deg)
                         dec_deg = float(coord.dec.deg)
@@ -632,11 +631,13 @@ def query_tycho_2(tyc_id):
     bt, vt, e_bt, e_vt : float
         B_T, V_T, and their 1-sigma uncertainties. If not found, all NaN.
     """
+    from astroquery.vizier import Vizier
 
     def _nan():
         return np.nan
 
     def _safe_float(x):
+
         try:
             if x is None:
                 return np.nan
@@ -655,6 +656,7 @@ def query_tycho_2(tyc_id):
     if s == "" or s.lower() in ("nan", "none"):
         return (_nan(),) * 4
 
+    import re
     s = re.sub(r"^\s*TYC\s+", "", s, flags=re.IGNORECASE).strip()
     m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s*$", s)
     if not m:
@@ -704,6 +706,8 @@ def query_tycho_2(tyc_id):
 
 
 def _norm_2mass_id(twomass_id: str):
+    import re
+
     s = str(twomass_id).strip()
     s = re.sub(r"^\s*2MASS\s+", "", s, flags=re.IGNORECASE).strip()
     if s.startswith("J"):
@@ -714,6 +718,8 @@ def _norm_2mass_id(twomass_id: str):
     return s, s_noj
 
 def query_2mass(twomass_id):
+    from astroquery.vizier import Vizier
+
     def _nan(): return np.nan
     def _safe_float(x):
         try:
@@ -769,9 +775,6 @@ def query_2mass(twomass_id):
 
     return (_nan(),) * 12
 
-
-
-import numpy as np
 
 def assess_2mass_phot_quality(
     J_mag, H_mag, Ks_mag,
@@ -989,6 +992,7 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
       - Add optional warnings for low n_obs and low flux_over_error
       - Make E(BP-RP) retrieval optional (NaN if not present)
     """
+    from astroquery.vizier import Vizier
 
     MAG_ERR_FACTOR = 2.5 / np.log(10.0)  # 1.085736...
 
@@ -1496,6 +1500,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
         # numpy scalar
         try:
             if np.isscalar(x):
+                import pandas as pd
                 return bool(pd.isna(x))
         except Exception:
             pass
@@ -1554,6 +1559,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
     # -----------------------------
     def _ok_simbad(res):
         # res should be 10-tuple
+        import pandas as pd
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 10:
             return False
         # must have ids and coordinates (you can relax if needed)
@@ -1578,6 +1584,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
     # 2) Tycho-2 photometry (retry)
     # -----------------------------
     def _ok_tycho(res):
+        import pandas as pd
         # expect 4-tuple
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 4:
             return False
@@ -1600,6 +1607,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
     # 3) 2MASS photometry (retry)
     # -----------------------------
     def _ok_2mass(res):
+        import pandas as pd
         # expect 12-tuple
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 12:
             return False
@@ -1807,6 +1815,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
             "2mass_warnings": "; ".join(map(str, quality_2mass.get("warnings", []))),
             "gaia_warnings": "; ".join(map(str, gaia_warnings)),
         }
+        import pandas as pd
 
         return pd.DataFrame([row])
 

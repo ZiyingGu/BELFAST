@@ -1,5 +1,5 @@
-from lib.target_utils import query_data, cal_obs_mag, cal_abs_mag, remove_extinction
-from lib.isochrone_utils import rearrange_isochrone, read_isochrones, check_rearranged_isochrones
+from belfast.target_utils import query_data, cal_obs_mag, cal_abs_mag, remove_extinction
+from belfast.isochrone_utils import rearrange_isochrone, read_isochrones, check_rearranged_isochrones
 
 import re
 from glob import glob

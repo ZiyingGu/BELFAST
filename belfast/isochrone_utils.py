@@ -1116,7 +1116,7 @@ def regularization_on_Mini_from_files(
     problematic_df = pd.DataFrame(problematic_records)
 
     save_file = save_path + save_name
-    problematic_path = save_path + f"problematic_duplicated_Mini_records_{grid_type}.csv"
+    problematic_path = save_path + f"problematic_duplicated_{Path(save_name).stem}.csv"
 
     save_dict = dict(
         Mini_grid=Mini_grid,
@@ -1171,7 +1171,7 @@ def regularization_on_Mini_from_files(
     print(f"skipped_group_count: {skipped_group_count}")
     print(f"safe_duplicate_count: {safe_duplicate_count}")
     print(f"problematic_duplicate_count: {len(problematic_df)}")
-    print(f"problematic duplicated Mini records are saved at: {problematic_path}")
+    print(f"problematic duplicated Mini records are saved at: {os.path.abspath(problematic_path)}")
     print(f"Grids are saved at: {os.path.abspath(save_file)}")
     print(
         f"total grid memory: {total_bytes / 1024**2:.2f} MB "
@@ -1768,7 +1768,7 @@ def regularization_on_u_from_files(
     if len(bad_width_df) > 0:
         bad_width_path = save_path + f"bad_u_width_records_{grid_type}.csv"
         bad_width_df.to_csv(bad_width_path, index=False)
-        print(f"Warning: bad width records saved to: {bad_width_path}")
+        print(f"Warning: bad width records saved to: {os.path.abspath(bad_width_path)}")
 
     # ============================================================
     # u grid
@@ -2000,8 +2000,8 @@ def regularization_on_u_from_files(
     bad_group_df = pd.DataFrame(bad_group_records)
     duplicated_u_df = pd.DataFrame(duplicated_u_records)
 
-    bad_group_path = save_path + f"bad_u_group_records_{grid_type}.csv"
-    duplicated_u_path = save_path + f"duplicated_u_records_{grid_type}.csv"
+    bad_group_path = save_path + f"bad_records_{Path(save_name).stem}.csv"
+    duplicated_u_path = save_path + f"duplicated_records_{Path(save_name).stem}.csv"
 
     bad_group_df.to_csv(bad_group_path, index=False)
     duplicated_u_df.to_csv(duplicated_u_path, index=False)
@@ -2063,8 +2063,8 @@ def regularization_on_u_from_files(
     print(f"skipped_group_count: {skipped_group_count}")
     print(f"bad_group_count: {len(bad_group_df)}")
     print(f"duplicated_u_count: {len(duplicated_u_df)}")
-    print(f"bad group records saved at: {bad_group_path}")
-    print(f"duplicated u records saved at: {duplicated_u_path}")
+    print(f"bad group records saved at: {os.path.abspath(bad_group_path)}")
+    print(f"duplicated u records saved at: {os.path.abspath(duplicated_u_path)}")
     print(f"u_save_range: [{u_save_min}, {u_save_max}]")
     print(f"n_u_original: {n_u}")
     print(f"n_u_saved: {len(u_grid)}")
@@ -3281,7 +3281,7 @@ def regularization_on_Mini_from_MIST_folders(
     print(f"skipped_group_count: {skipped_group_count}")
     print(f"safe_duplicate_count: {safe_duplicate_count}")
     print(f"problematic_duplicate_count: {len(problematic_df)}")
-    print(f"problematic duplicated Mini records are saved at: {problematic_path}")
+    print(f"problematic duplicated Mini records are saved at: {os.path.abspath(problematic_path)}")
     print(f"Grids are saved at: {os.path.abspath(save_file)}")
     print(
         f"total grid memory: {total_bytes / 1024**2:.2f} MB "
