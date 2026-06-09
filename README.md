@@ -9,8 +9,8 @@ By combining photometric observations, parallax, and projected rotational veloci
 Create a new conda environment with Python 3.13.5, activate it, and install Jupyter Notebook:
 
 ```bash
-conda create -n age python=3.13.5
-conda activate age
+conda create -n belfast python=3.13.5
+conda activate belfast
 pip install notebook
 ```
 
