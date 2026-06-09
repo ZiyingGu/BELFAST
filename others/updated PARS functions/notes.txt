@@ -1,0 +1,9 @@
+Download PARS:
+git clone https://github.com/mlipatov/paint_atmospheres.git
+PARS used old versions of packages and some of them need updates. I attached 4 modified functions. Please update them in:
+pa/lib/limbdark.py
+pa/lib/star.py
+pa/usr/08_vega_spectrum_comparison.py
+pa/usr/spectra_colormag.py
+And then please install PARS by:
+pip install -e . --config-settings editable_mode=compat

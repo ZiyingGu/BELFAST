@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+.idea/
+.ipynb_checkpoints/
+*.egg-info/
+.DS_Store
+
+/results/*
+!/results/.gitkeep
+
+/belfast/nn/data/*
+!/belfast/nn/data/.gitkeep
+
+/belfast/nn/models/*
+!/belfast/nn/models/.gitkeep
+
+/data/isochrones/*
+!/data/isochrones/.gitkeep
+
+/data/Kurucz_limb_darkening/*
+!/data/Kurucz_limb_darkening/.gitkeep
+
+/data/clusters/figures/*
+!/data/clusters/figures/.gitkeep
+
+!/data/PARS_filters/.gitkeep
