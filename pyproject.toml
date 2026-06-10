@@ -7,7 +7,7 @@ name = "BELFAST"
 version = "0.1.0"
 description = "A Bayesian framework for estimating the ages of early-type stars with fast rotation"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13.5"
 dependencies = [
     "numpy>=1.24",
     "pandas>=2.0",
