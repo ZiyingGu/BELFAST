@@ -25,3 +25,6 @@ __pycache__/
 !/data/clusters/figures/.gitkeep
 
 !/data/PARS_filters/.gitkeep
+
+/tutorials/01\ preparation_gu.ipynb
+/tutorials/02\ age\ estimation_gu.ipynb
