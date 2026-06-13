@@ -176,7 +176,7 @@ class Target:
                    PARS_limb_darkening_path=None,
                    PARS_filters=None,
                    PARS_nz=100,
-                   PARS_MH_offset=-0.110,
+                   PARS_MH_offset=-0.046, # [M/H] zeropoint converison from Caffau et. (2011) to Grevesse & Sauval (1998)
                    # NN setting
                    # NN_prepare_data=False,
                    # NN_photo_err_scaler=40,
