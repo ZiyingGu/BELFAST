@@ -1278,7 +1278,7 @@ def runnning_in_pool(
     """
     import emcee
     sampler = emcee.EnsembleSampler(
-        target.nwalkers,
+        target.n_walkers,
         target.ndim,
         log_posterior,
         moves=emcee_moves,
@@ -1405,10 +1405,51 @@ def runnning_in_pool(
     return sampler
 
 
+def _normalize_blobs(blobs_in):
+    """
+    Convert emcee blobs to ndarray with shape:
+        (n_steps, n_walkers, n_blob)
+    """
+    if blobs_in is None:
+        raise ValueError("sampler.get_blobs() returned None.")
+
+    arr = np.asarray(blobs_in)
+
+    if arr.dtype.names is not None:
+        if "blob" in arr.dtype.names:
+            arr = arr["blob"]
+        else:
+            raise ValueError(f"Unexpected blob dtype names: {arr.dtype.names}")
+
+    if arr.dtype == object:
+        if arr.ndim == 2:
+            arr = np.stack(
+                [
+                    np.stack([arr[i, j] for j in range(arr.shape[1])], axis=0)
+                    for i in range(arr.shape[0])
+                ],
+                axis=0,
+            )
+        elif arr.ndim == 1:
+            arr = np.stack(arr, axis=0)
+        else:
+            arr = np.array(arr.tolist())
+
+    arr = np.asarray(arr, dtype=np.float64)
+    arr = np.squeeze(arr)
+
+    if arr.ndim != 3:
+        raise ValueError(
+            f"Expected blobs_array shape (n_steps, n_walkers, n_blob), "
+            f"but got {arr.shape}."
+        )
+
+    return arr
+
 
 def run_test_sampling(
-    nsteps_test=None,
-    nsteps_evaluate=None,
+    n_steps_test=None,
+    n_steps_evaluate=None,
     use_tqdm=True,
     show_fig=True,
     n_processes=8,
@@ -1424,6 +1465,7 @@ def run_test_sampling(
     hist_bin_factor=3,
     dig_num=2,
     save_path=".",
+    save_target=False,
     save_samples=False,
     save_64=False,
 ):
@@ -1448,10 +1490,10 @@ def run_test_sampling(
     # -------------------------
     # Defaults
     # -------------------------
-    if nsteps_test is None:
-        nsteps_test = 3000
-    if nsteps_evaluate is None:
-        nsteps_evaluate = nsteps_test
+    if n_steps_test is None:
+        n_steps_test = 3000
+    if n_steps_evaluate is None:
+        n_steps_evaluate = n_steps_test
     if quantiles is None:
         quantiles = [0.16, 0.5, 0.84]
 
@@ -1461,6 +1503,41 @@ def run_test_sampling(
 
     if save_path[-1] == '/':
         save_path = save_path[:-1]
+
+    output_list = target.bands_list.copy()
+
+    if target.METHOD == "DIRECT":
+        output_list += [
+            "vsini",
+            "parallax",
+            "chi_squared",
+            "vtaneq",
+            "Mass",
+            "omega",
+            "Req",
+            "Rpol",
+            "lnL0",
+            "lnL",
+            "u",
+        ]
+    elif target.METHOD == "PARS":
+        output_list += [
+            "vsini",
+            "parallax",
+            "chi_squared",
+            "vtaneq",
+            "Mass",
+            "omega",
+            "Req",
+            "Rpol",
+            "logL",
+            "lnL0",
+            "lnL",
+            "u",
+        ]
+    else:
+        raise ValueError(f"Unknown target.METHOD: {target.METHOD}")
+
 
     # -------------------------
     # Helpers
@@ -1503,7 +1580,7 @@ def run_test_sampling(
             and running_in_jupyter()
         )
 
-    def _run_once(progress_flag: bool, nsteps_test: float):
+    def _run_once(progress_flag: bool, n_steps_test: float):
         """
         Run one emcee sampling and return (sampler, flat_samples).
         """
@@ -1518,43 +1595,48 @@ def run_test_sampling(
 
         if _should_disable_mp_pool():
             sampler = emcee.EnsembleSampler(
-                target.nwalkers,
+                target.n_walkers,
                 target.ndim,
                 log_posterior,
                 moves=moves_local,
                 blobs_dtype=dtype,
             )
-            sampler.run_mcmc(target.initial_states, nsteps_test, progress=progress_flag)
+            sampler.run_mcmc(target.initial_states, n_steps_test, progress=progress_flag)
         else:
             import multiprocess as mp
             with mp.Pool(processes=n_processes) as pool:
                 sampler = emcee.EnsembleSampler(
-                    target.nwalkers,
+                    target.n_walkers,
                     target.ndim,
                     log_posterior,
                     moves=moves_local,
                     pool=pool,
                     blobs_dtype=dtype,
                 )
-                sampler.run_mcmc(target.initial_states, nsteps_test, progress=progress_flag)
+                sampler.run_mcmc(target.initial_states, n_steps_test, progress=progress_flag)
 
         discard = int(sampler.iteration / 10)
         flat = sampler.get_chain(discard=discard, thin=1, flat=True)
         return sampler, flat
 
-    def _estimate_rough_mass(samples_flat: np.ndarray):
+    def _estimate_rough_mass(Mass_samples: np.ndarray):
         """Estimate rough mass summary from marginal posterior."""
-        mass_index = target.sampling_variables_list.index("Mini")
-        mass_samples = samples_flat[:, mass_index]
 
-        qs = np.percentile(mass_samples, [100 * q for q in quantiles])
+        Mass_samples = np.asarray(Mass_samples, dtype=float)
+        Mass_samples = Mass_samples[np.isfinite(Mass_samples)]
+
+        if len(Mass_samples) == 0:
+            raise ValueError("No finite mass samples available.")
+
+        qs = np.percentile(Mass_samples, [100 * q for q in quantiles])
+
         return {
             "median": qs[1],
             "q_low": qs[0],
             "q_high": qs[2],
             "plus": qs[2] - qs[1],
             "minus": qs[1] - qs[0],
-            "samples": mass_samples,
+            "samples": Mass_samples,
         }
 
     def _make_corner_inputs(samples_flat: np.ndarray):
@@ -1576,33 +1658,34 @@ def run_test_sampling(
 
         return corner_samples, corner_labels
 
-    def _build_name_prefix():
-        """Build filename prefix for outputs."""
-        base = (
-            f"{target.name.replace(' ', '_')}"
-            f"{target.cluster_name}_{target.METHOD}"
-            f"_sigma{target.sigma_adjustment_parameter}_"
-        )
-        if target.extinction_parameter == 0:
-            return base + "extinction0"
-        return base + f"{target.extinction_type}"
+    name_pre = (
+        f'{target.name.replace(" ", "_")}{target.cluster_name}_{target.iso_name.upper()}_{target.METHOD}_{target.grids_type}_grid'
+    )
 
-    # -------------------------
-    # Run sampling (1 or 2-stage)
-    # -------------------------
-    name_pre = _build_name_prefix()
+    if target.sigma_adjustment_parameter in [1, 3]:
+        name_pre += f"_sigma{target.sigma_adjustment_parameter}"
+
+    if target.extinction_parameter:
+        name_pre += f"_{target.extinction_type}"
 
     if target.omega_ini_prior == "default":
         if target.Vrot_prior is None:
             # Stage 1: no progress bar (your original behavior), just to estimate mass
             print("Estimating rough mass...")
-            # sampler_test, samples_test_emcee = _run_once(progress_flag=False, nsteps_test=nsteps_evaluate)
-            sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, nsteps_test=nsteps_evaluate)
+            # sampler_test, samples_test_emcee = _run_once(progress_flag=False, n_steps_test=n_steps_evaluate)
+            sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, n_steps_test=n_steps_evaluate)
 
-            rough_mass = _estimate_rough_mass(samples_test_emcee)
+            blobs_test = sampler_test.get_blobs(flat=False)
+            blobs_array = _normalize_blobs(blobs_test)
+            blobs_flat = blobs_array.reshape(-1, blobs_array.shape[-1])
+            Mass_smaples = blobs_flat[:, output_list.index("Mass")]
+
+            rough_mass = _estimate_rough_mass(Mass_smaples)
+
             key, Vrot_prior = select_Vrot_prior_by_rough_mass(
                 rough_mass["median"], log_prior_Vrot_dict
             )
+            target.rough_mass = rough_mass["median"]
             target.Vrot_prior = Vrot_prior
 
             if key is None:
@@ -1611,18 +1694,17 @@ def run_test_sampling(
                 print("====> Using default Vrot prior:", key)
 
         # Stage 2: actual test run
-        print(f"Running a test with {nsteps_test} samples...")
-        sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, nsteps_test=nsteps_test)
+        print(f"Running a test with {n_steps_test} samples...")
+        sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, n_steps_test=n_steps_test)
 
     else:
-        print(f"Running a test with {nsteps_test} samples...")
-        sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, nsteps_test=nsteps_test)
+        print(f"Running a test with {n_steps_test} samples...")
+        sampler_test, samples_test_emcee = _run_once(progress_flag=use_tqdm, n_steps_test=n_steps_test)
 
     # -------------------------
     # Corner plot
     # -------------------------
     # corner_samples, corner_labels = _make_corner_inputs(samples_test_emcee)
-
     samples_flat = samples_test_emcee
 
     # -------------------------
@@ -1686,7 +1768,7 @@ def run_test_sampling(
 
     if not show_fig:
         fig.savefig(
-            f"{save_path}/{name_pre}_steps{nsteps_test}.pdf",
+            f"{save_path}/{name_pre}_steps_test{n_steps_test}_n_steps_evaluate_{n_steps_evaluate}.pdf",
             bbox_inches="tight",
         )
         plt.close(fig)
@@ -1705,31 +1787,41 @@ def run_test_sampling(
     if len(acceptance_fraction_arr) % 9 != 0:
         print()
 
-    print(f"nsteps/60: {nsteps_test / 60:.2f}")
+    print(f"n_steps/60: {n_steps_test / 60:.2f}")
     print(
         "autocorrelation time:",
         np.ceil(sampler_test.get_autocorr_time(tol=0)).astype(int),
     )
 
     # -------------------------
-    # Save samples
+    # Saving
     # -------------------------
+
+    if save_target:
+        target.save(f"{save_path}/target_{name_pre}.npz")
 
     if save_samples:
         if  save_64:
             samples = sampler_test.get_chain()
             log_prob = sampler_test.get_log_prob()
-            blobs_full = sampler_test.get_blobs()["blob"]
+            blobs_full = _normalize_blobs(sampler_test.get_blobs()["blob"])
         else:
             samples = sampler_test.get_chain().astype(np.float32)
             log_prob = sampler_test.get_log_prob().astype(np.float32)
-            blobs_full = sampler_test.get_blobs()["blob"].astype(np.float32)
+            blobs_full = _normalize_blobs(sampler_test.get_blobs()["blob"]).astype(np.float32)
         np.savez_compressed(
-            f"{save_path}/posterior_{name_pre}_steps{nsteps_test}.npz",
+            f"{save_path}/posterior_{name_pre}_steps{n_steps_test}.npz",
             samples=samples,
             log_prob=log_prob,
             blobs=blobs_full if blobs_full is not None else np.array(None, dtype=object),
-            param_names=np.array(target.sampling_variables_list),
+            param_names= np.array(target.sampling_variables_list.copy()),
+            output_list=np.array(output_list),
+            n_steps_test=n_steps_test,
+            n_steps_evaluate=n_steps_evaluate,
+            n_walkers=target.n_walkers,
+            n_dim=len(target.sampling_variables_list),
+            n_discard=0,
+            n_thin=0,
         )
 
     return sampler_test, target
@@ -1864,6 +1956,7 @@ def save_chains_plot(
     corner_age_type="linear",
     corner_inc_type="degree",
     save_path='..',
+    save_target=True,
     save_samples=True,
     save_64=False,
     plot_recovered_corner=True,
@@ -1909,47 +2002,6 @@ def save_chains_plot(
             return shell == "ZMQInteractiveShell"
         except Exception:
             return False
-
-    def _normalize_blobs(blobs_in):
-        """
-        Convert emcee blobs to ndarray with shape:
-            (n_steps, n_walkers, n_blob)
-        """
-        if blobs_in is None:
-            raise ValueError("sampler.get_blobs() returned None.")
-
-        arr = np.asarray(blobs_in)
-
-        if arr.dtype.names is not None:
-            if "blob" in arr.dtype.names:
-                arr = arr["blob"]
-            else:
-                raise ValueError(f"Unexpected blob dtype names: {arr.dtype.names}")
-
-        if arr.dtype == object:
-            if arr.ndim == 2:
-                arr = np.stack(
-                    [
-                        np.stack([arr[i, j] for j in range(arr.shape[1])], axis=0)
-                        for i in range(arr.shape[0])
-                    ],
-                    axis=0,
-                )
-            elif arr.ndim == 1:
-                arr = np.stack(arr, axis=0)
-            else:
-                arr = np.array(arr.tolist())
-
-        arr = np.asarray(arr, dtype=np.float64)
-        arr = np.squeeze(arr)
-
-        if arr.ndim != 3:
-            raise ValueError(
-                f"Expected blobs_array shape (n_steps, n_walkers, n_blob), "
-                f"but got {arr.shape}."
-            )
-
-        return arr
 
     def _latex_summary(x, digits=3):
         x = np.asarray(x, dtype=float)
@@ -2275,10 +2327,12 @@ def save_chains_plot(
 
     name_pre = (
         f'{target.name.replace(" ", "_")}{target.cluster_name}_{target.iso_name.upper()}_{target.METHOD}_{target.grids_type}_grid'
-        f"_sigma{target.sigma_adjustment_parameter}"
     )
 
-    if extinction != 0:
+    if target.sigma_adjustment_parameter in [1, 3]:
+        name_pre += f"_sigma{target.sigma_adjustment_parameter}"
+
+    if target.extinction_parameter:
         name_pre += f"_{target.extinction_type}"
 
     if any(x is not None for x in target.true_values) and not all(x is not None for x in target.true_values):
@@ -2311,9 +2365,9 @@ def save_chains_plot(
             count += 1
 
     if save_samples:
-        print(f"Your plots and samples will be saved at \n\t{new_folder_path}")
+        print(f"Your plots and samples will be saved at \n\t{os.path.abspath(new_folder_path)}")
     else:
-        print(f"Your plots will be saved at \n\t{new_folder_path}")
+        print(f"Your plots will be saved at \n\t{os.path.abspath(new_folder_path)}")
 
     suffix = os.path.basename(new_folder_path)
 
@@ -2327,7 +2381,7 @@ def save_chains_plot(
             f"n_discard={n_discard}"
         )
 
-    total_available_samples = available_steps * sampler.nwalkers
+    total_available_samples = available_steps * target.n_walkers
 
     if plot_samples == "all":
         n_thin = 1
@@ -2340,10 +2394,10 @@ def save_chains_plot(
         )
         plot_samples = total_available_samples
 
-    needed_steps = math.ceil(plot_samples / sampler.nwalkers)
+    needed_steps = math.ceil(plot_samples / target.n_walkers)
     n_thin = max(1, available_steps // needed_steps)
 
-    while math.ceil(available_steps / n_thin) * sampler.nwalkers < plot_samples:
+    while math.ceil(available_steps / n_thin) * target.n_walkers < plot_samples:
         n_thin -= 1
         if n_thin < 1:
             n_thin = 1
@@ -2463,8 +2517,27 @@ def save_chains_plot(
 
 
     # -------------------------
-    # Save samples
+    # Saving
     # -------------------------
+
+    from pathlib import Path
+    import shutil
+
+    if save_target:
+        target_save_path = Path(new_folder_path) / f"target_{name_pre}.npz"
+
+        if not getattr(target, "load_flag", None):
+            target.save(target_save_path)
+        else:
+            source_path = Path(target.load_flag)
+
+            if not source_path.exists():
+                raise FileNotFoundError(
+                    f"Loaded target file does not exist: {source_path}"
+                )
+
+            shutil.copy2(source_path, target_save_path)
+
     if save_samples:
         if save_64:
             samples_full = sampler.get_chain()
@@ -2485,7 +2558,11 @@ def save_chains_plot(
             param_names=param_names,
             output_list=np.array(output_list),
             blobs=blobs_full,
-            n_discard=np.array(n_discard),
+            n_steps=n_steps,
+            n_walkers=n_walkers,
+            n_dim=n_dim,
+            n_discard=n_discard,
+            n_thin=n_thin,
         )
 
     # -------------------------
@@ -2515,7 +2592,7 @@ def save_chains_plot(
 
             recovered_corner_path = (
                 Path(new_folder_path)
-                / f"corner_recovered_burnin_{n_discard}_thin_{n_thin}_{suffix}.pdf"
+                / f"corner_recovered_parameters_{suffix}.pdf"
             )
 
             with PdfPages(recovered_corner_path) as pdf:
@@ -2540,7 +2617,7 @@ def save_chains_plot(
         try:
             blobs_hist_path = (
                     Path(new_folder_path)
-                    / f"blobs_hist_burnin_{n_discard}_thin_{n_thin}_{suffix}.pdf"
+                    / f"blobs_hist_{suffix}.pdf"
             )
 
             _plot_blobs_hist(
@@ -2703,14 +2780,14 @@ def save_chains_plot(
 
         corner_pdf_path = (
             Path(new_folder_path)
-            / f"corner_burnin_{n_discard}_thin_{n_thin}_{suffix}.pdf"
+            / f"corner_sampling_parameters_{suffix}.pdf"
         )
 
         with PdfPages(corner_pdf_path) as pdf:
             pdf.savefig(fig, dpi=150)
 
         print("Finished saving plots.")
-        print(f"Saved folder: {new_folder_path}")
+        # print(f"Saved folder: {os.path.abspath(new_folder_path)}")
 
         if show_fig and running_in_jupyter():
             plt.show()

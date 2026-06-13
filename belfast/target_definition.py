@@ -1,14 +1,15 @@
 # import necessary packages
 import os
-import pandas as pd
-import warnings
+# import pandas as pd
+# import warnings
 import numpy as np
-from tqdm import tqdm
-import pyarrow
-import pyarrow.parquet as pq
-import re
+# from tqdm import tqdm
+# import re
 from glob import glob
-from itertools import product
+from pathlib import Path
+import json
+import inspect
+# from itertools import product
 # from belfast.isochrone_utils import read_isochrones, PARSECv2_collect_data, MIST_collect_data, make_model
 from belfast.isochrone_utils import PARSECv2_collect_data, load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
 from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
@@ -38,6 +39,7 @@ class Target:
 
         Sets up the object's main attributes and checks for valid parameter combinations.
         """
+        self.current_path = str(Path.cwd())
         allowed_sigma_adjustment_parameter = {0, 1, 3}
         if sigma_adjustment_parameter not in allowed_sigma_adjustment_parameter:
             raise ValueError(f'"sigma_adjustment_parameter" must be one of {allowed_sigma_adjustment_parameter}, '
@@ -47,6 +49,7 @@ class Target:
             raise ValueError('Invalid combination: "sigma_adjustment_parameter=3" cannot be used with "extinction_parameter=True".\n'
                              'The degree of freedom will be ZERO!')
 
+        self.load_flag = False # False: it is defined, not loaded from files
         self.name = name.strip()
         self.bands_list = bands_list
         if isinstance(obs_mags, list):
@@ -84,6 +87,7 @@ class Target:
 
         Sets up extinction, variables lists, and computes extinction-corrected and absolute magnitudes.
         """
+        self.cluster = cluster
         if self.extinction_parameter == True:
             if extinction_type is None:
                 # Here A_V is the extinction of the Johnson V band
@@ -114,7 +118,6 @@ class Target:
         if self.extinction_parameter == True:
             sampling_variables_list.append('extinction')
 
-        self.cluster = cluster
         if extinction == 0:
             print('Assuming no extinction.')
 
@@ -126,35 +129,64 @@ class Target:
         self.abs_mags, self.abs_err_mags = cal_abs_mag(self.obs_mags_corrected, self.obs_err_mags_corrected, self.parallax_obs, self.parallax_obs_err,
                                                        max_sigma_adjustment_parameter=max_sigma_adjustment_parameter)
 
-
-    def known_parameter(self, true_values=None, known_Mini=None, known_logAge=None, known_MH=None,
-                        known_omega_ini=None, known_Inclination=None, known_parallax=None):
+    def known_parameter(
+            self,
+            true_values=None,
+            known_Mini=None,
+            known_logAge=None,
+            known_MH=None,
+            known_omega_ini=None,
+            known_Inclination=None,
+            known_parallax=None,
+    ):
         """
-        Specify known (fixed) parameters for the target.
-        Note:
-            For parameters [Mini, logAge, MH, omega_ini, Inclination]:
-            - If a parameter is not included in `sampling_variables_list`, you must provide its known value here.
-            - Otherwise, the method will raise an error.
+        Specify known or true parameter values for the target.
+
+        Parameters can be provided in two ways:
+
+        1. Provide `true_values` directly:
+           `true_values` must contain six values in the order:
+           [Mini, logAge, MH, omega_ini, Inclination, parallax].
+
+        2. Provide individual known values:
+           known_Mini, known_logAge, known_MH, known_omega_ini,
+           known_Inclination, and known_parallax.
+
+        If neither `true_values` nor an individual value is provided for a
+        parameter, that parameter is stored as None.
 
         Args:
-            known_Mini (float): Known stellar mini, if available.
-            known_logAge (float): Known log(age), if available.
-            known_MH (float): Known metallicity, if available.
-            known_omega_ini (float): Known rotation parameter, if available.
-            known_Inclination (float): Known inclination, if available.
-            known_parallax (float): Known parallax, if available.
-
-        Checks that all non-sampled variables are specified, and stores true parameter values.
+            true_values (array-like, optional):
+                True parameter values in the order
+                [Mini, logAge, MH, omega_ini, Inclination, parallax].
+            known_Mini (float, optional): Known initial stellar mass.
+            known_logAge (float, optional): Known log(age).
+            known_MH (float, optional): Known metallicity.
+            known_omega_ini (float, optional): Known initial rotation parameter.
+            known_Inclination (float, optional): Known inclination.
+            known_parallax (float, optional): Known parallax.
         """
 
         if true_values is not None:
+            true_values = np.asarray(true_values, dtype=object)
+
+            if true_values.shape != (6,):
+                raise ValueError(
+                    "`true_values` must have length 6 in the order "
+                    "[Mini, logAge, MH, omega_ini, Inclination, parallax]."
+                )
+
+            (
+                self.known_Mini,
+                self.known_logAge,
+                self.known_MH,
+                self.known_omega_ini,
+                self.known_Inclination,
+                self.known_parallax,
+            ) = true_values
+
             self.true_values = true_values
-            self.known_Mini = true_values[0]
-            self.known_logAge = true_values[1]
-            self.known_MH = true_values[2]
-            self.known_omega_ini = true_values[3]
-            self.known_Inclination = true_values[4]
-            self.known_parallax = true_values[5]
+
         else:
             self.known_Mini = known_Mini
             self.known_logAge = known_logAge
@@ -162,7 +194,18 @@ class Target:
             self.known_omega_ini = known_omega_ini
             self.known_Inclination = known_Inclination
             self.known_parallax = known_parallax
-            self.true_values = np.array([known_Mini, known_logAge, known_MH, known_omega_ini, known_Inclination, known_parallax])
+
+            self.true_values = np.array(
+                [
+                    known_Mini,
+                    known_logAge,
+                    known_MH,
+                    known_omega_ini,
+                    known_Inclination,
+                    known_parallax,
+                ],
+                dtype=object,
+            )
 
 
     def set_method(self,
@@ -208,6 +251,7 @@ class Target:
         self.grids_path = grids_path
         self.grids_type = grids_type
         self.METHOD = METHOD
+        self.flag_64 = flag_64
         self.interp_upper_limit = []
         self.interp_lower_limit = []
 
@@ -266,6 +310,8 @@ class Target:
                 raise Exception('PARS_limb_darkening_path must be defined.')
             if PARS_filters is None:
                 raise Exception('PARS_filters must be defined.')
+            self.PARS_limb_darkening_path = PARS_limb_darkening_path
+            self.PARS_filters = PARS_filters
             PARS_limb_darkening_filelist = glob(PARS_limb_darkening_path)
             PARS_limb_darkening_filelist.sort()
             limb_darkening_MH_dic = {file: extract_MH(file) for file in PARS_limb_darkening_filelist if extract_MH(file) is not None}
@@ -286,585 +332,9 @@ class Target:
         self.fixed_parameter_indices = fixed_parameter_indices
 
 
-    # def iso_grid_cut(
-    #         self,
-    #         iso_name=None,
-    #         isochrone_path=None,
-    #         isos_list=None,
-    #         phot_list=None,
-    #         print_file_list=False,
-    #         use_tqdm=True,
-    #         photo_err_scaler=None,
-    #         age_type=None,
-    #         skip=False,
-    #         label_list=None,
-    #         remove_young_and_old_flag=True,
-    # ):
-    #     """
-    #     Read isochrone files and collect relevant data for the target.
-    #
-    #     Parameters
-    #     ----------
-    #     iso_name : str, optional
-    #         Name of isochrone model. Supported: ['PARSECv2', 'MIST'].
-    #         If None, will try to use self.iso_name.
-    #     isochrone_path : str or list of str, optional
-    #         For PARSECv2 only. Path pattern(s) to isochrone files.
-    #     isos_list : str or list of str, optional
-    #         For MIST only. Path pattern(s) to MIST isochrone files.
-    #     phot_list : str or list of str, optional
-    #         For MIST only. Path pattern(s) to MIST photometry files.
-    #     print_file_list : bool
-    #         Whether to print matched file lists.
-    #     use_tqdm : bool
-    #         Whether to use tqdm.
-    #     photo_err_scaler : list or None
-    #         Photometric error scaler. Default is [0.1] * 8.
-    #     age_type : str, optional
-    #         Age type for PARSECv2, e.g. 'log' or 'linear'.
-    #         If None, will try to infer from isochrone_path.
-    #     skip : bool
-    #         For PARSECv2 only.
-    #     label_list : list, optional
-    #         For PARSECv2 only.
-    #     remove_young_and_old_flag : bool
-    #         For PARSECv2 only.
-    #
-    #     Notes
-    #     -----
-    #     - For PARSECv2, required input:
-    #         isochrone_path
-    #     - For MIST, required inputs:
-    #         isos_list, phot_list
-    #     """
-    #
-    #     iso_name = iso_name.strip()
-    #     if iso_name.lower() == "parsec":
-    #         iso_name = "PARSECv2"
-    #     elif iso_name.lower() == "mist":
-    #         iso_name = "MIST"
-    #
-    #     def _expand_file_list(path_or_list, arg_name):
-    #         file_list = []
-    #         if isinstance(path_or_list, str):
-    #             file_list = glob(path_or_list)
-    #         elif isinstance(path_or_list, list):
-    #             for path_i in path_or_list:
-    #                 file_list += glob(path_i)
-    #         else:
-    #             raise ValueError(f"'{arg_name}' must be a string or a list of strings.")
-    #         file_list.sort()
-    #         return file_list
-    #
-    #     # if photo_err_scaler is None:
-    #     #     photo_err_scaler = [0.1] * 8
-    #
-    #     if iso_name is None:
-    #         iso_name = getattr(self, "iso_name", None)
-    #
-    #     if iso_name is None:
-    #         raise ValueError(
-    #             "'iso_name' must be provided. Supported values are ['PARSECv2', 'MIST']."
-    #         )
-    #
-    #     self.iso_name = iso_name
-    #     self.use_tqdm = use_tqdm
-    #     self.skip = skip
-    #     self.label_list = label_list
-    #     self.remove_young_and_old_flag = remove_young_and_old_flag
-    #
-    #     if iso_name == "PARSECv2":
-    #         if isochrone_path is None:
-    #             raise ValueError("For iso_name='PARSECv2', 'isochrone_path' must be provided.")
-    #
-    #         if age_type is None:
-    #             if isinstance(isochrone_path, str):
-    #                 path_for_check = isochrone_path
-    #             elif isinstance(isochrone_path, list):
-    #                 path_for_check = " ".join(isochrone_path)
-    #             else:
-    #                 raise ValueError("'isochrone_path' must be a string or a list of strings.")
-    #
-    #             if "linear" in path_for_check:
-    #                 age_type = "linear"
-    #             elif "log" in path_for_check:
-    #                 age_type = "log"
-    #             else:
-    #                 raise ValueError(
-    #                     "'age_type' must be given or shown in isochrone_path "
-    #                     "(either 'linear' or 'log')."
-    #                 )
-    #
-    #         isochrone_file_list = _expand_file_list(isochrone_path, "isochrone_path")
-    #         self.isochrone_file_list = isochrone_file_list
-    #
-    #         self.age_type = age_type
-    #
-    #         if skip == True:
-    #             return
-    #
-    #         if print_file_list:
-    #             print("Isochrone files:\n", isochrone_file_list)
-    #
-    #         print("Reading isochrones and collecting data.")
-    #
-    #         df_table = PARSECv2_collect_data(
-    #             isochrone_file_list,
-    #             self.bands_list,
-    #             self.abs_mags,
-    #             self.abs_err_mags,
-    #             use_tqdm=use_tqdm,
-    #             label_list=self.label_list,
-    #             remove_young_and_old_flag=self.remove_young_and_old_flag,
-    #             photo_err_scaler=photo_err_scaler,
-    #         )
-    #
-    #         self.df_table = df_table
-    #
-    #         print(f"Totally we got {len(df_table)} datapoints.")
-    #         print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #         print("-" * 34)
-    #         for col in ["Mini", "logAge", "MH", "omega_ini", "Inclination"]:
-    #             min_val = np.min(df_table[col].values)
-    #             max_val = np.max(df_table[col].values)
-    #             print(f"{col:<12} {min_val:<10.4f} {max_val:<10.4f}")
-    #
-    #     elif iso_name == "MIST":
-    #         if isos_list is None:
-    #             raise ValueError("For iso_name='MIST', 'isos_list' must be provided.")
-    #         if phot_list is None:
-    #             raise ValueError("For iso_name='MIST', 'phot_list' must be provided.")
-    #
-    #         isos_file_list = _expand_file_list(isos_list, "isos_list")
-    #         phot_file_list = _expand_file_list(phot_list, "phot_list")
-    #
-    #         self.isos_file_list = isos_file_list
-    #         self.phot_file_list = phot_file_list
-    #
-    #         if print_file_list:
-    #             print("Isochrone files:\n", isos_file_list)
-    #             print("Photometry files:\n", phot_file_list)
-    #
-    #         print("Reading isochrones and collecting data.")
-    #
-    #         df_table_original = MIST_collect_data(
-    #             isos_file_list,
-    #             phot_file_list,
-    #             self.bands_list,
-    #             self.abs_mags,
-    #             self.abs_err_mags,
-    #             use_tqdm=use_tqdm,
-    #             photo_err_scaler=photo_err_scaler,
-    #         )
-    #
-    #         df_table = pd.DataFrame()
-    #         df_table[["Mini", "logAge", "MH", "omega_ini"]] = df_table_original[
-    #             ["star_mini", "log10_isochrone_age_yr", "[Fe/H]", "surf_avg_v_div_v_crit"]
-    #         ]
-    #         df_table["logL"] = df_table_original["log_L"]
-    #         df_table["Req"] = 10 ** df_table_original["log_R"]
-    #         df_table["Rpol"] = 10 ** df_table_original["log_R"]
-    #         df_table[
-    #             ["J", "H", "Ks", "B_T", "V_T", "G", "G_BP", "G_RP"]
-    #         ] = df_table_original[
-    #             ["2MASS_J", "2MASS_H", "2MASS_Ks", "Tycho_B", "Tycho_V",
-    #              "Gaia_G_EDR3", "Gaia_BP_EDR3", "Gaia_RP_EDR3"]
-    #         ]
-    #
-    #         self.df_table = df_table
-    #
-    #         print(f"Totally we got {len(df_table)} datapoints.")
-    #         print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #         print("-" * 34)
-    #         for col in ["Mini", "logAge", "MH", "omega_ini"]:
-    #             min_val = np.min(df_table[col].values)
-    #             max_val = np.max(df_table[col].values)
-    #             print(f"{col:<12} {min_val:<10.4f} {max_val:<10.4f}")
-    #
-    #     else:
-    #         raise ValueError(
-    #             f"Unsupported iso_name: {iso_name}. Supported values are ['PARSECv2', 'MIST']."
-    #         )
-
-    # def PARSECv2_make_table(self, isochrone_path, print_isochrone_file_list=False, use_tqdm=True, photo_err_scaler=None,
-    #                           age_type=None, skip=False, label_list=None, remove_young_and_old_flag=True):
-    #     """
-    #     Read isochrone files and collect relevant data for the target.
-    #
-    #     Args:
-    #         isochrone_path (str or list): Path pattern to isochrone files.
-    #         age_type (str): Type of age (e.g., 'log' or 'linear').
-    #         print_isochrone_file_list (bool): Whether to print found isochrone files.
-    #         photo_err_scaler (float): Sigma deviation for photometry selection.
-    #         select_rotation (bool): Whether to select rotation (drop non-rotation rows).
-    #         skip (bool): Skip collecting and collect data for neural network training later.
-    #         label_list (list): List of labels to keep when removing young and old stars, (e.g., [0, 1, 2]).
-    #         remove_young_and_old_flag (bool): Remove very young/old stars, keeping only labels in [1.0, 2.0, 3.0].
-    #
-    #     Reads isochrone tables, collects data, and stores as DataFrame for later modeling.
-    #     """
-    #
-    #     # if photo_err_scaler is None:
-    #     #     photo_err_scaler = [0.1] * 8
-    #
-    #     if age_type is None:
-    #         if 'linear' in isochrone_path:
-    #             age_type = 'linear'
-    #         elif 'log' in isochrone_path:
-    #             age_type = 'log'
-    #         else:
-    #             raise ValueError("'age_type' must be given or shown in isochrone_path (either 'linear' or 'log').")
-    #
-    #     isochrone_file_list=[]
-    #     if isinstance(isochrone_path, str):
-    #         isochrone_file_list = glob(isochrone_path)
-    #     elif isinstance(isochrone_path, list):
-    #         for path_i in isochrone_path:
-    #             isochrone_file_list += glob(path_i)
-    #     else:
-    #         raise ValueError("'isochrone_path' must be a string or a list of strings.")
-    #     isochrone_file_list.sort()
-    #     self.isochrone_file_list = isochrone_file_list
-    #     self.age_type = age_type
-    #     self.skip = skip
-    #     self.label_list = label_list
-    #     self.remove_young_and_old_flag = remove_young_and_old_flag
-    #     if print_isochrone_file_list:
-    #         print('Isochrone files:\n', isochrone_file_list)
-    #
-    #     print('Reading isochrones and collecting data.')
-    #     # df_table_list = []
-    #
-    #     df_table = PARSECv2_collect_data(isochrone_file_list, self.bands_list, self.abs_mags, self.abs_err_mags,
-    #                                      use_tqdm=use_tqdm, label_list=self.label_list,
-    #                                      remove_young_and_old_flag=self.remove_young_and_old_flag,
-    #                                      photo_err_scaler=photo_err_scaler)
-    #
-    #     self.df_table = df_table
-    #
-    #     print(f'Totally we got {len(df_table)} datapoints.')
-    #     print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #     for col in ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']:
-    #         min_val = np.min(df_table[col].values)
-    #         max_val = np.max(df_table[col].values)
-    #         print(f'{col:<12} {min_val:<10.4f} {max_val:<10.4f}')
-
-
-
-    # def MIST_make_table(self, isos_list, phot_list, print_file_list=False, use_tqdm=True, photo_err_scaler=None):
-    #
-    #     # if photo_err_scaler is None:
-    #     #     photo_err_scaler = [0.1] * 8
-    #
-    #     isos_file_list=[]
-    #     if isinstance(isos_list, str):
-    #         isos_file_list = glob(isos_list)
-    #     elif isinstance(isos_list, list):
-    #         for path_i in isos_list:
-    #             isos_file_list += glob(path_i)
-    #     else:
-    #         raise ValueError("'isochrone_path' must be a string or a list of strings.")
-    #     isos_file_list.sort()
-    #     self.isos_file_list = isos_file_list
-    #
-    #     phot_file_list=[]
-    #     if isinstance(phot_list, str):
-    #         phot_file_list = glob(phot_list)
-    #     elif isinstance(phot_list, list):
-    #         for path_i in phot_list:
-    #             phot_file_list += glob(path_i)
-    #     else:
-    #         raise ValueError("'isochrone_path' must be a string or a list of strings.")
-    #     phot_file_list.sort()
-    #     self.phot_file_list = phot_file_list
-    #
-    #     if print_file_list:
-    #         print('Isochrone files:\n', isos_file_list)
-    #         print('Photometry files:\n', phot_file_list)
-    #
-    #     print('Reading isochrones and collecting data.')
-    #     # df_table_list = []
-    #
-    #     df_table_original = MIST_collect_data(isos_file_list, phot_file_list, self.bands_list, self.abs_mags, self.abs_err_mags,
-    #                                           use_tqdm=use_tqdm, photo_err_scaler=photo_err_scaler)
-    #
-    #     df_table = pd.DataFrame()
-    #     df_table[['Mini', 'logAge', 'MH', 'omega_ini']] = df_table_original[['star_mini', 'log10_isochrone_age_yr', '[Fe/H]', 'surf_avg_v_div_v_crit']]
-    #     df_table['logL'] = df_table_original['log_L']
-    #     df_table['Req'] = 10 ** df_table_original['log_R']
-    #     df_table['Rpol'] = 10 ** df_table_original['log_R']
-    #     df_table[['J', 'H', 'Ks', 'B_T', 'V_T', 'G', 'G_BP', 'G_RP']] = df_table_original[['2MASS_J', '2MASS_H', '2MASS_Ks', 'Tycho_B', 'Tycho_V', 'Gaia_G_EDR3', 'Gaia_BP_EDR3', 'Gaia_RP_EDR3']]
-    #
-    #     self.df_table = df_table
-    #
-    #     print(f'Totally we got {len(df_table)} datapoints.')
-    #     print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #     for col in ['Mini', 'logAge', 'MH', 'omega_ini']:
-    #         min_val = np.min(df_table[col].values)
-    #         max_val = np.max(df_table[col].values)
-    #         print(f'{col:<12} {min_val:<10.4f} {max_val:<10.4f}')
-
-    #
-    # def set_method(self,
-    #                METHOD,
-    #                use_tqdm = True,
-    #
-    #                # INTERP setting
-    #                fewer_INTERP_cut_inclination = None,
-    #                fewer_INTERP_cut_MH = 2,
-    #                fewer_INTERP_cut_logAge = 1,
-    #
-    #                # REGULAR
-    #                REGULAR_grids_folder_list=None,
-    #                pattern="resampled_*.txt.gz",
-    #                sep=r"\s+",
-    #
-    #                # PARS setting
-    #                PARS_limb_darkening_path = None,
-    #                PARS_filters = None,
-    #                PARS_nz = 100,
-    #                PARS_MH_offset = -0.110,
-    #
-    #                # NN setting
-    #                NN_prepare_data = False,
-    #                NN_photo_err_scaler = 40,
-    #                ):
-    #     """
-    #     Set the modeling method and any method-specific settings for the target.
-    #
-    #     Args:
-    #         METHOD (str): The method to use ('fewer-INTERP', 'PARS', or 'NN').
-    #         fewer_INTERP_cut_inclination (list): Inclination cuts for interpolation.
-    #         fewer_INTERP_cut_MH (int): Metallicity cut step for interpolation.
-    #         fewer_INTERP_cut_logAge (int): logAge cut step for interpolation.
-    #         PARS_limb_darkening_path (str): Path to limb darkening files for PARS.
-    #         PARS_filters (str): Filters for PARS model to generate magnitudes.
-    #         PARS_nz (int): number of z coordinates for PARS in the upper hemisphere (normally 100).
-    #         PARS_MH_offset (float): Metallicity offset for PARS (default = -0.1).
-    #         NN_prepare_data (bool): Wehether to prepare and save data for NN training.
-    #         NN_photo_err_scaler (int): Sigma deviation for NN photometry.
-    #         NN_select_rotation (bool): Whether to select rotation (drop non-rotation rows) for the data for training NN.
-    #
-    #     Selects and configures the method (interpolation, PARS, or neural network) for later inference.
-    #     """
-    #     self.METHOD = METHOD
-    #     if self.cluster != '':
-    #         self.cluster_name = '_' + self.cluster
-    #     else:
-    #         self.cluster_name = self.cluster
-    #
-    #     self.NN_photo_err_scaler = NN_photo_err_scaler
-    #
-    #     # INTERP method
-    #     if METHOD == 'REGULAR':
-    #         # self.METHOD = 'REGULAR'
-    #         # self.REGULAR_grids_folder_list = REGULAR_grids_folder_list
-    #         # if isinstance(self.REGULAR_grids_folder_list, str):
-    #         #     self.df_for_interp = load_and_merge_resampled_files(REGULAR_grids_folder_list, pattern=pattern, sep=sep)
-    #         # elif isinstance(self.REGULAR_grids_folder_list, list):
-    #         #     df_list = []
-    #         #     for folder_i in self.REGULAR_grids_folder_list:
-    #         #         df_list.append(load_and_merge_resampled_files(folder_i, pattern=pattern, sep=sep))
-    #         #     self.df_for_interp = pd.concat(df_list)
-    #         # else:
-    #         #     raise TypeError("'REGULAR_grids_folder_list' must be a list or str.")
-    #
-    #         self.METHOD = 'REGULAR'
-    #         self.REGULAR_grids_folder_list = REGULAR_grids_folder_list
-    #         if isinstance(self.REGULAR_grids_folder_list, str):
-    #             self.df_for_interp = load_resampled_parquet(REGULAR_grids_folder_list)
-    #         elif isinstance(self.REGULAR_grids_folder_list, list):
-    #             df_list = []
-    #             for folder_i in self.REGULAR_grids_folder_list:
-    #                 df_list.append(load_resampled_parquet(folder_i))
-    #             self.df_for_interp = pd.concat(df_list)
-    #         else:
-    #             raise TypeError("'REGULAR_grids_folder_list' must be a list or str.")
-    #
-    #     elif METHOD == 'fewer-INTERP':
-    #         if fewer_INTERP_cut_inclination is None:
-    #             fewer_INTERP_cut_inclination = [0.0, 5.0, 10.0, 15, 20.0, 30.0, 35.0, 45.0, 55.0, 65.0, 90.0]
-    #
-    #         df_table_cut_inclination = self.df_table[self.df_table["Inclination"].isin(fewer_INTERP_cut_inclination)]
-    #         print('length of df_table_cut_inc: ', len(df_table_cut_inclination))
-    #         MH_values = np.unique(df_table_cut_inclination['MH'])[::fewer_INTERP_cut_MH]
-    #         df_table_cut_mh = df_table_cut_inclination[df_table_cut_inclination["MH"].isin(MH_values)]
-    #         print('length of df_table_cut_mh: ', len(df_table_cut_mh))
-    #         logAge_values = np.unique(df_table_cut_mh['logAge'])[::fewer_INTERP_cut_logAge]
-    #         df_table_cut_logAge = df_table_cut_mh[df_table_cut_mh["logAge"].isin(logAge_values)]
-    #         print('length of df_table_cut_logAge: ', len(df_table_cut_logAge))
-    #         df_for_interp = df_table_cut_logAge
-    #
-    #         print(f'Totally we got {len(df_for_interp)} datapoints for interpolation.')
-    #         print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #         for col in ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']:
-    #             min_val = np.min(df_for_interp[col].values)
-    #             max_val = np.max(df_for_interp[col].values)
-    #             print(f'{col:<12} {min_val:<10.4f} {max_val:<10.4f}')
-    #
-    #         if len(df_for_interp) > 8000:
-    #             warnings.warn(
-    #                 'Too many datapoints (> 8000) for interpolation.\n'
-    #                 '→ This may take ~20 min to build.\n'
-    #                 '→ Sampling speed will drop to ~5 iterations/s.',
-    #                 UserWarning
-    #             )
-    #         self.df_for_interp = df_for_interp
-    #
-    #     # PARS method
-    #     elif METHOD == 'PARS':
-    #         self.df_for_interp = self.df_table
-    #         PARS_limb_darkening_filelist = glob(PARS_limb_darkening_path)
-    #         PARS_limb_darkening_filelist.sort()
-    #         limb_darkening_MH_dic = {file: extract_MH(file) for file in PARS_limb_darkening_filelist if extract_MH(file) is not None}
-    #         print("Loading limb darkening files from Kurucz's model.")
-    #         PARS_MH_lower_limit = self.df_table.min()['MH'] + PARS_MH_offset
-    #         PARS_MH_upper_limit = self.df_table.max()['MH'] + PARS_MH_offset
-    #         made_limb_darkening_dict = make_limb_darkening_files(PARS_MH_lower_limit, PARS_MH_upper_limit, limb_darkening_MH_dic, PARS_filters, use_tqdm=use_tqdm)
-    #         self.made_limb_darkening_dict = made_limb_darkening_dict
-    #         self.PARS_nz = PARS_nz
-    #         self.PARS_MH_offset = PARS_MH_offset
-    #
-    #     # NN method
-    #     # NOT collecting data for training a neural network
-    #     elif METHOD == 'NN' and NN_prepare_data == False:
-    #         if self.skip == False:
-    #             self.df_for_interp = self.df_table
-    #         print('You have chose not to save data for training a nerual network.')
-    #         print('Please input your trained NN model by Target.set_NN() ')
-    #     # collecting data for training a neural network
-    #     elif METHOD == 'NN' and NN_prepare_data == True:
-    #         if self.skip == False:
-    #             self.df_for_interp = self.df_table
-    #         print('Reading isochrones and collecting data for training a neural network.')
-    #         # df_table_NN_list = []
-    #
-    #         # if use_tqdm == True:
-    #         #     iterable = tqdm(self.isochrone_file_list)
-    #         # else:
-    #         #     iterable = self.isochrone_file_list
-    #         # for iso_NN_i in iterable:
-    #         #     # df_iso_NN_list = read_isochrones(iso_NN_i, use_tqdm=False)
-    #         df_NN_table = PARSECv2_collect_data(self.isochrone_file_list, self.bands_list, self.abs_mags, self.abs_err_mags,
-    #                                               use_tqdm=self.use_tqdm, label_list=self.label_list,
-    #                                               remove_young_and_old_flag=self.remove_young_and_old_flag,
-    #                                               photo_err_scaler=self.NN_photo_err_scaler)
-    #             # df_table_NN_list.append(df_table_NN_i)
-    #         # df_NN_table = pd.concat(df_table_NN_i, ignore_index=True)
-    #         self.df_NN_table = df_NN_table
-    #         # save DataFrame for training NN
-    #         df_NN_target_col_a = self.bands_list + ['vsini_obs', 'parallax_obs']
-    #         errs_list = [c + '_err' for c in self.bands_list]
-    #         df_NN_target_col_b = errs_list + ['vsini_obs_err', 'parallax_obs_err']
-    #         df_NN_target_col = [item for pair in zip(df_NN_target_col_a, df_NN_target_col_b) for item in pair]
-    #         df_NN_target = pd.DataFrame(columns=df_NN_target_col)
-    #         df_NN_target.loc[0, self.bands_list] = self.obs_mags
-    #         df_NN_target.loc[0, errs_list] = self.obs_err_mags
-    #         df_NN_target.loc[0, 'vsini_obs'] = self.vsini_obs
-    #         df_NN_target.loc[0, 'vsini_obs_err'] = self.vsini_obs_err
-    #         df_NN_target.loc[0, 'parallax_obs'] = self.parallax_obs
-    #         df_NN_target.loc[0, 'parallax_obs_err'] = self.parallax_obs_err
-    #         df_NN_target.loc[0, 'extinction'] = self.extinction
-    #         df_NN_target.loc[0, 'extinction_err'] = self.extinction_err
-    #         df_NN_target.loc[0, 'extinction_type'] = self.extinction_type
-    #         numeric_cols = df_NN_target.columns.difference(['extinction_type'])  # 假设只有这一列是字符串
-    #         df_NN_target[numeric_cols] = df_NN_target[numeric_cols].astype('float64')
-    #         df_NN_target_float = df_NN_target.copy()
-    #         df_NN_table_float = df_NN_table.astype('float64')
-    #         schema_training = pyarrow.schema([pyarrow.field(col, pyarrow.float64()) for col in df_NN_table_float.columns])
-    #         # schema_real = pyarrow.schema([pyarrow.field(col, pyarrow.float64()) for col in df_NN_target_float.columns])
-    #         schema_real = pyarrow.schema([
-    #             pyarrow.field(col, pyarrow.float64()) if pd.api.types.is_float_dtype(df_NN_target_float[col])
-    #             else pyarrow.field(col, pyarrow.string()) if pd.api.types.is_string_dtype(df_NN_target_float[col])
-    #             else pyarrow.field(col, pyarrow.int64()) if pd.api.types.is_integer_dtype(df_NN_target_float[col])
-    #             else pyarrow.field(col, pyarrow.string())  # fallback
-    #             for col in df_NN_target_float.columns
-    #         ])
-    #         table_training = pyarrow.Table.from_pandas(df_NN_table_float, schema=schema_training, preserve_index=False)
-    #         table_real = pyarrow.Table.from_pandas(df_NN_target_float, schema=schema_real, preserve_index=False)
-    #
-    #         saved_NN_data_name = f'Neural_Network_Model/training_data/NN{self.cluster_name}_{self.age_type}_age_deviation{self.NN_photo_err_scaler}_' \
-    #                              f'{int(len(self.bands_list))}bands_{self.name.replace(" ", "_")}.parquet'
-    #         saved_NN_target_name = f'Neural_Network_Model/training_data/NN{self.cluster_name}_target_{self.name.replace(" ", "_")}.parquet'
-    #         pq.write_table(table_training, saved_NN_data_name)
-    #         pq.write_table(table_real, saved_NN_target_name)
-    #         print(f'Your data for training a nerual network are saved at:\n {os.getcwd()+"/"+saved_NN_data_name} \n'
-    #               f'The observed values of your target are saved at:\n {os.getcwd()+"/"+saved_NN_target_name} \n'
-    #               'Please input your trained NN model by Target.set_NN() ')
-    #         print('************************************************************************')
-    #         print(f'Totally we got {len(df_NN_table)} datapoints for training a nerual network.')
-    #         print(f'{"":<12} {"Min":<10} {"Max":<10}')
-    #         for NN_col in ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']:
-    #             min_NN_val = np.min(df_NN_table[NN_col].values)
-    #             max_NN_val = np.max(df_NN_table[NN_col].values)
-    #             print(f'{NN_col:<12} {min_NN_val:<10.4f} {max_NN_val:<10.4f}')
-    #     else:
-    #         raise ValueError('METHOD must be any of "fewer-INTERP", "PARS", or "NN".')
-    #
-    #
-    #
-    #
-    # def set_NN(self, NN_model_file=None, NN_model=None, NN_scalers=None, input_num=6):
-    #     """
-    #     Set or load the neural network model and scalers for inference.
-    #
-    #     Args:
-    #         NN_model_file (str): File path to load NN model from.
-    #         NN_model: Pre-loaded NN model object, if not giving NN_model_file
-    #         NN_scalers: Pre-loaded NN scalers object, if not giving NN_model_file
-    #         input_num (int): Number of inputs for the NN model.
-    #
-    #     Loads or assigns the NN model and scalers for use with the target.
-    #     """
-    #     if NN_model is None and NN_scalers is None:
-    #         from Neural_Network_Model.mlp_regressor import MLPRegressor
-    #         import torch
-    #         if NN_model_file is None:
-    #             NN_model_file = f"Neural_Network_Model/trained_model/NN_model_{self.name.replace(' ', '_')}{self.cluster_name}_{self.age_type}_age_deviation" \
-    #                             f"{self.NN_photo_err_scaler}_input{int(input_num)}_output{int(len(self.bands_list))}.pt"
-    #         checkpoint = torch.load(NN_model_file, map_location='cpu', weights_only=False)
-    #
-    #         self.NN_model = MLPRegressor(activation='swish', input_dim=6)
-    #         self.NN_model.load_state_dict(checkpoint['model_state_dict'])
-    #         self.NN_scalers = checkpoint['scalers']
-    #     elif NN_model is not None and NN_scalers is not None:
-    #         self.NN_model = NN_model
-    #         self.NN_scalers = NN_scalers
-    #     else:
-    #         raise ValueError('You should give "NN_model" and "NN_scalers" at the same time.')
-    #
-    #
-    # def build_interp_model(self, drop_columns=True, rescale=True):
-    #     """
-    #     Build the interpolation model for the target using the selected method.
-    #
-    #     Args:
-    #         drop_columns (bool): Whether to drop duplicated rows by interp_variables_list.
-    #
-    #     Constructs the interpolation model and determines parameter limits for sampling.
-    #     """
-    #     print(f'You are using the {self.METHOD} method.')
-    #     if self.METHOD in ['fewer-INTERP', 'REGULAR']:
-    #         if 'Inclination' not in self.interp_variables_list:
-    #             self.interp_variables_list.append('Inclination')
-    #     elif self.METHOD in ['NN', 'PARS']:
-    #         if 'Inclination' in self.interp_variables_list:
-    #             self.interp_variables_list.remove('Inclination')
-    #
-    #     fixed_parameter_indices = []
-    #     for interp_var in self.interp_variables_list:
-    #         if interp_var not in self.sampling_variables_list:
-    #             fixed_parameter_index = self.interp_variables_list.index(interp_var)
-    #             fixed_parameter_indices.append(fixed_parameter_index)
-    #     self.fixed_parameter_indices = fixed_parameter_indices
-    #
-    #
-    #     self.Model_interp, self.df_sampling, self.interp_upper_limit, self.interp_lower_limit\
-    #         = make_model(self.df_for_interp, self.interp_variables_list, self.bands_list, self.METHOD, drop_columns=drop_columns, rescale=rescale)
-
 
     def set_sampling(self,
-                     nwalkers=30,
+                     n_walkers=30,
                      age_limit=None,
                      parallax_limit=None,
                      sigma_limit=None,
@@ -884,7 +354,7 @@ class Target:
 
         Args:
             initial_type (str): How to initialize walkers ('random', 'better', or 'closer').
-            nwalkers (int): Number of walkers for MCMC.
+            n_walkers (int): Number of walkers for MCMC.
             parallax_limit (list): Parallax prior limits [min, max].
             sigma_limit (list): Sigma prior limits [min, max] or list of such for multiple sigmas.
             extinction_limit (list): Extinction prior limits [min, max].
@@ -904,6 +374,11 @@ class Target:
             sigma_limit = [1e-8, 0.1]
         if extinction_limit is None:
             extinction_limit = [1e-8, 1]
+
+        self.age_limit = age_limit
+        self.parallax_limit = parallax_limit
+        self.sigma_limit = sigma_limit
+        self.extinction_limit = extinction_limit
 
         if any(x is not None for x in self.true_values) and not all(x is not None for x in self.true_values):
             if self.known_omega_ini is not None and self.known_Inclination is not None:
@@ -929,7 +404,7 @@ class Target:
             invalid_keys.append('Vrot_prior')
 
         self.Vrot_prior = Vrot_prior
-        self.rough_mini = None
+        self.rough_mass = None
 
         if invalid_keys:
             message = (
@@ -989,9 +464,9 @@ class Target:
         ndim = len(self.sampling_variables_list)
         value_differences = np.array(self.sampling_upper_limit) - np.array(self.sampling_lower_limit)
 
-        initial_states = np.random.rand(nwalkers, ndim) * value_differences + np.array(self.sampling_lower_limit)
+        initial_states = np.random.rand(n_walkers, ndim) * value_differences + np.array(self.sampling_lower_limit)
 
-        self.nwalkers = nwalkers
+        self.n_walkers = n_walkers
         self.ndim = ndim
         self.initial_states = initial_states
 
@@ -1007,3 +482,411 @@ class Target:
             low_str = f"{low:.4f}" if np.isfinite(low) else "nan"
             high_str = f"{high:.4f}" if np.isfinite(high) else "nan"
             print(f"{name:<12} {low_str:>10} {high_str:>10}")
+
+
+    def save(self, filename):
+        """
+        Save the current object configuration to an npz file.
+
+        Notes
+        -----
+        The following runtime objects are not saved and should be rebuilt
+        when loading the object:
+
+            Model_interp
+            interp_u
+            interp_u_to_outputs
+            interp_u_bounds
+            data
+
+        User-defined prior functions are saved as source-code strings
+        using inspect.getsource().
+        """
+
+        filename = Path(filename)
+        filename.parent.mkdir(parents=True, exist_ok=True)
+
+        skip_keys = {
+            "Model_interp",
+            "interp_u",
+            "interp_u_to_outputs",
+            "interp_u_bounds",
+            "data",
+        }
+
+        prior_keys = {
+            "Vrot_prior",
+            "mini_prior",
+            "logAge_prior",
+            "MH_prior",
+            "omega_ini_prior",
+            "inclination_prior",
+            "parallax_prior",
+            "extinction_prior",
+        }
+
+        arrays_to_save = {}
+        config = {}
+
+        def to_jsonable(value):
+            """Convert values to JSON-serializable objects."""
+            if value is None:
+                return None
+
+            if isinstance(value, (str, int, float, bool)):
+                return value
+
+            if isinstance(value, (np.integer, np.floating, np.bool_)):
+                return value.item()
+
+            if isinstance(value, Path):
+                return str(value)
+
+            if isinstance(value, np.ndarray):
+                return value.tolist()
+
+            if isinstance(value, (list, tuple)):
+                return [to_jsonable(v) for v in value]
+
+            if isinstance(value, dict):
+                return {str(k): to_jsonable(v) for k, v in value.items()}
+
+            raise TypeError(
+                f"Cannot convert object of type {type(value)} to JSON."
+            )
+
+        def serialize_prior(name, prior):
+            """
+            Serialize prior settings.
+
+            Default priors such as 'default' or None are saved directly.
+            User-defined callable priors are saved by source code.
+            """
+            if prior is None:
+                return None
+
+            if isinstance(prior, str):
+                return prior
+
+            if callable(prior):
+                try:
+                    source = inspect.getsource(prior)
+                except OSError as e:
+                    raise RuntimeError(
+                        f"Could not get source code for prior `{name}`. "
+                        "Please define it as a normal Python function."
+                    ) from e
+
+                return {
+                    "type": "custom_source",
+                    "name": prior.__name__,
+                    "source": source,
+                }
+
+            raise TypeError(
+                f"Prior `{name}` has unsupported type {type(prior)}. "
+                "Expected None, str, or callable."
+            )
+
+        for key, value in self.__dict__.items():
+            if key in skip_keys:
+                continue
+
+            if key in prior_keys:
+                config[key] = serialize_prior(key, value)
+                continue
+
+            if isinstance(value, np.ndarray):
+                # Numeric arrays can be safely saved directly in npz.
+                # Object arrays, usually containing None, are saved in JSON.
+                if value.dtype == object:
+                    config[key] = to_jsonable(value)
+                else:
+                    arrays_to_save[key] = value
+                continue
+
+            if isinstance(value, (str, int, float, bool, type(None), list, tuple, dict, Path)):
+                config[key] = to_jsonable(value)
+                continue
+
+            if isinstance(value, (np.integer, np.floating, np.bool_)):
+                config[key] = to_jsonable(value)
+                continue
+
+            raise TypeError(
+                f"Attribute `{key}` has unsupported type {type(value)}. "
+                "Please either add it to `skip_keys` or define how to serialize it."
+            )
+
+        arrays_to_save["config_json"] = np.array(json.dumps(config, indent=2))
+
+        np.savez(filename, **arrays_to_save)
+
+        print(f"Saved object to: {os.path.abspath(filename)}")
+
+
+
+    @classmethod
+    def load(cls, filename):
+        """
+        Load an object from a saved npz file.
+
+        Loading order:
+        1. Read saved config.
+        2. Change directory to saved current_path.
+        3. Restore attributes needed by set_method().
+        4. Call set_method() to rebuild runtime-only objects.
+        5. Restore all saved attributes from file, overriding values set by set_method().
+           Non-prior attributes are restored first, then prior functions are restored.
+        """
+
+        import os
+        import json
+        import textwrap
+        import numpy as np
+        from pathlib import Path
+        from scipy.stats import norm
+
+        from belfast.mcmc_utils import (
+            select_Vrot_prior_by_rough_mass,
+            log_prior_Vrot_dict,
+            _log_prior_mixture_maxwell_lagged_truncated,
+        )
+
+        filename = Path(filename)
+        data = np.load(filename, allow_pickle=False)
+
+        if "config_json" not in data:
+            raise KeyError("`config_json` was not found in the saved npz file.")
+
+        config = json.loads(str(data["config_json"]))
+
+        obj = cls.__new__(cls)
+
+        prior_keys = {
+            "Vrot_prior",
+            "mini_prior",
+            "logAge_prior",
+            "MH_prior",
+            "omega_ini_prior",
+            "inclination_prior",
+            "parallax_prior",
+            "extinction_prior",
+        }
+
+        object_array_keys = {
+            "true_values",
+        }
+
+        def _clean_source(source):
+            """
+            Clean source code saved by inspect.getsource().
+
+            Handles two common cases:
+            1. Source defined inside another function/class, with leading indentation.
+            2. One-line lambda assignment accidentally ending with a comma.
+            """
+
+            source = textwrap.dedent(source).strip()
+
+            lines = source.splitlines()
+
+            # Example:
+            # extinction_prior = lambda x: norm.logpdf(...),
+            if len(lines) == 1 and "lambda" in lines[0] and lines[0].rstrip().endswith(","):
+                lines[0] = lines[0].rstrip().rstrip(",")
+
+            return "\n".join(lines)
+
+        def restore_prior(name, value):
+            """
+            Restore prior.
+
+            - None remains None.
+            - Strings such as 'default' remain strings.
+            - User-defined functions saved as source code are restored by exec().
+            """
+
+            if value is None:
+                return None
+
+            if isinstance(value, str):
+                return value
+
+            if isinstance(value, dict) and value.get("type") == "custom_source":
+                source = _clean_source(value["source"])
+                func_name = value["name"]
+
+                # Special handling for Vrot prior.
+                # This avoids problems with closures such as params inside _make_log_prior_Vrot().
+                if name == "Vrot_prior":
+                    rough_mass = getattr(obj, "rough_mass", None)
+
+                    # Compatibility with your earlier attribute name.
+                    if rough_mass is None:
+                        rough_mass = getattr(obj, "rough_mini", None)
+
+                    if rough_mass is None:
+                        return None
+
+                    _, func = select_Vrot_prior_by_rough_mass(
+                        rough_mass,
+                        log_prior_Vrot_dict,
+                    )
+
+                    if func is None:
+                        return None
+
+                    return func
+
+                namespace = {
+                    "np": np,
+                    "numpy": np,
+                    "norm": norm,
+
+                    # For priors like:
+                    # extinction_prior = lambda x: norm.logpdf(x, loc=extinction, scale=extinction_err)
+                    "extinction": getattr(obj, "extinction", None),
+                    "extinction_err": getattr(obj, "extinction_err", None),
+
+                    # For possible custom priors using your internal function.
+                    "_log_prior_mixture_maxwell_lagged_truncated": (
+                        _log_prior_mixture_maxwell_lagged_truncated
+                    ),
+                }
+
+                exec(source, namespace)
+
+                if func_name in namespace:
+                    func = namespace[func_name]
+                elif name in namespace:
+                    func = namespace[name]
+                else:
+                    raise RuntimeError(
+                        f"Could not restore prior `{name}`. "
+                        f"Neither `{func_name}` nor `{name}` was found after exec()."
+                    )
+
+                # Handle accidental trailing comma:
+                # prior = lambda x: ...,  -> tuple with one function
+                if isinstance(func, tuple):
+                    if len(func) == 1 and callable(func[0]):
+                        func = func[0]
+                    else:
+                        raise TypeError(
+                            f"Restored prior `{name}` is a tuple, "
+                            f"but not a one-function tuple. Got length {len(func)}."
+                        )
+
+                if not callable(func):
+                    raise TypeError(
+                        f"Restored prior `{name}` is not callable. Got {type(func)}."
+                    )
+
+                return func
+
+            raise TypeError(
+                f"Cannot restore prior `{name}` from type {type(value)}."
+            )
+
+        def restore_saved_attributes():
+            """
+            Restore all saved attributes.
+
+            Important:
+            Non-prior attributes are restored first, then prior functions.
+            This ensures custom priors depending on saved attributes
+            such as extinction and extinction_err can be reconstructed correctly.
+            """
+
+            # ------------------------------------------------------------
+            # 1. Restore non-prior config attributes first.
+            # ------------------------------------------------------------
+            for key, value in config.items():
+                if key in prior_keys:
+                    continue
+
+                if key in object_array_keys:
+                    setattr(obj, key, np.array(value, dtype=object))
+                else:
+                    setattr(obj, key, value)
+
+            # ------------------------------------------------------------
+            # 2. Restore numeric arrays saved directly in npz.
+            # ------------------------------------------------------------
+            for key in data.files:
+                if key == "config_json":
+                    continue
+
+                setattr(obj, key, data[key])
+
+            # ------------------------------------------------------------
+            # 3. Restore prior functions after all other attributes exist.
+            # ------------------------------------------------------------
+            for key, value in config.items():
+                if key in prior_keys:
+                    setattr(obj, key, restore_prior(key, value))
+
+        # ------------------------------------------------------------
+        # 1. Set current_path and change working directory first.
+        # ------------------------------------------------------------
+        if "current_path" in config and config["current_path"] is not None:
+            obj.current_path = str(config["current_path"])
+            os.chdir(obj.current_path)
+
+        # ------------------------------------------------------------
+        # 2. Some attributes may be needed by set_method().
+        # ------------------------------------------------------------
+        pre_set_method_keys = [
+            "cluster",
+            "sampling_variables_list",
+        ]
+
+        for key in pre_set_method_keys:
+            if key in config:
+                setattr(obj, key, config[key])
+
+        # ------------------------------------------------------------
+        # 3. Get set_method inputs from saved config.
+        # ------------------------------------------------------------
+        required_set_method_keys = [
+            "grids_path",
+            "grids_type",
+            "METHOD",
+        ]
+
+        for key in required_set_method_keys:
+            if key not in config:
+                raise KeyError(
+                    f"`{key}` is required to rebuild runtime objects with set_method(), "
+                    "but it was not found in the saved config."
+                )
+
+        set_method_kwargs = {
+            "grids_path": config["grids_path"],
+            "grids_type": config["grids_type"],
+            "METHOD": config["METHOD"],
+            "iso_name": config.get("iso_name", "PARSEC"),
+            "flag_64": config.get("flag_64", False),
+
+            # PARS-related settings
+            "PARS_limb_darkening_path": config.get("PARS_limb_darkening_path", None),
+            "PARS_filters": config.get("PARS_filters", None),
+            "PARS_nz": config.get("PARS_nz", 100),
+            "PARS_MH_offset": config.get("PARS_MH_offset", -0.046),
+        }
+
+        # ------------------------------------------------------------
+        # 4. Call set_method() to rebuild runtime-only objects.
+        # ------------------------------------------------------------
+        obj.set_method(**set_method_kwargs)
+
+        # ------------------------------------------------------------
+        # 5. Restore saved attributes again.
+        #    Saved file values are the source of truth.
+        # ------------------------------------------------------------
+        restore_saved_attributes()
+
+        obj.load_flag = str(filename)
+
+        return obj
