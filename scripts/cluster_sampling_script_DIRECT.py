@@ -1,15 +1,15 @@
 import sys
 print(f"Current Python interpreter: {sys.executable}")
 
-from lib.target_definition import Target
-from lib.target_utils import query_data
-import lib.mcmc_utils as mcmc
+from belfast.target_definition import Target
+# from belfast.target_utils import query_data
+import belfast.mcmc_utils as mcmc
 import numpy as np
 import emcee
 from scipy.stats import norm
-import re
+# import re
 import os
-from glob import glob
+# from glob import glob
 from datetime import datetime
 print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -144,13 +144,13 @@ for i in range(len(df_cluster)):
 
     if target_name in ['HIP 42485', 'HIP 42578']:
         target.set_method(
-            grids_path='../regular_u_grids/regularized_u_grid_1e6_2000e6yr_step10e6_linear_isochrones_MS_with_inc.npz',
+            grids_path='../data/isochrones/regular_u_grids/regularized_u_grid_1e6_2000e6yr_step10e6_linear_isochrones_MS_with_inc.npz',
             grids_type='u',
             METHOD='DIRECT',
         )
     else:
         target.set_method(
-            grids_path='../regular_Mini_grids/regularized_Mini_grid_1e6_2000e6yr_step10e6_linear_isochrones_preMS&MS_without_inc.npz',
+            grids_path='../data/isochrones/regular_Mini_grids/regularized_Mini_grid_1e6_2000e6yr_step10e6_linear_isochrones_preMS&MS_with_inc.npz',
             grids_type='Mini',
             METHOD='DIRECT',
         )
@@ -158,7 +158,7 @@ for i in range(len(df_cluster)):
     if cluster != 'Pleiades':
         target.interp_lower_limit[1] = np.log10(100)+6
 
-    target.set_sampling(nwalkers=30,
+    target.set_sampling(n_walkers=30,
                         MH_prior = lambda x: norm.logpdf(x, loc=MH, scale=MH_err),
                         extinction_prior = lambda x: norm.logpdf(x, loc=extinction, scale=extinction_err),
                         )
@@ -173,7 +173,7 @@ for i in range(len(df_cluster)):
         (emcee.moves.KDEMove(),           0.15),
     ]
 
-    sampler_test = mcmc.run_test_sampling(use_tqdm=False, show_fig=False, nsteps_test=3000,
+    sampler_test = mcmc.run_test_sampling(use_tqdm=False, show_fig=False, n_steps_test=3000,
                                                       save_path=test_save_path,
                                                       emcee_moves=emcee_moves,
     )

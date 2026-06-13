@@ -1,0 +1,41 @@
+Current Python interpreter: /Users/ziyinggu/anaconda3/envs/age_new/bin/python3
+Script started at: 2026-06-14 07:17:24
+###############################################################################
+******************************* Hyades *************************************
+###############################################################################
+>>>>>>>>>> Now working on Target: HIP 21670
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        15.6307    25.6307
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.32 0.30 0.34 0.33 0.31 0.29 0.31 0.31 0.33 
+	0.32 0.32 0.32 0.31 0.31 0.33 0.30 0.30 0.33 
+	0.30 0.28 0.32 0.28 0.28 0.35 0.32 0.32 0.32 
+	0.30 0.31 0.33 
+n_steps/60: 50.00
+autocorrelation time: [ 91 107 120 100 107  73  76 120]
+This test took 40.7030 seconds.
+Starting Time: 2026-06-14 07:18:19
+🔄 Starting initial sampling...
