@@ -1074,7 +1074,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
         if not np.isfinite(p_Vrot):
             if verbose:
                 print("Failed in Vrot_prior calculation.")
-            return -np.inf, np.ones(len(target.bands_list) + 11) * np.nan
+            return -np.inf, np.ones(len(target.bands_list) + 12) * np.nan
 
         lnL += p_Vrot
     else:

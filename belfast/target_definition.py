@@ -131,6 +131,15 @@ class Target:
         self.abs_mags, self.abs_err_mags = cal_abs_mag(self.obs_mags_corrected, self.obs_err_mags_corrected, self.parallax_obs, self.parallax_obs_err,
                                                        max_sigma_adjustment_parameter=max_sigma_adjustment_parameter)
 
+        self.known_Mini = None
+        self.known_logAge = None
+        self.known_MH = None
+        self.known_omega_ini = None
+        self.known_Inclination = None
+        self.known_parallax = None
+        self.true_values = np.array([None, None, None, None, None, None,], dtype=object)
+
+
     def known_parameter(
             self,
             true_values=None,
@@ -230,8 +239,13 @@ class Target:
                    ):
 
         if grids_path is None:
-            grids_path = str(DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz')
-            self.grids_path = grids_path
+            grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+        if isinstance(grids_path, os.PathLike):
+            grids_path = str(grids_path)
+        if isinstance(PARS_limb_darkening_path, os.PathLike):
+            PARS_limb_darkening_path = str(PARS_limb_darkening_path)
+        if isinstance(PARS_filters, os.PathLike):
+            PARS_filters = str(PARS_filters)
 
         available_grids_type = ['Mini', 'u']
         available_METHOD = ['DIRECT', 'PARS', 'NN']
