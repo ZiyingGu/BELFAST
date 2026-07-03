@@ -7,10 +7,10 @@ from pathlib import Path
 from datetime import datetime
 import numpy as np
 from belfast.target_utils import cal_obs_mag, cal_parsec, add_extinction
+from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
 
 GM_SUN = 1.32712440018e20 # unit='m3 / s2'
 R_SUN = 6.957e8 # unit='m'
-
 
 warnings.filterwarnings(
     "ignore",
@@ -31,10 +31,22 @@ warnings.filterwarnings(
     category=RuntimeWarning,
     module=r".*mcmc_utils",
 )
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"divide by zero encountered in divide",
+    category=RuntimeWarning,
+    module=r".*surface",
+)
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"invalid value encountered in divide",
+    category=RuntimeWarning,
+    module=r".*surface",
+)
+
 target = None
-
-
-
 def _logsumexp_two(a, b):
     """
     Stable log(exp(a) + exp(b))
@@ -397,9 +409,14 @@ def log_prior(sampling_variables, verbose=False):
 
     if 'MH' in target.sampling_variables_list:
         MH_index = target.sampling_variables_list.index('MH')
+        if target.iso_name == 'MIST' and target.correct_MIST_MH_zeropoint:
+            sampling_variables[MH_index] += target.MIST_MH_offset
+            # print(f'sampling_variables = {sampling_variables}')
         MH = sampling_variables[MH_index]
+        # print(f'MH = {MH}')
         if target.MH_prior == 'default':
-            MH_prior = norm.logpdf(MH, loc=-0.0427, scale=0.2461) # non-informative prior from the GALAH survey (Buder et al. 2019)
+            MH_prior = norm.logpdf(MH, loc=-0.1127, scale=0.2582)  # non-informative prior from the GALAH survey (Buder et al. 2019) corrected solar abundance zeropoint from Grevesse+07 to Caffau+11
+            # MH_prior = norm.logpdf(MH, loc=-0.0427, scale=0.2461) # non-informative prior from the GALAH survey (Buder et al. 2019) Wrong! Not correct solar abundance difference
             # MH_prior = norm.logpdf(MH, loc=0.072, scale=0.21) # narrower; young solar type star in the solar neighbourhood; data from Buder et al. 2019
         else:
             MH_prior = target.MH_prior(MH)
@@ -471,6 +488,8 @@ def log_prior(sampling_variables, verbose=False):
     if np.all((sampling_variables > target.sampling_lower_limit) & (sampling_variables < target.sampling_upper_limit)):
         return Mini_prior + logAge_prior + MH_prior + omega_ini_prior + Inclination_prior + parallax_prior + extinction_prior
     else:
+        if verbose:
+            print('Out of the parameter space of sampling!')
         return -np.inf
 
 
@@ -511,6 +530,8 @@ def log_prior(sampling_variables, verbose=False):
 #
 #     if 'MH' in target.sampling_variables_list:
 #         MH_index = target.sampling_variables_list.index('MH')
+#         if target.iso_name == 'MIST' and target.correct_MIST_MH_zeropoint:
+            # sampling_variables[MH_index] += target.MIST_MH_offset
 #         MH = sampling_variables[MH_index]
 #     elif target.known_MH is not None:
 #         MH = target.known_MH
@@ -664,6 +685,8 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
 
     if 'MH' in target.sampling_variables_list:
         MH_index = target.sampling_variables_list.index('MH')
+        if target.iso_name == 'MIST' and target.correct_MIST_MH_zeropoint:
+            sampling_variables[MH_index] += target.MIST_MH_offset
         MH = sampling_variables[MH_index]
     elif target.known_MH is not None:
         MH = target.known_MH
@@ -742,7 +765,7 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
     vtaneq = omega_angular * Req * R_SUN / 1000 # km/s
     vsini = vtaneq * np.sin(Inclination)
     # v_keplerian = np.sqrt(GM_SUN * Mass / (R_SUN * Req)) / 1000 # km/s
-    v_critical = np.sqrt(GM_SUN * Mass / (R_SUN * 1.5 * Rpol)) / 1000 # km/s
+    # v_critical = np.sqrt(GM_SUN * Mass / (R_SUN * 1.5 * Rpol)) / 1000 # km/s
 
     chi_photo = np.sum(((final_mags - target.obs_mags) / final_err_mags) ** 2)
 
@@ -779,7 +802,7 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
 
     blobs = final_mags.tolist()
     blobs.append(vsini)
-    blobs.append(parallax)
+    # blobs.append(parallax)
     blobs.append(chi_squared)
     blobs.append(vtaneq)
     blobs.append(Mass)
@@ -788,20 +811,39 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
     blobs.append(Rpol)
     blobs.append(lnL0)
     blobs.append(lnL)
-    u = target.interp_u([Mini, logAge, MH, omega_ini, Inclination])
+    if target.iso_name == 'PARSEC':
+        u = target.interp_u([Mini, logAge, MH, omega_ini, Inclination])
     blobs.append(u)
-    unified_blobs = [float(np.squeeze(x)) for x in blobs]
 
-    if target.known_omega_ini == 0:
-        pass
-    elif target.omega_ini_prior == 'default':
-        if target.Vrot_prior is not None:
-            Vrot_prior = target.Vrot_prior(vtaneq) + np.log(v_critical)
-            if np.isnan(Vrot_prior):
-                if verbose:
-                    print('Failed in Vrot_prior calculation.')
-                return -np.inf, np.ones(len(target.bands_list) + 11)*np.nan
-            lnL += Vrot_prior
+
+    # if target.known_omega_ini == 0:
+    #     pass
+    # elif target.omega_ini_prior == 'default':
+    #     if target.Vrot_prior is not None:
+    #         Vrot_prior = target.Vrot_prior(vtaneq) + np.log(v_critical)
+    #         if np.isnan(Vrot_prior):
+    #             if verbose:
+    #                 print('Failed in Vrot_prior calculation.')
+    #             return -np.inf, np.ones(len(target.bands_list) + 11)*np.nan
+    #         lnL += Vrot_prior
+
+    # Vrot empirical constraint
+    # This is a likelihood term in Vrot space, not a transformed prior on omega_ini.
+    if target.Vrot_prior is not None:
+        p_Vrot = target.Vrot_prior(vtaneq)
+
+        if not np.isfinite(p_Vrot):
+            if verbose:
+                print("Failed in Vrot_prior calculation.")
+            return -np.inf, np.ones(len(target.bands_list) + 11) * np.nan
+
+        lnL += p_Vrot
+    else:
+        p_Vrot = 0
+
+    blobs.append(p_Vrot)
+
+    unified_blobs = [float(np.squeeze(x)) for x in blobs]
 
     return lnL, np.array(unified_blobs)
 
@@ -844,6 +886,8 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
 
     if 'MH' in target.sampling_variables_list:
         MH_index = target.sampling_variables_list.index('MH')
+        if target.iso_name == 'MIST' and target.correct_MIST_MH_zeropoint:
+            sampling_variables[MH_index] += target.MIST_MH_offset
         MH = sampling_variables[MH_index]
     elif target.known_MH is not None:
         MH = target.known_MH
@@ -996,7 +1040,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
 
     blobs = final_mags.tolist()
     blobs.append(vsini)
-    blobs.append(parallax)
+    # blobs.append(parallax)
     blobs.append(chi_squared)
     blobs.append(vtaneq)
     blobs.append(Mass)
@@ -1006,18 +1050,39 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
     blobs.append(logL)
     blobs.append(lnL0)
     blobs.append(lnL)
-    u = target.interp_u(sampling_variables[:len(target.interp_variables_list)])
+    if target.iso_name == 'PARSEC':
+        u = target.interp_u(sampling_variables[:len(target.interp_variables_list)])
+    else:
+        u = 0
     blobs.append(u)
-    unified_blobs = [float(np.squeeze(x)) for x in blobs]
 
+
+    # if target.Vrot_prior is not None:
+    #     Vrot_prior = target.Vrot_prior(vtaneq) + np.log(v_critical)
+    #     if np.isnan(Vrot_prior):
+    #         if verbose:
+    #             print('Failed in Vrot_prior calculation.')
+    #         return -np.inf, np.ones(len(target.bands_list) + 12)*np.nan
+    #     else:
+    #         lnL += Vrot_prior
+
+    # Vrot empirical constraint
+    # This is a likelihood term in Vrot space, not a transformed prior on omega_ini.
     if target.Vrot_prior is not None:
-        Vrot_prior = target.Vrot_prior(vtaneq) + np.log(v_critical)
-        if np.isnan(Vrot_prior):
+        p_Vrot = target.Vrot_prior(vtaneq)
+
+        if not np.isfinite(p_Vrot):
             if verbose:
-                print('Failed in Vrot_prior calculation.')
-            return -np.inf, np.ones(len(target.bands_list) + 12)*np.nan
-        else:
-            lnL += Vrot_prior
+                print("Failed in Vrot_prior calculation.")
+            return -np.inf, np.ones(len(target.bands_list) + 11) * np.nan
+
+        lnL += p_Vrot
+    else:
+        p_Vrot = 0
+
+    blobs.append(p_Vrot)
+
+    unified_blobs = [float(np.squeeze(x)) for x in blobs]
 
     return lnL, np.array(unified_blobs)
 
@@ -1059,6 +1124,8 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
 #
 #     if 'MH' in target.sampling_variables_list:
 #         MH_index = target.sampling_variables_list.index('MH')
+#         if target.iso_name == 'MIST' and target.correct_MIST_MH_zeropoint:
+            # sampling_variables[MH_index] += target.MIST_MH_offset
 #         MH = sampling_variables[MH_index]
 #     elif target.known_MH is not None:
 #         MH = target.known_MH
@@ -1464,7 +1531,7 @@ def run_test_sampling(
     quantiles=None,
     hist_bin_factor=3,
     dig_num=2,
-    save_path=".",
+    save_path=str(RESULTS_DIR),
     save_target=False,
     save_samples=False,
     save_64=False,
@@ -1509,7 +1576,7 @@ def run_test_sampling(
     if target.METHOD == "DIRECT":
         output_list += [
             "vsini",
-            "parallax",
+            # "parallax",
             "chi_squared",
             "vtaneq",
             "Mass",
@@ -1519,11 +1586,12 @@ def run_test_sampling(
             "lnL0",
             "lnL",
             "u",
+            "p_Vrot",
         ]
     elif target.METHOD == "PARS":
         output_list += [
             "vsini",
-            "parallax",
+            # "parallax",
             "chi_squared",
             "vtaneq",
             "Mass",
@@ -1534,6 +1602,7 @@ def run_test_sampling(
             "lnL0",
             "lnL",
             "u",
+            "p_Vrot",
         ]
     else:
         raise ValueError(f"Unknown target.METHOD: {target.METHOD}")
@@ -1659,7 +1728,7 @@ def run_test_sampling(
         return corner_samples, corner_labels
 
     name_pre = (
-        f'{target.name.replace(" ", "_")}{target.cluster_name}_{target.iso_name.upper()}_{target.METHOD}_{target.grids_type}_grid'
+        f'{target.name}{target.cluster_name}_{target.iso_name}_{target.METHOD}_{target.grids_type}_grid'
     )
 
     if target.sigma_adjustment_parameter in [1, 3]:
@@ -1682,6 +1751,7 @@ def run_test_sampling(
 
             rough_mass = _estimate_rough_mass(Mass_smaples)
 
+            print(f'Rough mass is {np.round(rough_mass["median"], 2)} M_sun.')
             key, Vrot_prior = select_Vrot_prior_by_rough_mass(
                 rough_mass["median"], log_prior_Vrot_dict
             )
@@ -1757,22 +1827,6 @@ def run_test_sampling(
     else:
         raise ValueError('"corner_age_type" must be either "log" or "linear"; "corner_inc_type" must be either "radian" or "degree".')
 
-    fig = corner.corner(
-        corner_samples_flat,
-        labels=corner_sampling_variables_list,
-        quantiles=quantiles,
-        show_titles=True,
-        hist_bin_factor=hist_bin_factor,
-        title_fmt=f".{dig_num}f",
-    )
-
-    if not show_fig:
-        fig.savefig(
-            f"{save_path}/{name_pre}_steps_test{n_steps_test}_n_steps_evaluate_{n_steps_evaluate}.pdf",
-            bbox_inches="tight",
-        )
-        plt.close(fig)
-
     # -------------------------
     # Diagnostics
     # -------------------------
@@ -1798,7 +1852,7 @@ def run_test_sampling(
     # -------------------------
 
     if save_target:
-        target.save(f"{save_path}/target_{name_pre}.npz")
+        target.save(f"{save_path}/testing_target_{name_pre}.npz")
 
     if save_samples:
         if  save_64:
@@ -1810,7 +1864,7 @@ def run_test_sampling(
             log_prob = sampler_test.get_log_prob().astype(np.float32)
             blobs_full = _normalize_blobs(sampler_test.get_blobs()["blob"]).astype(np.float32)
         np.savez_compressed(
-            f"{save_path}/posterior_{name_pre}_steps{n_steps_test}.npz",
+            f"{save_path}/testing_posterior_{name_pre}_steps{n_steps_test}.npz",
             samples=samples,
             log_prob=log_prob,
             blobs=blobs_full if blobs_full is not None else np.array(None, dtype=object),
@@ -1821,8 +1875,35 @@ def run_test_sampling(
             n_walkers=target.n_walkers,
             n_dim=len(target.sampling_variables_list),
             n_discard=0,
+            n_discard_total=0,
             n_thin=0,
         )
+
+    import sys
+    from IPython.display import display
+
+    fig = corner.corner(
+        corner_samples_flat,
+        labels=corner_sampling_variables_list,
+        quantiles=quantiles,
+        show_titles=True,
+        hist_bin_factor=hist_bin_factor,
+        title_fmt=f".{dig_num}f",
+    )
+
+    if not show_fig:
+        fig.savefig(
+            f"{save_path}/{name_pre}_testing_steps_test{n_steps_test}_n_steps_evaluate_{n_steps_evaluate}.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+    else:
+        # make sure all printed text appears before the figure
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        display(fig)
+        plt.close(fig)
 
     return sampler_test, target
 
@@ -1942,7 +2023,6 @@ def run_sampling(initial_steps=None,
 
 
 
-
 def save_chains_plot(
     sampler,
     show_fig=True,
@@ -1955,7 +2035,7 @@ def save_chains_plot(
     quantiles=None,
     corner_age_type="linear",
     corner_inc_type="degree",
-    save_path='..',
+    save_path=str(RESULTS_DIR),
     save_target=True,
     save_samples=True,
     save_64=False,
@@ -2322,11 +2402,11 @@ def save_chains_plot(
     # -------------------------
     # Create results folder
     # -------------------------
-    results_base = os.path.join(save_path, "results")
+    results_base = save_path
     os.makedirs(results_base, exist_ok=True)
 
     name_pre = (
-        f'{target.name.replace(" ", "_")}{target.cluster_name}_{target.iso_name.upper()}_{target.METHOD}_{target.grids_type}_grid'
+        f'{target.name}{target.cluster_name}_{target.iso_name}_{target.METHOD}_{target.grids_type}_grid'
     )
 
     if target.sigma_adjustment_parameter in [1, 3]:
@@ -2349,7 +2429,7 @@ def save_chains_plot(
         if target.known_parallax is not None:
             name_pre += f'_known_parallax_{target.known_parallax}'
 
-    folder_name = name_pre if folder_suffix == "" else name_pre + f" ({folder_suffix})"
+    folder_name = name_pre if folder_suffix == "" else name_pre + f"_({folder_suffix.replace(' ', '_')})"
     folder_path = os.path.join(results_base, folder_name)
 
     if not os.path.exists(folder_path):
@@ -2358,16 +2438,13 @@ def save_chains_plot(
     else:
         count = 2
         while True:
-            new_folder_path = f"{folder_path} ({count})"
+            new_folder_path = f"{folder_path}_({count})"
             if not os.path.exists(new_folder_path):
                 os.makedirs(new_folder_path)
                 break
             count += 1
 
-    if save_samples:
-        print(f"Your plots and samples will be saved at \n\t{os.path.abspath(new_folder_path)}")
-    else:
-        print(f"Your plots will be saved at \n\t{os.path.abspath(new_folder_path)}")
+    print(f"Results and plots will be saved at \n\t{os.path.abspath(new_folder_path)}")
 
     suffix = os.path.basename(new_folder_path)
 
@@ -2466,7 +2543,7 @@ def save_chains_plot(
     if target.METHOD == "DIRECT":
         output_list += [
             "vsini",
-            "parallax",
+            # "parallax",
             "chi_squared",
             "vtaneq",
             "Mass",
@@ -2476,11 +2553,12 @@ def save_chains_plot(
             "lnL0",
             "lnL",
             "u",
+            "p_Vrot",
         ]
     elif target.METHOD == "PARS":
         output_list += [
             "vsini",
-            "parallax",
+            # "parallax",
             "chi_squared",
             "vtaneq",
             "Mass",
@@ -2491,6 +2569,7 @@ def save_chains_plot(
             "lnL0",
             "lnL",
             "u",
+            "p_Vrot",
         ]
     else:
         raise ValueError(f"Unknown target.METHOD: {target.METHOD}")
@@ -2515,6 +2594,324 @@ def save_chains_plot(
             f"blobs_array.shape={blobs_array.shape}"
         )
 
+    # -------------------------
+    # Text summary
+    # -------------------------
+
+    def _fmt_name(name, width=16):
+        """Format parameter name with fixed width."""
+        name = str(name)
+        if len(name) > width:
+            name = name[:width]
+        return f"{name:<{width}}"
+
+    def _fmt_text(text, width=14):
+        """Format text with fixed width."""
+        text = "" if text is None else str(text)
+        if len(text) > width:
+            text = text[:width]
+        return f"{text:<{width}}"
+
+    def _fmt_val(value, width=10):
+        """Format value with ~2 significant digits, no scientific notation, left-aligned."""
+        if value is None:
+            return f"{'':<{width}}"
+
+        try:
+            if not np.isfinite(value):
+                return f"{'nan':<{width}}"
+        except TypeError:
+            return f"{str(value):<{width}}"
+
+        value = float(value)
+        abs_val = abs(value)
+
+        if abs_val == 0:
+            text = "0"
+        elif abs_val >= 100:
+            text = f"{value:.0f}"
+        elif abs_val >= 10:
+            text = f"{value:.1f}"
+        elif abs_val >= 1:
+            text = f"{value:.2f}"
+        elif abs_val >= 0.1:
+            text = f"{value:.3f}"
+        elif abs_val >= 0.01:
+            text = f"{value:.4f}"
+        elif abs_val >= 0.001:
+            text = f"{value:.5f}"
+        else:
+            text = f"{value:.6f}"
+
+        return f"{text:<{width}}"
+
+    def _prior_type_from_value(value):
+        """
+        Return prior type label.
+
+        None or 'default' -> default
+        anything else     -> user-specific
+        """
+        if value is None:
+            return "default"
+
+        if isinstance(value, str) and value.lower() == "default":
+            return "default"
+
+        return "user-specific"
+
+    def _sampling_prior_type(raw_name):
+        """
+        Determine prior type for sampling parameters.
+        """
+        prior_attr_map = {
+            "Mini": "mini_prior",
+            "logAge": "logAge_prior",
+            "MH": "MH_prior",
+            "omega_ini": "omega_ini_prior",
+            "Inclination": "inclination_prior",
+            "parallax": "parallax_prior",
+            "extinction": "extinction_prior",
+        }
+
+        # Sigma parameters are fixed to uniform/default by design.
+        if raw_name in ["sigma", "sigma_gaia", "sigma_tycho2", "sigma_2mass"]:
+            return "default"
+
+        attr = prior_attr_map.get(raw_name, None)
+
+        if attr is None:
+            return "default"
+
+        return _prior_type_from_value(getattr(target, attr, "default"))
+
+    def _vrot_prior_type(vrot_prior):
+        """
+        Determine whether Vrot_prior is default or user-specific.
+
+        Default cases:
+            None
+            'default'
+            function generated by _make_log_prior_Vrot with v_max=500.0
+        """
+        if vrot_prior is None:
+            return "default"
+
+        if isinstance(vrot_prior, str):
+            if vrot_prior.lower() == "default":
+                return "default"
+            return "user-specific"
+
+        if callable(vrot_prior):
+            import inspect
+
+            qualname = getattr(vrot_prior, "__qualname__", "")
+
+            try:
+                sig = inspect.signature(vrot_prior)
+                params = sig.parameters
+
+                if "v_max" in params:
+                    v_max_default = params["v_max"].default
+
+                    if (
+                            "_make_log_prior_Vrot" in qualname
+                            and v_max_default == 500.0
+                    ):
+                        return "default"
+
+                    return "user-specific"
+
+            except Exception:
+                pass
+
+            return "user-specific"
+
+        return "user-specific"
+
+    def _derived_prior_type(name):
+        """
+        Determine prior type for derived parameters.
+
+        Vrot_prior is not itself a sampling parameter, but it constrains vtaneq.
+        Other derived parameters do not have priors, so leave Type blank.
+        """
+        if name == "vtaneq":
+            return _vrot_prior_type(getattr(target, "Vrot_prior", None))
+
+        return ""
+
+    def _summary_lines(
+            section_title,
+            names,
+            values_2d,
+            raw_names=None,
+            lower_limits=None,
+            upper_limits=None,
+            prior_types=None,
+            name_width=16,
+            val_width=10,
+            type_width=14,
+            include_limits=True,
+    ):
+        """
+        Create aligned percentile summary lines.
+
+        values_2d should have shape (n_samples, n_parameters).
+        """
+        values_2d = np.asarray(values_2d, dtype=float)
+
+        if values_2d.ndim == 1:
+            values_2d = values_2d[:, None]
+
+        if values_2d.shape[1] != len(names):
+            raise ValueError(
+                f"{section_title}: values_2d has {values_2d.shape[1]} columns, "
+                f"but names has {len(names)} entries."
+            )
+
+        if raw_names is None:
+            raw_names = names
+
+        if lower_limits is None:
+            lower_limits = [None] * len(names)
+
+        if upper_limits is None:
+            upper_limits = [None] * len(names)
+
+        if prior_types is None:
+            prior_types = ["default"] * len(names)
+
+        lines = []
+        lines.append(section_title)
+
+        header = (
+            f"{'parameter':<{name_width}}"
+            f"{'2.5%':<{val_width}}"
+            f"{'16%':<{val_width}}"
+            f"{'50%':<{val_width}}"
+            f"{'84%':<{val_width}}"
+            f"{'97.5%':<{val_width}}"
+        )
+
+        if include_limits:
+            header += (
+                f"{'Min':<{val_width}}"
+                f"{'Max':<{val_width}}"
+                f"{'Prior type':<{type_width}}"
+            )
+
+        lines.append(header)
+
+        for i, name in enumerate(names):
+            x = values_2d[:, i]
+            x = x[np.isfinite(x)]
+
+            if x.size == 0:
+                q = [np.nan, np.nan, np.nan, np.nan, np.nan]
+            else:
+                q = np.percentile(x, [2.5, 16, 50, 84, 97.5])
+
+            line = _fmt_name(name, width=name_width)
+            line += "".join(_fmt_val(v, width=val_width) for v in q)
+
+            if include_limits:
+                line += _fmt_val(lower_limits[i], width=val_width)
+                line += _fmt_val(upper_limits[i], width=val_width)
+                line += _fmt_text(prior_types[i], width=type_width)
+
+            lines.append(line)
+
+        return lines
+
+    # -------------------------
+    # Write summary text file
+    # -------------------------
+
+    if folder_suffix == "":
+        summary_filename = f"summary_{name_pre}.txt"
+    else:
+        summary_filename = f"summary_{name_pre}_({folder_suffix.replace(' ','_')}).txt"
+
+    summary_path = os.path.join(new_folder_path, summary_filename)
+
+    # Use corner_samples_flat so logAge/Inclination units follow corner settings.
+    # If you want raw sampled values instead, replace corner_samples_flat with samples_flat.
+    summary_raw_param_names = list(target.sampling_variables_list)
+    summary_param_names = list(target.sampling_variables_list)
+
+    if corner_age_type == "linear" and "logAge" in summary_param_names:
+        summary_param_names = [
+            "Age_Myr" if name == "logAge" else name
+            for name in summary_param_names
+        ]
+
+    if corner_inc_type == "degree" and "Inclination" in summary_param_names:
+        summary_param_names = [
+            "Incl_deg" if name == "Inclination" else name
+            for name in summary_param_names
+        ]
+
+    sampling_lower_limits = list(getattr(target, "sampling_lower_limit", []))
+    sampling_upper_limits = list(getattr(target, "sampling_upper_limit", []))
+
+    if len(sampling_lower_limits) != len(summary_raw_param_names):
+        sampling_lower_limits = [None] * len(summary_raw_param_names)
+
+    if len(sampling_upper_limits) != len(summary_raw_param_names):
+        sampling_upper_limits = [None] * len(summary_raw_param_names)
+
+    sampling_prior_types = [
+        _sampling_prior_type(name)
+        for name in summary_raw_param_names
+    ]
+
+    derived_lower_limits = [None] * len(output_list)
+    derived_upper_limits = [None] * len(output_list)
+    derived_prior_types = [
+        _derived_prior_type(name)
+        for name in output_list
+    ]
+
+    summary_lines = []
+
+    summary_lines += _summary_lines(
+        section_title="Sampling parameters",
+        names=summary_param_names,
+        values_2d=corner_samples_flat,
+        raw_names=summary_raw_param_names,
+        lower_limits=sampling_lower_limits,
+        upper_limits=sampling_upper_limits,
+        prior_types=sampling_prior_types,
+        name_width=16,
+        val_width=10,
+        type_width=14,
+        include_limits=True,
+    )
+
+    summary_lines.append("")
+
+    summary_lines += _summary_lines(
+        section_title="Derived parameters",
+        names=output_list,
+        values_2d=blobs_flat,
+        raw_names=output_list,
+        lower_limits=derived_lower_limits,
+        upper_limits=derived_upper_limits,
+        prior_types=derived_prior_types,
+        name_width=16,
+        val_width=10,
+        type_width=14,
+        include_limits=True,
+    )
+
+    with open(summary_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(summary_lines))
+        f.write("\n")
+
+    # print(f"Saved summary text file: {summary_path}")
+
+
 
     # -------------------------
     # Saving
@@ -2524,10 +2921,10 @@ def save_chains_plot(
     import shutil
 
     if save_target:
-        target_save_path = Path(new_folder_path) / f"target_{name_pre}.npz"
+        target_save_path = Path(new_folder_path) / f"target_{name_pre}_({folder_suffix.replace(' ', '_')}).npz"
 
         if not getattr(target, "load_flag", None):
-            target.save(target_save_path)
+            target.save(target_save_path, verbose=False)
         else:
             source_path = Path(target.load_flag)
 
@@ -2558,10 +2955,11 @@ def save_chains_plot(
             param_names=param_names,
             output_list=np.array(output_list),
             blobs=blobs_full,
-            n_steps=n_steps,
+            n_steps_thin_plot=n_steps,
             n_walkers=n_walkers,
             n_dim=n_dim,
             n_discard=n_discard,
+            n_discard_total=n_discard*n_walkers,
             n_thin=n_thin,
         )
 

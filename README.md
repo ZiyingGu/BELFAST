@@ -22,7 +22,7 @@ As a prerequisite, please download the PARS package:
 git clone https://github.com/mlipatov/paint_atmospheres.git
 ```
 
-PARS was originally developed with older package versions, and some files need to be updated for compatibility. In the directory 'others/updated PARS functions', four modified files are provided. Please replace the corresponding files in PARS with the modified versions:
+PARS was originally developed with older package versions, and some files need to be updated for compatibility. In the directory 'others/updated_PARS_functions', four modified files are provided. Please replace the corresponding files in PARS with the modified versions:
 
 ```text
 pa/lib/limbdark.py

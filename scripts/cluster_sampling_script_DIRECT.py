@@ -11,21 +11,14 @@ from scipy.stats import norm
 import os
 # from glob import glob
 from datetime import datetime
-print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
 import pandas as pd
 import time
+from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
 
 
+print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-df_cluster = pd.read_csv(f"../data/clusters/targets_for_sampling.csv")
-
-
-
-# finished_paths = glob('../results/*PARS*')
-# finished_stars = [p.split('/')[-1].split('_' + cluster)[0].replace('_', ' ')for p in finished_paths]
-
-
+df_cluster = pd.read_csv(DATA_DIR / "clusters" / "targets_for_sampling_new.csv")
 
 i_pleiades, i_praesepe, i_hyades = 0, 0, 0
 
@@ -34,8 +27,9 @@ for i in range(len(df_cluster)):
 
     cluster = df_i['Cluster']
 
-    # if cluster != 'Pleiades':
-    #     continue
+    test_save_path = RESULTS_DIR / f"{cluster}_test_sampling"
+    test_save_path.mkdir(parents=True, exist_ok=True)
+    test_save_path = str(test_save_path)
 
     if cluster == 'Hyades':
         MH = 0.090 # [Fe/H] = 0.11 from Carrera & Pancino 2011, corrected the difference of zeropoint between Caffau+2011
@@ -43,21 +37,16 @@ for i in range(len(df_cluster)):
         # np.sqrt(0.01**2 + 0.03**2 + 0.04**2 + 0.06**2) = 0.079
         # errors from: statistical and systematic of Carrera & Pancino 2011; solar abundance from Grevesse+1996 and Caffau+2011
         if i_hyades == 0:
-            test_save_path = f"../results/{cluster}_test_sampling"
-            os.makedirs(test_save_path, exist_ok=True)
             print('###############################################################################')
             print(f'******************************* {cluster} *************************************')
             print('###############################################################################')
         i_hyades += 1
-
     elif cluster == 'Praesepe':
         MH = 0.140 # [Fe/H] = 0.16 from Carrera & Pancino 2011, corrected the difference of zeropoint between Caffau+2011
         MH_err = 0.093
         # np.sqrt(0.05**2 + 0.03**2 + 0.04**2 + 0.06**2) = 0.093
         # errors from: statistical and systematic of Carrera & Pancino 2011; solar abundance from Grevesse+1996 and Caffau+2011
         if i_praesepe == 0:
-            test_save_path = f"../results/{cluster}_test_sampling"
-            os.makedirs(test_save_path, exist_ok=True)
             print('###############################################################################')
             print(f'******************************* {cluster} *************************************')
             print('###############################################################################')
@@ -65,12 +54,10 @@ for i in range(len(df_cluster)):
 
     elif cluster == 'Pleiades':
         MH = 0.010 # [Fe/H] = 0.03 from Soderblom+2009, corrected the difference of zeropoint between Caffau+2011
-        MH_err = 0.081
-        # np.sqrt(0.03**2 + 0.02**2 + 0.04**2 + 0.06**2) = 0.081
+        MH_err = 0.090
+        # np.sqrt(0.02**2 + 0.05**2 + 0.04**2 + 0.06**2) = 0.090
         # errors from: statistical and systematic of Soderblom+2009; solar abundance from Grevesse+1996 and Caffau+2011 (0.04 is additional added to align with the Hyades and  Praesepe.)
         if i_pleiades == 0:
-            test_save_path = f"../results/{cluster}_test_sampling"
-            os.makedirs(test_save_path, exist_ok=True)
             print('###############################################################################')
             print(f'******************************* {cluster} *************************************')
             print('###############################################################################')
@@ -79,32 +66,37 @@ for i in range(len(df_cluster)):
     else:
         raise ValueError('"cluster" must be either "Hyades", or "Praesepe", or "Pleiades".')
 
-    target_name = df_i['HIP ID']
+
+    target_name = df_i['HIP_ID']
     if isinstance(target_name, str):
         pass
     elif not np.isnan(target_name) and isinstance(target_name, (int, float)):
         target_name = 'HIP ' + str(int(target_name))
     elif np.isnan(target_name):
-        target_name = df_i['HD ID']
+        target_name = df_i['HD_ID']
         if isinstance(target_name, str):
             pass
         elif not np.isnan(target_name) and isinstance(target_name, (int, float)):
             target_name = 'HD ' + str(int(target_name))
         elif np.isnan(target_name):
-            target_name = df_i['Other Name']
+            target_name = df_i['Other_Name']
             if isinstance(target_name, str):
                 pass
             elif isinstance(target_name, (int, float)):
                 target_name = str(int(target_name))
 
-    # if target_name in finished_stars:
-    #     continue
 
     print(f'>>>>>>>>>> Now working on Target: {target_name}')
 
-    extinction = df_i['A550']
-    extinction_err = df_i['A550_err']
-    extinction_type = 'A_V'
+    extinction = float(df_i["A550"])
+    extinction_err = float(df_i["A550_err"])
+    extinction_type = "A_V"
+
+    A_V_err_floor = 0.02
+
+    if (not np.isfinite(extinction_err)) or (extinction_err < A_V_err_floor):
+        print(f"Too small extinction error, using floor error A_V_err = {A_V_err_floor:.3f} mag")
+        extinction_err = A_V_err_floor
 
     bands_list = ['G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
     band_mags_list = [band + '_mag' for band in bands_list]
@@ -113,8 +105,8 @@ for i in range(len(df_cluster)):
     obs_err_mags = df_i[errors_list].values
     obs_mags = np.asarray(obs_mags, dtype=float)
     obs_err_mags = np.asarray(obs_err_mags, dtype=float)
-    vsini_obs = df_i['vsini']
-    vsini_obs_err = df_i['vsini_err']
+    vsini_obs = df_i['vbroad']
+    vsini_obs_err = df_i['vbroad_err']
     parallax_obs = df_i['parallax']
     parallax_obs_err = df_i['parallax_err']
 
@@ -142,23 +134,43 @@ for i in range(len(df_cluster)):
 
     # using regular PARSEC v2.0 isochrones. For regularization, please see preparation_tutorial.ipynb
 
-    if target_name in ['HIP 42485', 'HIP 42578']:
-        target.set_method(
-            grids_path='../data/isochrones/regular_u_grids/regularized_u_grid_1e6_2000e6yr_step10e6_linear_isochrones_MS_with_inc.npz',
-            grids_type='u',
-            METHOD='DIRECT',
-        )
+    u_grid_targets = {
+        'HIP 20635', 'HIP 23497', # Hyades stars
+        'HD 73449',  'HIP 42485', 'HIP 42578', # Praesepe stars
+        'HIP 17851', # Pleiades star (It is a Be star and have u+2sigma=0.94, but not necessary an SGB star)
+    }
+
+    if target_name in u_grid_targets:
+        grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_u_grids" / "regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
+        grids_type = "u"
     else:
-        target.set_method(
-            grids_path='../data/isochrones/regular_Mini_grids/regularized_Mini_grid_1e6_2000e6yr_step10e6_linear_isochrones_preMS&MS_with_inc.npz',
-            grids_type='Mini',
-            METHOD='DIRECT',
-        )
+        grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_Mini_grids" / "regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
+        grids_type = "Mini"
+
+    target.set_method(grids_path=str(grids_path), grids_type=grids_type, METHOD="DIRECT")
 
     if cluster != 'Pleiades':
-        target.interp_lower_limit[1] = np.log10(100)+6
+        target.interp_lower_limit[1] = np.log10(100) + 6
+    else:
+        print('****** cut grids < 10 Myr *****')
+        target.interp_lower_limit[1] = np.log10(10) + 6
+
+    # if target_name in rerun_star_list:
+    #     target.interp_lower_limit[1] = np.log10(10)+6
+
+    uniform_Vrot_prior_targets = {
+        'HIP 21670', 'HD 73818', 'HIP 42993',
+    }
+    if target_name in uniform_Vrot_prior_targets:
+        print(f'>>>>>>>>>> Using uniform Vrot prior for {target_name}.')
+        folder_suffix = f'G-Tomo A_V prior, MH prior {MH}±{MH_err}; uniform Vrot prior'
+        Vrot_prior = lambda x: 0
+    else:
+        folder_suffix = f'G-Tomo A_V prior, MH prior {MH}±{MH_err}'
+        Vrot_prior = None
 
     target.set_sampling(n_walkers=30,
+                        Vrot_prior=Vrot_prior,
                         MH_prior = lambda x: norm.logpdf(x, loc=MH, scale=MH_err),
                         extinction_prior = lambda x: norm.logpdf(x, loc=extinction, scale=extinction_err),
                         )
@@ -187,6 +199,6 @@ for i in range(len(df_cluster)):
                                 emcee_moves = emcee_moves,
                                 )
 
-    mcmc.save_chains_plot(sampler, show_fig=False, folder_suffix=f'G-Tomo A_V prior, MH prior {MH}±{MH_err}', save_samples=True)
+    mcmc.save_chains_plot(sampler, show_fig=False, folder_suffix=folder_suffix, save_samples=True)
 
     print('**********************************************************************************************************************')

@@ -6,8 +6,14 @@ __pycache__/
 *.egg-info/
 .DS_Store
 
+*.txt
+!/requirements.txt
+!/others/updated_PARS_functions/notes.txt
+
 /results/*
 !/results/.gitkeep
+
+/scripts/*.txt
 
 /belfast/nn/data/*
 !/belfast/nn/data/.gitkeep
@@ -26,5 +32,13 @@ __pycache__/
 
 !/data/PARS_filters/.gitkeep
 
-/tutorials/01\ preparation_gu.ipynb
-/tutorials/02\ age\ estimation_gu.ipynb
+/tutorials/*
+!/tutorials/01_preparation.ipynb
+!/tutorials/02_age_estimation_for_single_star.ipynb
+!/tutorials/03_plotting_figures.ipynb
+!/tutorials/04_select_cluster_targets.ipynb
+!/tutorials/04a_Banyan_Sigma.ipynb
+!/tutorials/05_cluster age_estimation.ipynb
+!/tutorials/06_Neural_Network_training.ipynb
+!/tutorials/vizier_J_A+A_628_A66
+!/tutorials/vizier_J_A+A_623_A35

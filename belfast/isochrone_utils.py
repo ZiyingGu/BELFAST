@@ -13,6 +13,9 @@ from tqdm import tqdm
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
+from belfast.paths import DATA_DIR
+
+
 
 def _open_text_maybe_gz(path):
     path = Path(path)
@@ -76,7 +79,7 @@ def read_isochrones(iso_file, use_tqdm=True):
     return results
 
 
-def rearrange_isochrone(iso_paths_list, selected_bands_list, saved_folder_dir, name_suffix=None, n_common=35):
+def rearrange_isochrones(iso_paths_list, selected_bands_list, saved_folder_dir, name_suffix=None, n_common=35):
     """
     Rearrange and merge multiple sets of isochrone files into a unified format.
 
@@ -125,7 +128,7 @@ def rearrange_isochrone(iso_paths_list, selected_bands_list, saved_folder_dir, n
     """
 
     if name_suffix is not None:
-        saved_folder_dir += f' ({name_suffix})'
+        saved_folder_dir += f'_({name_suffix.replace(" ", "_")})'
 
     os.makedirs(saved_folder_dir, exist_ok=True)
 
@@ -153,22 +156,25 @@ def rearrange_isochrone(iso_paths_list, selected_bands_list, saved_folder_dir, n
         # print(f'Now generating: {out_path}')
 
         filename = os.path.basename(iso_file_list[0][iso_file_i])
-        filename_no_paren = re.sub(r"\s*\([^)]*\)", "", filename).strip()
+        filename_no_paren = re.sub(r"[\s_]*\([^)]*\)", "", filename).strip()
 
         # Compatible with both .dat and .dat.gz
         if filename_no_paren.endswith(".dat.gz"):
             file_name_body = filename_no_paren[:-len(".dat.gz")]
             file_name_ext = ".dat.gz"
+        elif filename_no_paren.endswith(".dat"):
+            file_name_body = filename_no_paren[:-len(".dat")]
+            file_name_ext = ".dat"
         else:
             file_name_body, file_name_ext = os.path.splitext(filename_no_paren)
 
         if name_suffix is not None:
-            file_name_body += f" ({name_suffix})"
+            file_name_body += f"_({name_suffix.replace(" ", "_")})"
 
         final_file_name = file_name_body + file_name_ext
 
         out_path = os.path.join(saved_folder_dir, final_file_name)
-        print(f"Now generating: {out_path}")
+        print(f"Now rearranging: {out_path}")
 
         isos_list = []
         for iso_file_list_i in range(len(iso_file_list)):
@@ -243,7 +249,7 @@ def rearrange_isochrone(iso_paths_list, selected_bands_list, saved_folder_dir, n
 
 
 
-def check_rearranged_isochrones(rearranged_iso_path, original_iso_path_list, selected_bands_list, n_common=35):
+def check_rearranged_isochrones(rearranged_iso_path, original_iso_path_list, selected_bands_list, n_common=35, verbose=True):
     """
     Validate that rearranged isochrone files are consistent with their original inputs.
 
@@ -281,6 +287,9 @@ def check_rearranged_isochrones(rearranged_iso_path, original_iso_path_list, sel
     - For every isochrone block, all series are compared column by column.
     - If no AssertionError is raised, the rearranged file is considered consistent.
     """
+
+    print('Starting rearranged isochrone checks...')
+
     selected_columns_list = []
     for selected_bands_list_i in selected_bands_list:
         selected_columns_list_i = []
@@ -300,14 +309,16 @@ def check_rearranged_isochrones(rearranged_iso_path, original_iso_path_list, sel
         original_iso_list.append(original_iso_i)
 
     for iso_file_index in range(len(rearranged_iso)):
-        print(f'Now working on {rearranged_iso[iso_file_index]}')
-        print(f'\treading: {rearranged_iso[iso_file_index]}')
-        rearranged_iso_iso_file_index = read_isochrones(rearranged_iso[iso_file_index])
+        if verbose:
+            print(f'Now working on {rearranged_iso[iso_file_index]}')
+            print(f'\treading: {rearranged_iso[iso_file_index]}')
+        rearranged_iso_iso_file_index = read_isochrones(rearranged_iso[iso_file_index],use_tqdm=False)
 
         iso_file_index_list = []
         for iso_serires_i in range(len(original_iso_path_list)):
-            print(f'\treading: {original_iso_list[iso_serires_i][iso_file_index]}')
-            iso_file_index_list.append(read_isochrones(original_iso_list[iso_serires_i][iso_file_index]))
+            if verbose:
+                print(f'\treading: {original_iso_list[iso_serires_i][iso_file_index]}')
+            iso_file_index_list.append(read_isochrones(original_iso_list[iso_serires_i][iso_file_index], use_tqdm=False))
 
 
         for file_i in range(len(iso_file_index_list[0])):
@@ -319,9 +330,10 @@ def check_rearranged_isochrones(rearranged_iso_path, original_iso_path_list, sel
                                                   iso_file_index_list[iso_serires_i][file_i][selected_columns_list[iso_serires_i]])
             except AssertionError:
                 raise AssertionError(f"NOT identical!")
+        if verbose:
+            print('\tIdentical!')
 
-        print('\tIdentical!')
-
+    print('Done! All rearranged isochrone files were correctly combined!')
 
 
 def restructure_inclination(df):
@@ -725,10 +737,13 @@ def regularization_on_Mini_from_files(
     print_path_list=False,
     save_float32=True,
     read_all_at_once=False,
-    parallel_read=True,
+    parallel_file_read=True,
     parallel_backend="process",
     max_workers=None,
 ):
+    if not read_all_at_once and parallel_file_read:
+        print("[info] parallel_read is ignored because read_all_at_once=False.")
+
     if label_list is None:
         label_list = [1.0]
 
@@ -789,7 +804,7 @@ def regularization_on_Mini_from_files(
     df_all = None
 
     if read_all_at_once:
-        if parallel_read:
+        if parallel_file_read:
             print("Reading all files at once in parallel. This is faster but uses more memory...")
 
             read_args = [
@@ -1161,7 +1176,7 @@ def regularization_on_Mini_from_files(
     print("Finished regularization.")
     print(f"grid_type: {grid_type}")
     print(f"read_all_at_once: {read_all_at_once}")
-    print(f"parallel_read: {parallel_read}")
+    print(f"parallel_file_read: {parallel_file_read}")
     print(f"parallel_backend: {parallel_backend}")
     print(f"max_workers: {max_workers}")
     print(f"save_float32: {save_float32}")
@@ -1388,6 +1403,162 @@ def load_regularized_Mini_interpolator(npz_path, force_float64=False):
     )
 
 
+
+def _as_dir_string(path, create=True):
+    """
+    Convert a directory path to absolute string with trailing slash.
+    Needed because regularization_on_Mini_from_files uses string concatenation.
+    """
+    path = Path(path).expanduser().resolve()
+
+    if create:
+        path.mkdir(parents=True, exist_ok=True)
+
+    path_str = str(path)
+
+    if not path_str.endswith(os.sep):
+        path_str += os.sep
+
+    return path_str
+
+
+def _as_glob_pattern_string(path):
+    """
+    Convert glob pattern path to string.
+    Do not mkdir/resolve the '*' part.
+    """
+    return str(Path(path).expanduser())
+
+
+def _label_list_to_tag(label_list):
+    if label_list == [1] or label_list == [1.0]:
+        return "MS"
+
+    if set(label_list) == {0, 1} or set(label_list) == {0.0, 1.0}:
+        return "preMS_MS"
+
+    return "labels_" + "_".join(str(x).replace(".", "p") for x in label_list)
+
+
+def regularize_PARSECv2_Mini_grid(
+    path=None,
+    save_path=None,
+    save_name=None,
+    age_initial="1e6",
+    age_end="2001e6",
+    age_interval="10e6",
+    age_type="linear",
+    photometry_suffix="2mass & tycho2 & gaia dr3",
+    grid_type="with_inc",
+    label_list=None,
+    print_path_list=False,
+    save_float32=True,
+    read_all_at_once=False,
+    **kwargs,
+):
+    """
+    Wrapper for regularization_on_Mini_from_files().
+
+    Default input:
+        DATA_DIR/isochrones/PARSEC_v2/
+        1e6_2001e6yr_linear_isochrones_rearranged (2mass & tycho2 & gaia dr3)/*
+
+    Default output:
+        DATA_DIR/isochrones/regular_PARSECv2_Mini_grids/
+    """
+
+    if label_list is None:
+        label_list = [1]
+
+    if path is None:
+        parsec_dir = DATA_DIR / "isochrones" / "PARSEC_v2"
+
+        path = [
+            str(
+                parsec_dir
+                / f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged ({photometry_suffix})"
+                / "*"
+            )
+        ]
+
+    elif isinstance(path, (str, Path)):
+        path = [_as_glob_pattern_string(path)]
+
+    elif isinstance(path, (list, tuple)):
+        path = [_as_glob_pattern_string(p) for p in path]
+
+    else:
+        raise ValueError("path must be None, str, Path, list, or tuple.")
+
+    if save_path is None:
+        save_path = DATA_DIR / "isochrones" / "regular_PARSECv2_Mini_grids"
+
+    save_path = _as_dir_string(save_path, create=True)
+
+    if save_name is None:
+        label_tag = _label_list_to_tag(label_list)
+
+        save_name = (
+            f"regularized_Mini_grid_"
+            f"{age_initial}_{age_end}yr_step{age_interval}_"
+            f"{age_type}_isochrones_{label_tag}_{grid_type}.npz"
+        )
+
+    save_file, problematic_df = regularization_on_Mini_from_files(
+        path=path,
+        save_path=save_path,
+        save_name=save_name,
+        grid_type=grid_type,
+        label_list=label_list,
+        print_path_list=print_path_list,
+        save_float32=save_float32,
+        read_all_at_once=read_all_at_once,
+        **kwargs,
+    )
+
+    return save_file, problematic_df
+
+
+def load_default_regularized_PARSECv2_Mini_interpolator(
+    npz_path=None,
+    age_initial="1e6",
+    age_end="2001e6",
+    age_interval="10e6",
+    age_type="linear",
+    label_tag="MS",
+    grid_type="with_inc",
+    force_float64=False,
+):
+    """
+    Load regularized Mini interpolator.
+
+    If npz_path is None, use the default path under:
+        DATA_DIR/isochrones/regular_PARSECv2_Mini_grids/
+    """
+
+    if npz_path is None:
+        save_dir = DATA_DIR / "isochrones" / "regular_PARSECv2_Mini_grids"
+
+        save_name = (
+            f"regularized_Mini_grid_"
+            f"{age_initial}_{age_end}yr_step{age_interval}_"
+            f"{age_type}_isochrones_{label_tag}_{grid_type}.npz"
+        )
+
+        npz_path = save_dir / save_name
+
+    npz_path = Path(npz_path).expanduser().resolve()
+
+    if not npz_path.exists():
+        raise FileNotFoundError(f"Regularized Mini grid not found: {npz_path}")
+
+    return load_regularized_Mini_interpolator(
+        npz_path=npz_path,
+        force_float64=force_float64,
+    )
+
+
+
 def _get_u_grid_columns(grid_type):
     if grid_type == "without_inc":
         interp_variable_list = ["Mini", "logAge", "MH", "omega_ini"]
@@ -1573,13 +1744,16 @@ def regularization_on_u_from_files(
     save_float32=True,
     u_save_range=None,
     read_all_at_once=False,
-    parallel_read=True,
+    parallel_file_read=True,
     parallel_backend="process",      # "process" or "thread"
     parallel_interp=True,
     interp_backend="thread",         # recommend "thread" in Jupyter
     max_workers=None,
     interp_max_workers=8,
 ):
+    if not read_all_at_once and parallel_file_read:
+        print("[info] parallel_read is ignored because read_all_at_once=False.")
+
     if save_path[-1] != "/":
         save_path += "/"
     os.makedirs(save_path, exist_ok=True)
@@ -1627,7 +1801,7 @@ def regularization_on_u_from_files(
     # optional read all files
     # ============================================================
     if read_all_at_once:
-        if parallel_read:
+        if parallel_file_read:
             print("Reading all files at once in parallel. This is faster but uses more memory...")
 
             read_args = [
@@ -2023,7 +2197,7 @@ def regularization_on_u_from_files(
         label_list=np.array(label_list),
         save_float32=np.array(save_float32),
         read_all_at_once=np.array(read_all_at_once),
-        parallel_read=np.array(parallel_read),
+        parallel_file_read=np.array(parallel_file_read),
         parallel_backend=np.array(parallel_backend),
         parallel_interp=np.array(parallel_interp),
         interp_backend=np.array(interp_backend),
@@ -2048,7 +2222,7 @@ def regularization_on_u_from_files(
     print("Finished u-grid regularization.")
     print(f"grid_type: {grid_type}")
     print(f"read_all_at_once: {read_all_at_once}")
-    print(f"parallel_read: {parallel_read}")
+    print(f"parallel_file_read: {parallel_file_read}")
     print(f"parallel_backend: {parallel_backend}")
     print(f"parallel_interp: {parallel_interp}")
     print(f"interp_backend: {interp_backend}")
@@ -2248,6 +2422,129 @@ def load_regularized_u_interpolator(npz_path, force_float64=False):
         data,
     )
 
+
+
+def regularize_PARSECv2_u_grid(
+    path=None,
+    save_path=None,
+    save_name=None,
+    age_initial="1e6",
+    age_end="2001e6",
+    age_interval="10e6",
+    age_type="linear",
+    photometry_suffix="2mass & tycho2 & gaia dr3",
+    grid_type="with_inc",
+    label_list=None,
+    min_width_threshold=0.01,
+    save_float32=True,
+    read_all_at_once=False,
+    **kwargs,
+):
+    """
+    Wrapper for regularization_on_u_from_files().
+
+    Default input:
+        DATA_DIR/isochrones/PARSEC_v2/
+        1e6_2001e6yr_linear_isochrones_rearranged (2mass & tycho2 & gaia dr3)/*
+
+    Default output:
+        DATA_DIR/isochrones/regular_PARSECv2_u_grids/
+
+    Returns
+    -------
+    save_file, bad_group_df, duplicated_u_df
+    """
+
+    if label_list is None:
+        label_list = [1]
+
+    if path is None:
+        parsec_dir = DATA_DIR / "isochrones" / "PARSEC_v2"
+
+        path = [
+            str(
+                parsec_dir
+                / f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged ({photometry_suffix})"
+                / "*"
+            )
+        ]
+
+    elif isinstance(path, (str, Path)):
+        path = [_as_glob_pattern_string(path)]
+
+    elif isinstance(path, (list, tuple)):
+        path = [_as_glob_pattern_string(p) for p in path]
+
+    else:
+        raise ValueError("path must be None, str, Path, list, or tuple.")
+
+    if save_path is None:
+        save_path = DATA_DIR / "isochrones" / "regular_PARSECv2_u_grids"
+
+    save_path = _as_dir_string(save_path, create=True)
+
+    if save_name is None:
+        label_tag = _label_list_to_tag(label_list)
+
+        save_name = (
+            f"regularized_u_grid_"
+            f"{age_initial}_{age_end}yr_step{age_interval}_"
+            f"{age_type}_isochrones_{label_tag}_{grid_type}.npz"
+        )
+
+    save_file, bad_group_df, duplicated_u_df = regularization_on_u_from_files(
+        path=path,
+        save_path=save_path,
+        save_name=save_name,
+        grid_type=grid_type,
+        label_list=label_list,
+        min_width_threshold=min_width_threshold,
+        save_float32=save_float32,
+        read_all_at_once=read_all_at_once,
+        **kwargs,
+    )
+
+    return save_file, bad_group_df, duplicated_u_df
+
+
+def load_default_regularized_PARSECv2_u_interpolator(
+    npz_path=None,
+    age_initial="1e6",
+    age_end="2001e6",
+    age_interval="10e6",
+    age_type="linear",
+    label_tag="MS",
+    grid_type="with_inc",
+    force_float64=False,
+):
+    """
+    Load default PARSEC v2 u-regularized interpolator.
+
+    Default file:
+        DATA_DIR/isochrones/regular_PARSECv2_u_grids/
+        regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz
+    """
+
+    if npz_path is None:
+        save_dir = DATA_DIR / "isochrones" / "regular_PARSECv2_u_grids"
+
+        save_name = (
+            f"regularized_u_grid_"
+            f"{age_initial}_{age_end}yr_step{age_interval}_"
+            f"{age_type}_isochrones_{label_tag}_{grid_type}.npz"
+        )
+
+        npz_path = save_dir / save_name
+
+    npz_path = Path(npz_path).expanduser().resolve()
+
+    if not npz_path.exists():
+        raise FileNotFoundError(f"Regularized PARSEC v2 u grid not found: {npz_path}")
+
+    return load_regularized_u_interpolator(
+        npz_path=npz_path,
+        force_float64=force_float64,
+    )
 
 
 
@@ -2916,7 +3213,7 @@ def regularization_on_Mini_from_MIST_folders(
     Mini_setting=(1.0, 5.0, 0.01),
     save_float32=True,
     read_all_at_once=False,
-    parallel_read=True,
+    parallel_file_read=True,
     parallel_backend="process",
     max_workers=None,
     check_order=True,
@@ -2931,7 +3228,7 @@ def regularization_on_Mini_from_MIST_folders(
     mist_root_or_folders : str, Path, or list
         Root folder or list of folders containing MIST full_isos and UBVRIplus files.
 
-    save_path : str
+    save_path : str or Path
         Output folder.
 
     save_name : str
@@ -2947,7 +3244,7 @@ def regularization_on_Mini_from_MIST_folders(
         If True, read all matched pairs into one large DataFrame first.
         If False, read one pair at a time.
 
-    parallel_read : bool
+    parallel_file_read : bool
         If True and read_all_at_once=True, read pairs in parallel.
 
     parallel_backend : {"process", "thread"}
@@ -2973,7 +3270,11 @@ def regularization_on_Mini_from_MIST_folders(
     problematic_df : pd.DataFrame
         Problematic duplicated Mini records.
     """
-    save_path = Path(save_path)
+    if not read_all_at_once and parallel_file_read:
+        print("[info] parallel_read is ignored because read_all_at_once=False.")
+
+    if isinstance(save_path, str):
+        save_path = Path(save_path)
     save_path.mkdir(parents=True, exist_ok=True)
 
     dtype = np.float32 if save_float32 else np.float64
@@ -3037,7 +3338,7 @@ def regularization_on_Mini_from_MIST_folders(
             for pair_i in range(len(pairs))
         ]
 
-        if parallel_read:
+        if parallel_file_read:
             if max_workers is None:
                 max_workers = min(os.cpu_count() or 1, len(read_args))
 
@@ -3369,4 +3670,110 @@ def load_regularized_MIST_interpolator(npz_path, force_float64=False):
         interp_variable_list,
         interp_output_list,
         data,
+    )
+
+def regularize_MIST_Mini_grid(
+    mist_root_or_folders=None,
+    save_path=None,
+    save_name=None,
+    Mini_setting=(1.0, 5.0, 0.001),
+    save_float32=True,
+    read_all_at_once=False,
+    parallel_file_read=True,
+    parallel_backend="process",
+    max_workers=None,
+    check_order=True,
+    local_max_workers=8,
+    print_pairs=False,
+):
+    """
+    Wrapper for regularization_on_Mini_from_MIST_folders().
+
+    MIST does not provide inclination grids, so only METHOD PARS is available.
+
+    Default input:
+        DATA_DIR/isochrones/MIST
+
+    Default output:
+        DATA_DIR/isochrones/regular_MIST_Mini_grids/regularized_MIST_Mini_grid.npz
+
+    Returns
+    -------
+    save_file : str
+    problematic_df : pandas.DataFrame
+    """
+
+    if mist_root_or_folders is None:
+        mist_root_or_folders = DATA_DIR / "isochrones" / "MIST"
+
+    if save_path is None:
+        save_path = DATA_DIR / "isochrones" / "regular_MIST_Mini_grids"
+
+    if save_name is None:
+        save_name = "regularized_MIST_Mini_grid.npz"
+
+    mist_root_or_folders = Path(mist_root_or_folders).expanduser().resolve()
+    save_path = Path(save_path).expanduser().resolve()
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    save_file, problematic_df = regularization_on_Mini_from_MIST_folders(
+        mist_root_or_folders=mist_root_or_folders,
+        save_path=save_path,
+        save_name=save_name,
+        Mini_setting=Mini_setting,
+        save_float32=save_float32,
+        read_all_at_once=read_all_at_once,
+        parallel_file_read=parallel_file_read,
+        parallel_backend=parallel_backend,
+        max_workers=max_workers,
+        check_order=check_order,
+        local_max_workers=local_max_workers,
+        print_pairs=print_pairs,
+    )
+
+    return save_file, problematic_df
+
+from pathlib import Path
+
+from belfast.paths import DATA_DIR
+
+
+def load_default_regularized_MIST_Mini_interpolator(
+    npz_path=None,
+    save_path=None,
+    save_name=None,
+    force_float64=False,
+):
+    """
+    Load the default regularized MIST Mini interpolator.
+
+    Default file:
+        DATA_DIR/isochrones/regular_MIST_Mini_grids/regularized_MIST_Mini_grid.npz
+
+    Returns
+    -------
+    interp_func
+    interp_variable_list
+    interp_output_list
+    data
+    """
+
+    if npz_path is None:
+        if save_path is None:
+            save_path = DATA_DIR / "isochrones" / "regular_MIST_Mini_grids"
+
+        if save_name is None:
+            save_name = "regularized_MIST_Mini_grid.npz"
+
+        npz_path = Path(save_path).expanduser().resolve() / save_name
+
+    else:
+        npz_path = Path(npz_path).expanduser().resolve()
+
+    if not npz_path.exists():
+        raise FileNotFoundError(f"Regularized MIST Mini grid not found: {npz_path}")
+
+    return load_regularized_MIST_interpolator(
+        npz_path=npz_path,
+        force_float64=force_float64,
     )

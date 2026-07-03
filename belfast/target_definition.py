@@ -14,7 +14,7 @@ import inspect
 from belfast.isochrone_utils import PARSECv2_collect_data, load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
 from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
 from belfast.PARS_utils import extract_MH, make_limb_darkening_files
-
+from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
 
 class Target:
     def __init__(self, name, bands_list, obs_mags, obs_err_mags,
@@ -50,7 +50,9 @@ class Target:
                              'The degree of freedom will be ZERO!')
 
         self.load_flag = False # False: it is defined, not loaded from files
-        self.name = name.strip()
+        self.name = name.strip().replace(' ', '_')
+        self.bands_list = bands_list
+        self.obs_mags = obs_mags
         self.bands_list = bands_list
         if isinstance(obs_mags, list):
             obs_mags = np.array(obs_mags)
@@ -87,7 +89,7 @@ class Target:
 
         Sets up extinction, variables lists, and computes extinction-corrected and absolute magnitudes.
         """
-        self.cluster = cluster
+        self.cluster = cluster.strip().replace(' ', '_')
         if self.extinction_parameter == True:
             if extinction_type is None:
                 # Here A_V is the extinction of the Johnson V band
@@ -210,10 +212,12 @@ class Target:
 
     def set_method(self,
                    # general setting
-                   grids_path,
-                   grids_type,
-                   METHOD,
+                   grids_path=None,
+                   grids_type='Mini',
+                   METHOD='DIRECT',
                    iso_name='PARSEC',
+                   correct_MIST_MH_zeropoint=False,
+                   MIST_MH_offset=0.018,
                    flag_64=False,
                     # PARS setting
                    PARS_limb_darkening_path=None,
@@ -225,10 +229,14 @@ class Target:
                    # NN_photo_err_scaler=40,
                    ):
 
+        if grids_path is None:
+            grids_path = str(DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz')
+            self.grids_path = grids_path
+
         available_grids_type = ['Mini', 'u']
         available_METHOD = ['DIRECT', 'PARS', 'NN']
         if not isinstance(grids_path, str) or grids_type not in available_grids_type:
-            raise Exception(f'Grids path must be a string and one of {available_grids_type}')
+            raise Exception(f'Grids path must be a string and one type of {available_grids_type}')
         if not isinstance(METHOD, str) or METHOD not in available_METHOD:
             raise TypeError(f'METHOD must be a string and one of {available_METHOD}')
 
@@ -237,19 +245,26 @@ class Target:
         else:
             self.cluster_name = self.cluster
 
-        self.iso_name = iso_name
-        if iso_name.lower() == 'PARSEC'.lower():
+        if iso_name.upper() == 'PARSEC':
             pass
-        elif iso_name.lower() == 'MIST'.lower():
+        elif iso_name.upper() == 'MIST':
             if grids_type == 'u':
                 raise ValueError("MIST isochrones could only use 'Mini' grids.")
             if METHOD == 'DIRECT':
                 raise ValueError("MIST isochrones could only use the 'PARS' method.")
         else:
             raise ValueError("iso_name must be either 'PARSEC' or 'MIST'.")
+        self.iso_name = iso_name.upper()
+
+        print('*' * 100)
+        print(f'Using {iso_name} isochrones with {grids_type} grids and {METHOD} method.')
+        print('*' * 100)
 
         self.grids_path = grids_path
         self.grids_type = grids_type
+        self.iso_name = iso_name.upper()
+        self.correct_MIST_MH_zeropoint = correct_MIST_MH_zeropoint
+        self.MIST_MH_offset = MIST_MH_offset
         self.METHOD = METHOD
         self.flag_64 = flag_64
         self.interp_upper_limit = []
@@ -484,7 +499,7 @@ class Target:
             print(f"{name:<12} {low_str:>10} {high_str:>10}")
 
 
-    def save(self, filename):
+    def save(self, filename, verbose=True):
         """
         Save the current object configuration to an npz file.
 
@@ -498,6 +513,7 @@ class Target:
             interp_u_to_outputs
             interp_u_bounds
             data
+            made_limb_darkening_dict
 
         User-defined prior functions are saved as source-code strings
         using inspect.getsource().
@@ -512,6 +528,7 @@ class Target:
             "interp_u_to_outputs",
             "interp_u_bounds",
             "data",
+            "made_limb_darkening_dict",
         }
 
         prior_keys = {
@@ -622,7 +639,8 @@ class Target:
 
         np.savez(filename, **arrays_to_save)
 
-        print(f"Saved object to: {os.path.abspath(filename)}")
+        if verbose:
+            print(f"Saved object to: {os.path.abspath(filename)}")
 
 
 
