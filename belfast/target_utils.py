@@ -1149,8 +1149,8 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
         if verbose:
             if res355 is None or len(res355) == 0:
                 print(f"VizieR I/355 returned no matches for source_id={sid}")
-            else:
-                print(res355)
+            # else:
+            #     print(res355)
 
         if res355 is None or len(res355) == 0 or len(res355[0]) == 0:
             res355 = v355.query_constraints(catalog="I/355", source_id=sid)
@@ -1588,7 +1588,7 @@ def print_summary_card_aligned(
     # -----------------------------
     right_BT = f"B_T : {fnum(BT,8,4)} ± {fnum(eBT,8,4)} mag"
     right_VT = f"V_T : {fnum(VT,8,4)} ± {fnum(eVT,8,4)} mag"
-    right_sep = "-" * min(35, col3)
+    right_sep = "-" * min(40, col3)
     right_2mass_header = "2MASS"
     right_J  = f"J   : {fnum(J,8,4)} ± {fnum(eJ,8,4)} mag"
     right_H  = f"H   : {fnum(H,8,4)} ± {fnum(eH,8,4)} mag"
