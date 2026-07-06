@@ -39,3 +39,3091 @@ autocorrelation time: [ 91 107 120 100 107  73  76 120]
 This test took 40.7030 seconds.
 Starting Time: 2026-06-14 07:18:19
 🔄 Starting initial sampling...
+Sampling time: 00:01:04
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=109.8, τ₀․₃=103.2, rel_diff=6.0%
+  Length ratio (after burn=10τ): 81.09 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1098)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=164.0, τ₀․₃=147.0, rel_diff=10.4%
+  Length ratio (after burn=10τ): 63.16 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1640)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=171.6, τ₀․₃=154.7, rel_diff=9.8%
+  Length ratio (after burn=10τ): 71.58 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1716)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 16000 samples (elapsed 0h 1m)
+  τ₀․₅=161.3, τ₀․₃=132.3, rel_diff=18.0%
+  Length ratio (after burn=10τ): 89.22 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:43
+📏 τ₀․₅=161.3, τ₀․₃=132.3, τ_late=161.3 → burn-in=1612
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_21670_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_21670_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_21670_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 23497
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        13.3851    23.3851
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.00-2.40 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.18 0.15 0.15 0.18 0.19 0.16 0.17 0.16 0.21 
+	0.16 0.18 0.14 0.19 0.18 0.18 0.13 0.16 0.18 
+	0.18 0.19 0.17 0.18 0.10 0.14 0.05 0.19 0.19 
+	0.15 0.17 0.19 
+n_steps/60: 50.00
+autocorrelation time: [124 306 220 207 226 119 367 101]
+This test took 42.1841 seconds.
+Starting Time: 2026-06-14 07:21:30
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=398.9, τ₀․₃=271.8, rel_diff=31.9%
+  Length ratio (after burn=10τ): 15.07 vs requirement 70
+⏱ Adaptive check_interval = 3989 (10×τ_late=3989)
+Sampling time: 00:00:23
+
+🔍 Checkpoint @ 13989 samples (elapsed 0h 1m)
+  τ₀․₅=545.7, τ₀․₃=376.4, rel_diff=31.0%
+  Length ratio (after burn=10τ): 15.64 vs requirement 70
+⏱ Adaptive check_interval = 5456 (10×τ_late=5457)
+Sampling time: 00:00:32
+
+🔍 Checkpoint @ 19445 samples (elapsed 0h 1m)
+  τ₀․₅=651.0, τ₀․₃=500.8, rel_diff=23.1%
+  Length ratio (after burn=10τ): 19.87 vs requirement 70
+⏱ Adaptive check_interval = 6509 (10×τ_late=6510)
+Sampling time: 00:00:38
+
+🔍 Checkpoint @ 25954 samples (elapsed 0h 2m)
+  τ₀․₅=765.1, τ₀․₃=605.3, rel_diff=20.9%
+  Length ratio (after burn=10τ): 23.93 vs requirement 70
+⏱ Adaptive check_interval = 7650 (10×τ_late=7651)
+Sampling time: 00:00:45
+
+🔍 Checkpoint @ 33604 samples (elapsed 0h 3m)
+  τ₀․₅=955.5, τ₀․₃=656.7, rel_diff=31.3%
+  Length ratio (after burn=10τ): 25.17 vs requirement 70
+⏱ Adaptive check_interval = 9555 (10×τ_late=9555)
+Sampling time: 00:00:56
+
+🔍 Checkpoint @ 43159 samples (elapsed 0h 4m)
+  τ₀․₅=936.1, τ₀․₃=744.6, rel_diff=20.5%
+  Length ratio (after burn=10τ): 36.10 vs requirement 70
+⏱ Adaptive check_interval = 9361 (10×τ_late=9361)
+Sampling time: 00:00:55
+
+🔍 Checkpoint @ 52520 samples (elapsed 0h 5m)
+  τ₀․₅=1016.5, τ₀․₃=904.3, rel_diff=11.0%
+  Length ratio (after burn=10τ): 41.67 vs requirement 70
+⏱ Adaptive check_interval = 10165 (10×τ_late=10165)
+Sampling time: 00:00:59
+
+🔍 Checkpoint @ 62685 samples (elapsed 0h 6m)
+  τ₀․₅=1067.8, τ₀․₃=857.8, rel_diff=19.7%
+  Length ratio (after burn=10τ): 48.71 vs requirement 70
+⏱ Adaptive check_interval = 10677 (10×τ_late=10678)
+Sampling time: 00:01:02
+
+🔍 Checkpoint @ 73362 samples (elapsed 0h 7m)
+  τ₀․₅=1193.8, τ₀․₃=988.0, rel_diff=17.2%
+  Length ratio (after burn=10τ): 51.45 vs requirement 70
+⏱ Adaptive check_interval = 11938 (10×τ_late=11938)
+Sampling time: 00:01:10
+
+🔍 Checkpoint @ 85300 samples (elapsed 0h 8m)
+  τ₀․₅=1335.3, τ₀․₃=1127.0, rel_diff=15.6%
+  Length ratio (after burn=10τ): 53.88 vs requirement 70
+⏱ Adaptive check_interval = 13353 (10×τ_late=13353)
+Sampling time: 00:01:18
+
+🔍 Checkpoint @ 98653 samples (elapsed 0h 9m)
+  τ₀․₅=1394.9, τ₀․₃=1180.5, rel_diff=15.4%
+  Length ratio (after burn=10τ): 60.73 vs requirement 70
+⏱ Adaptive check_interval = 13948 (10×τ_late=13949)
+Sampling time: 00:01:21
+
+🔍 Checkpoint @ 112601 samples (elapsed 0h 11m)
+  τ₀․₅=1385.0, τ₀․₃=1005.8, rel_diff=27.4%
+  Length ratio (after burn=10τ): 71.30 vs requirement 70
+⏱ Adaptive check_interval = 13850 (10×τ_late=13850)
+Sampling time: 00:01:21
+
+🔍 Checkpoint @ 126451 samples (elapsed 0h 12m)
+  τ₀․₅=1330.3, τ₀․₃=964.3, rel_diff=27.5%
+  Length ratio (after burn=10τ): 85.06 vs requirement 70
+⏱ Adaptive check_interval = 13302 (10×τ_late=13303)
+Sampling time: 00:01:17
+
+🔍 Checkpoint @ 139753 samples (elapsed 0h 13m)
+  τ₀․₅=1384.7, τ₀․₃=1217.2, rel_diff=12.1%
+  Length ratio (after burn=10τ): 90.93 vs requirement 70
+⏱ Adaptive check_interval = 13847 (10×τ_late=13847)
+Sampling time: 00:01:22
+
+🔍 Checkpoint @ 153600 samples (elapsed 0h 15m)
+  τ₀․₅=1402.5, τ₀․₃=1358.8, rel_diff=3.1%
+  Length ratio (after burn=10τ): 99.52 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:15:22
+📏 τ₀․₅=1402.5, τ₀․₃=1358.8, τ_late=1402.5 → burn-in=14025
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_23497_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_23497_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_23497_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 20635
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        15.9119    25.9119
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.00-2.40 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.26 0.27 0.32 0.21 0.29 0.28 0.27 0.27 0.29 
+	0.27 0.29 0.24 0.29 0.25 0.25 0.22 0.28 0.31 
+	0.29 0.26 0.27 0.24 0.23 0.26 0.28 0.31 0.29 
+	0.26 0.29 0.27 
+n_steps/60: 50.00
+autocorrelation time: [ 55 100  78 135 156  54 181  57]
+This test took 37.5030 seconds.
+Starting Time: 2026-06-14 07:40:01
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=260.4, τ₀․₃=183.1, rel_diff=29.7%
+  Length ratio (after burn=10τ): 28.41 vs requirement 70
+⏱ Adaptive check_interval = 2603 (10×τ_late=2604)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 12603 samples (elapsed 0h 1m)
+  τ₀․₅=228.4, τ₀․₃=173.2, rel_diff=24.2%
+  Length ratio (after burn=10τ): 45.18 vs requirement 70
+⏱ Adaptive check_interval = 2284 (10×τ_late=2284)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 14887 samples (elapsed 0h 1m)
+  τ₀․₅=225.7, τ₀․₃=176.5, rel_diff=21.8%
+  Length ratio (after burn=10τ): 55.96 vs requirement 70
+⏱ Adaptive check_interval = 2256 (10×τ_late=2257)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 17143 samples (elapsed 0h 1m)
+  τ₀․₅=225.1, τ₀․₃=193.6, rel_diff=14.0%
+  Length ratio (after burn=10τ): 66.14 vs requirement 70
+⏱ Adaptive check_interval = 2251 (10×τ_late=2251)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 19394 samples (elapsed 0h 1m)
+  τ₀․₅=245.5, τ₀․₃=246.7, rel_diff=0.5%
+  Length ratio (after burn=10τ): 68.60 vs requirement 70
+⏱ Adaptive check_interval = 2467 (10×τ_late=2467)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 21861 samples (elapsed 0h 2m)
+  τ₀․₅=261.7, τ₀․₃=198.7, rel_diff=24.1%
+  Length ratio (after burn=10τ): 73.53 vs requirement 70
+⏱ Adaptive check_interval = 2617 (10×τ_late=2617)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 24478 samples (elapsed 0h 2m)
+  τ₀․₅=273.0, τ₀․₃=212.3, rel_diff=22.2%
+  Length ratio (after burn=10τ): 79.68 vs requirement 70
+⏱ Adaptive check_interval = 2729 (10×τ_late=2730)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 27207 samples (elapsed 0h 2m)
+  τ₀․₅=300.6, τ₀․₃=232.4, rel_diff=22.7%
+  Length ratio (after burn=10τ): 80.50 vs requirement 70
+⏱ Adaptive check_interval = 3006 (10×τ_late=3006)
+Sampling time: 00:00:18
+
+🔍 Checkpoint @ 30213 samples (elapsed 0h 3m)
+  τ₀․₅=269.5, τ₀․₃=229.0, rel_diff=15.0%
+  Length ratio (after burn=10τ): 102.13 vs requirement 70
+⏱ Adaptive check_interval = 2694 (10×τ_late=2695)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 32907 samples (elapsed 0h 3m)
+  τ₀․₅=251.8, τ₀․₃=228.3, rel_diff=9.3%
+  Length ratio (after burn=10τ): 120.68 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:03:20
+📏 τ₀․₅=251.8, τ₀․₃=228.3, τ_late=251.8 → burn-in=2518
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20635_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20635_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_20635_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 22044
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        17.4743    27.4743
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.25 0.23 0.24 0.21 0.26 0.29 0.27 0.26 0.25 
+	0.21 0.25 0.24 0.28 0.27 0.27 0.27 0.23 0.20 
+	0.28 0.22 0.26 0.27 0.26 0.25 0.26 0.25 0.30 
+	0.24 0.27 0.31 
+n_steps/60: 50.00
+autocorrelation time: [ 68 213  86 233 230  51 113  61]
+This test took 38.5170 seconds.
+Starting Time: 2026-06-14 07:45:00
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=285.3, τ₀․₃=179.4, rel_diff=37.1%
+  Length ratio (after burn=10τ): 25.06 vs requirement 70
+⏱ Adaptive check_interval = 2852 (10×τ_late=2853)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 12852 samples (elapsed 0h 1m)
+  τ₀․₅=281.8, τ₀․₃=233.6, rel_diff=17.1%
+  Length ratio (after burn=10τ): 35.62 vs requirement 70
+⏱ Adaptive check_interval = 2817 (10×τ_late=2818)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 15669 samples (elapsed 0h 1m)
+  τ₀․₅=377.9, τ₀․₃=232.3, rel_diff=38.5%
+  Length ratio (after burn=10τ): 31.46 vs requirement 70
+⏱ Adaptive check_interval = 3779 (10×τ_late=3779)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 19448 samples (elapsed 0h 1m)
+  τ₀․₅=372.6, τ₀․₃=272.0, rel_diff=27.0%
+  Length ratio (after burn=10τ): 42.19 vs requirement 70
+⏱ Adaptive check_interval = 3726 (10×τ_late=3726)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 23174 samples (elapsed 0h 2m)
+  τ₀․₅=389.6, τ₀․₃=260.1, rel_diff=33.2%
+  Length ratio (after burn=10τ): 49.48 vs requirement 70
+⏱ Adaptive check_interval = 3896 (10×τ_late=3896)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 27070 samples (elapsed 0h 2m)
+  τ₀․₅=316.5, τ₀․₃=244.1, rel_diff=22.9%
+  Length ratio (after burn=10τ): 75.53 vs requirement 70
+⏱ Adaptive check_interval = 3164 (10×τ_late=3165)
+Sampling time: 00:00:18
+
+🔍 Checkpoint @ 30234 samples (elapsed 0h 2m)
+  τ₀․₅=311.2, τ₀․₃=247.5, rel_diff=20.5%
+  Length ratio (after burn=10τ): 87.14 vs requirement 70
+⏱ Adaptive check_interval = 3112 (10×τ_late=3112)
+Sampling time: 00:00:18
+
+🔍 Checkpoint @ 33346 samples (elapsed 0h 3m)
+  τ₀․₅=347.5, τ₀․₃=304.0, rel_diff=12.5%
+  Length ratio (after burn=10τ): 85.95 vs requirement 70
+⏱ Adaptive check_interval = 3475 (10×τ_late=3475)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 36821 samples (elapsed 0h 3m)
+  τ₀․₅=385.5, τ₀․₃=347.3, rel_diff=9.9%
+  Length ratio (after burn=10τ): 85.51 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:03:39
+📏 τ₀․₅=385.5, τ₀․₃=347.3, τ_late=385.5 → burn-in=3855
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_22044_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_22044_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_22044_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 20641
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        17.0177    27.0177
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.33 0.32 0.36 0.32 0.34 0.31 0.34 0.29 0.35 
+	0.31 0.34 0.31 0.33 0.32 0.33 0.35 0.33 0.33 
+	0.29 0.32 0.29 0.32 0.29 0.33 0.34 0.31 0.30 
+	0.32 0.33 0.27 
+n_steps/60: 50.00
+autocorrelation time: [ 63  98 111  71 138  75 116  77]
+This test took 37.3043 seconds.
+Starting Time: 2026-06-14 07:50:18
+🔄 Starting initial sampling...
+Sampling time: 00:00:58
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=104.0, τ₀․₃=90.4, rel_diff=13.0%
+  Length ratio (after burn=10τ): 86.17 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1040)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=114.1, τ₀․₃=122.8, rel_diff=7.1%
+  Length ratio (after burn=10τ): 87.74 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:10
+📏 τ₀․₅=114.1, τ₀․₃=122.8, τ_late=122.8 → burn-in=1227
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20641_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20641_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_20641_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 21036
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        16.4915    26.4915
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.24 0.23 0.19 0.21 0.21 0.22 0.22 0.22 0.20 
+	0.23 0.24 0.22 0.21 0.19 0.23 0.22 0.24 0.20 
+	0.23 0.16 0.22 0.24 0.19 0.22 0.23 0.20 0.22 
+	0.23 0.24 0.24 
+n_steps/60: 50.00
+autocorrelation time: [ 60 153 117 201 222  60 249  64]
+This test took 37.4148 seconds.
+Starting Time: 2026-06-14 07:52:45
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=358.6, τ₀․₃=252.4, rel_diff=29.6%
+  Length ratio (after burn=10τ): 17.88 vs requirement 70
+⏱ Adaptive check_interval = 3586 (10×τ_late=3586)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 13586 samples (elapsed 0h 1m)
+  τ₀․₅=435.1, τ₀․₃=305.8, rel_diff=29.7%
+  Length ratio (after burn=10τ): 21.23 vs requirement 70
+⏱ Adaptive check_interval = 4350 (10×τ_late=4351)
+Sampling time: 00:00:25
+
+🔍 Checkpoint @ 17936 samples (elapsed 0h 1m)
+  τ₀․₅=661.8, τ₀․₃=465.6, rel_diff=29.6%
+  Length ratio (after burn=10τ): 17.10 vs requirement 70
+⏱ Adaptive check_interval = 6617 (10×τ_late=6618)
+Sampling time: 00:00:38
+
+🔍 Checkpoint @ 24553 samples (elapsed 0h 2m)
+  τ₀․₅=772.3, τ₀․₃=585.9, rel_diff=24.1%
+  Length ratio (after burn=10τ): 21.79 vs requirement 70
+⏱ Adaptive check_interval = 7722 (10×τ_late=7723)
+Sampling time: 00:00:45
+
+🔍 Checkpoint @ 32275 samples (elapsed 0h 3m)
+  τ₀․₅=762.2, τ₀․₃=602.0, rel_diff=21.0%
+  Length ratio (after burn=10τ): 32.34 vs requirement 70
+⏱ Adaptive check_interval = 7622 (10×τ_late=7622)
+Sampling time: 00:00:45
+
+🔍 Checkpoint @ 39897 samples (elapsed 0h 3m)
+  τ₀․₅=749.0, τ₀․₃=499.5, rel_diff=33.3%
+  Length ratio (after burn=10τ): 43.26 vs requirement 70
+⏱ Adaptive check_interval = 7490 (10×τ_late=7490)
+Sampling time: 00:00:44
+
+🔍 Checkpoint @ 47387 samples (elapsed 0h 4m)
+  τ₀․₅=826.4, τ₀․₃=640.4, rel_diff=22.5%
+  Length ratio (after burn=10τ): 47.34 vs requirement 70
+⏱ Adaptive check_interval = 8263 (10×τ_late=8264)
+Sampling time: 00:00:49
+
+🔍 Checkpoint @ 55650 samples (elapsed 0h 5m)
+  τ₀․₅=879.0, τ₀․₃=678.3, rel_diff=22.8%
+  Length ratio (after burn=10τ): 53.31 vs requirement 70
+⏱ Adaptive check_interval = 8790 (10×τ_late=8790)
+Sampling time: 00:00:52
+
+🔍 Checkpoint @ 64440 samples (elapsed 0h 6m)
+  τ₀․₅=985.6, τ₀․₃=892.6, rel_diff=9.4%
+  Length ratio (after burn=10τ): 55.38 vs requirement 70
+⏱ Adaptive check_interval = 9856 (10×τ_late=9856)
+Sampling time: 00:00:58
+
+🔍 Checkpoint @ 74296 samples (elapsed 0h 7m)
+  τ₀․₅=1372.2, τ₀․₃=1182.5, rel_diff=13.8%
+  Length ratio (after burn=10τ): 44.14 vs requirement 70
+⏱ Adaptive check_interval = 13722 (10×τ_late=13722)
+Sampling time: 00:01:20
+
+🔍 Checkpoint @ 88018 samples (elapsed 0h 8m)
+  τ₀․₅=1590.6, τ₀․₃=1412.7, rel_diff=11.2%
+  Length ratio (after burn=10τ): 45.34 vs requirement 70
+⏱ Adaptive check_interval = 15906 (10×τ_late=15906)
+Sampling time: 00:01:33
+
+🔍 Checkpoint @ 103924 samples (elapsed 0h 10m)
+  τ₀․₅=1692.4, τ₀․₃=1306.1, rel_diff=22.8%
+  Length ratio (after burn=10τ): 51.41 vs requirement 70
+⏱ Adaptive check_interval = 16924 (10×τ_late=16924)
+Sampling time: 00:01:39
+
+🔍 Checkpoint @ 120848 samples (elapsed 0h 12m)
+  τ₀․₅=1646.8, τ₀․₃=1464.1, rel_diff=11.1%
+  Length ratio (after burn=10τ): 63.38 vs requirement 70
+⏱ Adaptive check_interval = 16467 (10×τ_late=16468)
+Sampling time: 00:01:37
+
+🔍 Checkpoint @ 137315 samples (elapsed 0h 13m)
+  τ₀․₅=1834.7, τ₀․₃=1554.6, rel_diff=15.3%
+  Length ratio (after burn=10τ): 64.84 vs requirement 70
+⏱ Adaptive check_interval = 18347 (10×τ_late=18347)
+Sampling time: 00:01:48
+
+🔍 Checkpoint @ 155662 samples (elapsed 0h 15m)
+  τ₀․₅=1744.2, τ₀․₃=1282.1, rel_diff=26.5%
+  Length ratio (after burn=10τ): 79.25 vs requirement 70
+⏱ Adaptive check_interval = 17441 (10×τ_late=17442)
+Sampling time: 00:01:42
+
+🔍 Checkpoint @ 173103 samples (elapsed 0h 17m)
+  τ₀․₅=1728.4, τ₀․₃=1270.4, rel_diff=26.5%
+  Length ratio (after burn=10τ): 90.15 vs requirement 70
+⏱ Adaptive check_interval = 17283 (10×τ_late=17284)
+Sampling time: 00:01:42
+
+🔍 Checkpoint @ 190386 samples (elapsed 0h 19m)
+  τ₀․₅=1744.1, τ₀․₃=1495.8, rel_diff=14.2%
+  Length ratio (after burn=10τ): 99.16 vs requirement 70
+⏱ Adaptive check_interval = 17440 (10×τ_late=17441)
+Sampling time: 00:01:42
+
+🔍 Checkpoint @ 207826 samples (elapsed 0h 20m)
+  τ₀․₅=1643.1, τ₀․₃=1533.5, rel_diff=6.7%
+  Length ratio (after burn=10τ): 116.49 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:20:49
+📏 τ₀․₅=1643.1, τ₀․₃=1533.5, τ_late=1643.1 → burn-in=16430
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_21036_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_21036_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_21036_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 20261
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        16.0899    26.0899
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.24 0.21 0.22 0.22 0.24 0.24 0.21 0.23 0.23 
+	0.24 0.08 0.24 0.24 0.23 0.24 0.19 0.20 0.21 
+	0.22 0.19 0.22 0.21 0.23 0.22 0.24 0.24 0.26 
+	0.16 0.25 0.22 
+n_steps/60: 50.00
+autocorrelation time: [ 75 321 147 206 251  76 347  55]
+This test took 38.1397 seconds.
+Starting Time: 2026-06-14 08:17:27
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=382.6, τ₀․₃=260.1, rel_diff=32.0%
+  Length ratio (after burn=10τ): 16.14 vs requirement 70
+⏱ Adaptive check_interval = 3826 (10×τ_late=3826)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 13826 samples (elapsed 0h 1m)
+  τ₀․₅=542.1, τ₀․₃=349.6, rel_diff=35.5%
+  Length ratio (after burn=10τ): 15.50 vs requirement 70
+⏱ Adaptive check_interval = 5421 (10×τ_late=5421)
+Sampling time: 00:00:32
+
+🔍 Checkpoint @ 19247 samples (elapsed 0h 1m)
+  τ₀․₅=691.2, τ₀․₃=383.8, rel_diff=44.5%
+  Length ratio (after burn=10τ): 17.85 vs requirement 70
+⏱ Adaptive check_interval = 6911 (10×τ_late=6912)
+Sampling time: 00:00:41
+
+🔍 Checkpoint @ 26158 samples (elapsed 0h 2m)
+  τ₀․₅=723.9, τ₀․₃=522.5, rel_diff=27.8%
+  Length ratio (after burn=10τ): 26.13 vs requirement 70
+⏱ Adaptive check_interval = 7239 (10×τ_late=7239)
+Sampling time: 00:00:43
+
+🔍 Checkpoint @ 33397 samples (elapsed 0h 3m)
+  τ₀․₅=810.5, τ₀․₃=586.2, rel_diff=27.7%
+  Length ratio (after burn=10τ): 31.21 vs requirement 70
+⏱ Adaptive check_interval = 8105 (10×τ_late=8105)
+Sampling time: 00:00:49
+
+🔍 Checkpoint @ 41502 samples (elapsed 0h 4m)
+  τ₀․₅=740.6, τ₀․₃=643.7, rel_diff=13.1%
+  Length ratio (after burn=10τ): 46.04 vs requirement 70
+⏱ Adaptive check_interval = 7406 (10×τ_late=7406)
+Sampling time: 00:00:44
+
+🔍 Checkpoint @ 48908 samples (elapsed 0h 4m)
+  τ₀․₅=882.7, τ₀․₃=689.1, rel_diff=21.9%
+  Length ratio (after burn=10τ): 45.41 vs requirement 70
+⏱ Adaptive check_interval = 8827 (10×τ_late=8827)
+Sampling time: 00:00:53
+
+🔍 Checkpoint @ 57735 samples (elapsed 0h 5m)
+  τ₀․₅=842.0, τ₀․₃=739.8, rel_diff=12.1%
+  Length ratio (after burn=10τ): 58.57 vs requirement 70
+⏱ Adaptive check_interval = 8420 (10×τ_late=8420)
+Sampling time: 00:00:50
+
+🔍 Checkpoint @ 66155 samples (elapsed 0h 6m)
+  τ₀․₅=940.7, τ₀․₃=993.6, rel_diff=5.3%
+  Length ratio (after burn=10τ): 56.58 vs requirement 70
+⏱ Adaptive check_interval = 9936 (10×τ_late=9936)
+Sampling time: 00:00:59
+
+🔍 Checkpoint @ 76091 samples (elapsed 0h 7m)
+  τ₀․₅=1173.4, τ₀․₃=1138.1, rel_diff=3.0%
+  Length ratio (after burn=10τ): 54.85 vs requirement 70
+⏱ Adaptive check_interval = 11734 (10×τ_late=11734)
+Sampling time: 00:01:11
+
+🔍 Checkpoint @ 87825 samples (elapsed 0h 8m)
+  τ₀․₅=1220.8, τ₀․₃=1129.0, rel_diff=7.5%
+  Length ratio (after burn=10τ): 61.94 vs requirement 70
+⏱ Adaptive check_interval = 12207 (10×τ_late=12208)
+Sampling time: 00:01:13
+
+🔍 Checkpoint @ 100032 samples (elapsed 0h 10m)
+  τ₀․₅=1315.3, τ₀․₃=1280.9, rel_diff=2.6%
+  Length ratio (after burn=10τ): 66.05 vs requirement 70
+⏱ Adaptive check_interval = 13152 (10×τ_late=13153)
+Sampling time: 00:01:19
+
+🔍 Checkpoint @ 113184 samples (elapsed 0h 11m)
+  τ₀․₅=1432.3, τ₀․₃=1157.3, rel_diff=19.2%
+  Length ratio (after burn=10τ): 69.02 vs requirement 70
+⏱ Adaptive check_interval = 14322 (10×τ_late=14323)
+Sampling time: 00:01:26
+
+🔍 Checkpoint @ 127506 samples (elapsed 0h 12m)
+  τ₀․₅=1670.4, τ₀․₃=1433.6, rel_diff=14.2%
+  Length ratio (after burn=10τ): 66.33 vs requirement 70
+⏱ Adaptive check_interval = 16703 (10×τ_late=16704)
+Sampling time: 00:01:41
+
+🔍 Checkpoint @ 144209 samples (elapsed 0h 14m)
+  τ₀․₅=1621.7, τ₀․₃=1382.6, rel_diff=14.7%
+  Length ratio (after burn=10τ): 78.93 vs requirement 70
+⏱ Adaptive check_interval = 16216 (10×τ_late=16217)
+Sampling time: 00:01:38
+
+🔍 Checkpoint @ 160425 samples (elapsed 0h 16m)
+  τ₀․₅=1581.3, τ₀․₃=1342.2, rel_diff=15.1%
+  Length ratio (after burn=10τ): 91.45 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:16:24
+📏 τ₀․₅=1581.3, τ₀․₃=1342.2, τ_late=1581.3 → burn-in=15812
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20261_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_20261_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_20261_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 18170
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        18.1939    28.1939
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> No default Vrot prior available.
+Running a test with 3000 samples...
+acceptance ratio:
+	0.18 0.19 0.22 0.18 0.18 0.20 0.21 0.18 0.21 
+	0.20 0.21 0.19 0.19 0.17 0.21 0.22 0.19 0.21 
+	0.15 0.21 0.18 0.22 0.21 0.20 0.20 0.15 0.20 
+	0.14 0.20 0.21 
+n_steps/60: 50.00
+autocorrelation time: [ 52 277 103 213 258  84 292  61]
+This test took 38.1147 seconds.
+Starting Time: 2026-06-14 08:37:06
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=392.9, τ₀․₃=231.2, rel_diff=41.2%
+  Length ratio (after burn=10τ): 15.45 vs requirement 70
+⏱ Adaptive check_interval = 3929 (10×τ_late=3929)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 13929 samples (elapsed 0h 1m)
+  τ₀․₅=477.3, τ₀․₃=357.6, rel_diff=25.1%
+  Length ratio (after burn=10τ): 19.18 vs requirement 70
+⏱ Adaptive check_interval = 4773 (10×τ_late=4773)
+Sampling time: 00:00:28
+
+🔍 Checkpoint @ 18702 samples (elapsed 0h 1m)
+  τ₀․₅=532.6, τ₀․₃=373.6, rel_diff=29.8%
+  Length ratio (after burn=10τ): 25.12 vs requirement 70
+⏱ Adaptive check_interval = 5325 (10×τ_late=5326)
+Sampling time: 00:00:31
+
+🔍 Checkpoint @ 24027 samples (elapsed 0h 2m)
+  τ₀․₅=601.0, τ₀․₃=463.5, rel_diff=22.9%
+  Length ratio (after burn=10τ): 29.98 vs requirement 70
+⏱ Adaptive check_interval = 6009 (10×τ_late=6010)
+Sampling time: 00:00:35
+
+🔍 Checkpoint @ 30036 samples (elapsed 0h 2m)
+  τ₀․₅=806.0, τ₀․₃=631.4, rel_diff=21.7%
+  Length ratio (after burn=10τ): 27.27 vs requirement 70
+⏱ Adaptive check_interval = 8060 (10×τ_late=8060)
+Sampling time: 00:00:47
+
+🔍 Checkpoint @ 38096 samples (elapsed 0h 3m)
+  τ₀․₅=924.0, τ₀․₃=656.0, rel_diff=29.0%
+  Length ratio (after burn=10τ): 31.23 vs requirement 70
+⏱ Adaptive check_interval = 9240 (10×τ_late=9240)
+Sampling time: 00:00:54
+
+🔍 Checkpoint @ 47336 samples (elapsed 0h 4m)
+  τ₀․₅=1043.5, τ₀․₃=740.1, rel_diff=29.1%
+  Length ratio (after burn=10τ): 35.36 vs requirement 70
+⏱ Adaptive check_interval = 10434 (10×τ_late=10435)
+Sampling time: 00:01:01
+
+🔍 Checkpoint @ 57770 samples (elapsed 0h 5m)
+  τ₀․₅=1008.9, τ₀․₃=742.1, rel_diff=26.4%
+  Length ratio (after burn=10τ): 47.26 vs requirement 70
+⏱ Adaptive check_interval = 10089 (10×τ_late=10089)
+Sampling time: 00:01:00
+
+🔍 Checkpoint @ 67859 samples (elapsed 0h 6m)
+  τ₀․₅=1187.2, τ₀․₃=632.0, rel_diff=46.8%
+  Length ratio (after burn=10τ): 47.16 vs requirement 70
+⏱ Adaptive check_interval = 11872 (10×τ_late=11872)
+Sampling time: 00:01:11
+
+🔍 Checkpoint @ 79731 samples (elapsed 0h 7m)
+  τ₀․₅=1021.6, τ₀․₃=604.1, rel_diff=40.9%
+  Length ratio (after burn=10τ): 68.05 vs requirement 70
+⏱ Adaptive check_interval = 10215 (10×τ_late=10216)
+Sampling time: 00:01:00
+
+🔍 Checkpoint @ 89946 samples (elapsed 0h 8m)
+  τ₀․₅=904.1, τ₀․₃=676.1, rel_diff=25.2%
+  Length ratio (after burn=10τ): 89.48 vs requirement 70
+⏱ Adaptive check_interval = 9041 (10×τ_late=9041)
+Sampling time: 00:00:53
+
+🔍 Checkpoint @ 98987 samples (elapsed 0h 9m)
+  τ₀․₅=921.0, τ₀․₃=870.8, rel_diff=5.5%
+  Length ratio (after burn=10τ): 97.47 vs requirement 70
+⏱ Adaptive check_interval = 9210 (10×τ_late=9210)
+Sampling time: 00:00:54
+
+🔍 Checkpoint @ 108197 samples (elapsed 0h 10m)
+  τ₀․₅=1284.4, τ₀․₃=1198.3, rel_diff=6.7%
+  Length ratio (after burn=10τ): 74.24 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:10:49
+📏 τ₀․₅=1284.4, τ₀․₃=1198.3, τ_late=1284.4 → burn-in=12843
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_18170_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_18170_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_18170_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 18735
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax        16.8567    26.8567
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.22 0.20 0.21 0.09 0.21 0.21 0.19 0.22 0.19 
+	0.19 0.19 0.19 0.21 0.20 0.23 0.19 0.17 0.20 
+	0.18 0.19 0.22 0.19 0.21 0.20 0.19 0.20 0.19 
+	0.18 0.21 0.18 
+n_steps/60: 50.00
+autocorrelation time: [ 90 253 119 184 226 102 266  77]
+This test took 38.4868 seconds.
+Starting Time: 2026-06-14 08:50:31
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=283.1, τ₀․₃=184.8, rel_diff=34.7%
+  Length ratio (after burn=10τ): 25.33 vs requirement 70
+⏱ Adaptive check_interval = 2830 (10×τ_late=2831)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 12830 samples (elapsed 0h 1m)
+  τ₀․₅=243.8, τ₀․₃=195.4, rel_diff=19.8%
+  Length ratio (after burn=10τ): 42.64 vs requirement 70
+⏱ Adaptive check_interval = 2437 (10×τ_late=2438)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 15267 samples (elapsed 0h 1m)
+  τ₀․₅=282.1, τ₀․₃=238.1, rel_diff=15.6%
+  Length ratio (after burn=10τ): 44.12 vs requirement 70
+⏱ Adaptive check_interval = 2821 (10×τ_late=2821)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 18088 samples (elapsed 0h 1m)
+  τ₀․₅=323.6, τ₀․₃=290.0, rel_diff=10.4%
+  Length ratio (after burn=10τ): 45.90 vs requirement 70
+⏱ Adaptive check_interval = 3235 (10×τ_late=3236)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 21323 samples (elapsed 0h 2m)
+  τ₀․₅=364.9, τ₀․₃=319.0, rel_diff=12.6%
+  Length ratio (after burn=10τ): 48.44 vs requirement 70
+⏱ Adaptive check_interval = 3648 (10×τ_late=3649)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 24971 samples (elapsed 0h 2m)
+  τ₀․₅=416.7, τ₀․₃=369.7, rel_diff=11.3%
+  Length ratio (after burn=10τ): 49.93 vs requirement 70
+⏱ Adaptive check_interval = 4166 (10×τ_late=4167)
+Sampling time: 00:00:25
+
+🔍 Checkpoint @ 29137 samples (elapsed 0h 2m)
+  τ₀․₅=477.2, τ₀․₃=413.8, rel_diff=13.3%
+  Length ratio (after burn=10τ): 51.06 vs requirement 70
+⏱ Adaptive check_interval = 4771 (10×τ_late=4772)
+Sampling time: 00:00:28
+
+🔍 Checkpoint @ 33908 samples (elapsed 0h 3m)
+  τ₀․₅=483.0, τ₀․₃=418.9, rel_diff=13.3%
+  Length ratio (after burn=10τ): 60.20 vs requirement 70
+⏱ Adaptive check_interval = 4830 (10×τ_late=4830)
+Sampling time: 00:00:29
+
+🔍 Checkpoint @ 38738 samples (elapsed 0h 3m)
+  τ₀․₅=479.7, τ₀․₃=336.1, rel_diff=29.9%
+  Length ratio (after burn=10τ): 70.76 vs requirement 70
+⏱ Adaptive check_interval = 4796 (10×τ_late=4797)
+Sampling time: 00:00:28
+
+🔍 Checkpoint @ 43534 samples (elapsed 0h 4m)
+  τ₀․₅=533.6, τ₀․₃=437.5, rel_diff=18.0%
+  Length ratio (after burn=10τ): 71.59 vs requirement 70
+⏱ Adaptive check_interval = 5336 (10×τ_late=5336)
+Sampling time: 00:00:32
+
+🔍 Checkpoint @ 48870 samples (elapsed 0h 4m)
+  τ₀․₅=510.0, τ₀․₃=410.4, rel_diff=19.5%
+  Length ratio (after burn=10τ): 85.83 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:04:58
+📏 τ₀․₅=510.0, τ₀․₃=410.4, τ_late=510.0 → burn-in=5099
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_18735_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_18735_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.09±0.079)/target_HIP_18735_Hyades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+###############################################################################
+******************************* Praesepe *************************************
+###############################################################################
+>>>>>>>>>> Now working on Target: HIP 42993
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.6179    10.6179
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.32 0.36 0.36 0.36 0.35 0.34 0.36 0.37 0.34 
+	0.34 0.34 0.35 0.37 0.36 0.37 0.36 0.33 0.35 
+	0.37 0.35 0.36 0.33 0.34 0.35 0.36 0.35 0.35 
+	0.36 0.35 0.37 
+n_steps/60: 50.00
+autocorrelation time: [ 65 112 173 160  66  69  97  64]
+This test took 38.3239 seconds.
+Starting Time: 2026-06-14 08:57:19
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=121.6, τ₀․₃=113.4, rel_diff=6.7%
+  Length ratio (after burn=10τ): 72.27 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1216)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=137.2, τ₀․₃=126.4, rel_diff=7.9%
+  Length ratio (after burn=10τ): 77.47 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:13
+📏 τ₀․₅=137.2, τ₀․₃=126.4, τ_late=137.2 → burn-in=1371
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42993_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42993_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42993_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 67710
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.1137    10.1137
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.22 0.23 0.25 0.25 0.23 0.21 0.24 0.18 0.26 
+	0.22 0.15 0.24 0.23 0.22 0.24 0.25 0.22 0.24 
+	0.21 0.21 0.25 0.22 0.23 0.26 0.24 0.25 0.24 
+	0.21 0.25 0.23 
+n_steps/60: 50.00
+autocorrelation time: [106 229  82 165 186  97 103 103]
+This test took 38.7844 seconds.
+Starting Time: 2026-06-14 08:59:50
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=214.3, τ₀․₃=183.4, rel_diff=14.4%
+  Length ratio (after burn=10τ): 36.66 vs requirement 70
+⏱ Adaptive check_interval = 2143 (10×τ_late=2143)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 12143 samples (elapsed 0h 1m)
+  τ₀․₅=254.1, τ₀․₃=203.2, rel_diff=20.0%
+  Length ratio (after burn=10τ): 37.79 vs requirement 70
+⏱ Adaptive check_interval = 2541 (10×τ_late=2541)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 14684 samples (elapsed 0h 1m)
+  τ₀․₅=287.4, τ₀․₃=221.4, rel_diff=23.0%
+  Length ratio (after burn=10τ): 41.09 vs requirement 70
+⏱ Adaptive check_interval = 2874 (10×τ_late=2874)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 17558 samples (elapsed 0h 1m)
+  τ₀․₅=289.2, τ₀․₃=202.1, rel_diff=30.1%
+  Length ratio (after burn=10τ): 50.72 vs requirement 70
+⏱ Adaptive check_interval = 2891 (10×τ_late=2892)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 20449 samples (elapsed 0h 2m)
+  τ₀․₅=297.4, τ₀․₃=235.5, rel_diff=20.8%
+  Length ratio (after burn=10τ): 58.76 vs requirement 70
+⏱ Adaptive check_interval = 2974 (10×τ_late=2974)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 23423 samples (elapsed 0h 2m)
+  τ₀․₅=276.6, τ₀․₃=239.3, rel_diff=13.5%
+  Length ratio (after burn=10τ): 74.68 vs requirement 70
+⏱ Adaptive check_interval = 2766 (10×τ_late=2766)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 26189 samples (elapsed 0h 2m)
+  τ₀․₅=264.1, τ₀․₃=224.7, rel_diff=14.9%
+  Length ratio (after burn=10τ): 89.17 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:02:40
+📏 τ₀․₅=264.1, τ₀․₃=224.7, τ_late=264.1 → burn-in=2640
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_67710_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_67710_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HD_67710_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42523
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.3784    10.3784
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.35-2.85 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.21 0.21 0.21 0.22 0.24 0.22 0.22 0.19 0.24 
+	0.23 0.22 0.22 0.20 0.23 0.22 0.22 0.21 0.21 
+	0.24 0.22 0.23 0.22 0.23 0.23 0.19 0.21 0.21 
+	0.21 0.23 0.21 
+n_steps/60: 50.00
+autocorrelation time: [ 82 136 166 151 151  75 227  83]
+This test took 38.3575 seconds.
+Starting Time: 2026-06-14 09:04:01
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=217.0, τ₀․₃=185.7, rel_diff=14.4%
+  Length ratio (after burn=10τ): 36.08 vs requirement 70
+⏱ Adaptive check_interval = 2170 (10×τ_late=2170)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 12170 samples (elapsed 0h 1m)
+  τ₀․₅=223.2, τ₀․₃=172.5, rel_diff=22.7%
+  Length ratio (after burn=10τ): 44.52 vs requirement 70
+⏱ Adaptive check_interval = 2232 (10×τ_late=2232)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 14402 samples (elapsed 0h 1m)
+  τ₀․₅=234.1, τ₀․₃=167.8, rel_diff=28.3%
+  Length ratio (after burn=10τ): 51.52 vs requirement 70
+⏱ Adaptive check_interval = 2341 (10×τ_late=2341)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 16743 samples (elapsed 0h 1m)
+  τ₀․₅=241.1, τ₀․₃=175.5, rel_diff=27.2%
+  Length ratio (after burn=10τ): 59.45 vs requirement 70
+⏱ Adaptive check_interval = 2410 (10×τ_late=2411)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 19153 samples (elapsed 0h 1m)
+  τ₀․₅=238.0, τ₀․₃=206.2, rel_diff=13.4%
+  Length ratio (after burn=10τ): 70.48 vs requirement 70
+⏱ Adaptive check_interval = 2379 (10×τ_late=2380)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 21532 samples (elapsed 0h 2m)
+  τ₀․₅=226.4, τ₀․₃=205.0, rel_diff=9.5%
+  Length ratio (after burn=10τ): 85.10 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:02:11
+📏 τ₀․₅=226.4, τ₀․₃=205.0, τ_late=226.4 → burn-in=2264
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42523_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42523_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42523_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42164
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.5940    10.5940
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.90-2.30 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.21 0.25 0.22 0.26 0.23 0.25 0.23 0.25 0.26 
+	0.24 0.23 0.19 0.26 0.23 0.24 0.23 0.26 0.28 
+	0.24 0.23 0.24 0.23 0.24 0.24 0.24 0.25 0.26 
+	0.24 0.24 0.25 
+n_steps/60: 50.00
+autocorrelation time: [ 95 216 112 179 264  75 264  96]
+This test took 38.4144 seconds.
+Starting Time: 2026-06-14 09:07:38
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=226.9, τ₀․₃=184.4, rel_diff=18.7%
+  Length ratio (after burn=10τ): 34.08 vs requirement 70
+⏱ Adaptive check_interval = 2268 (10×τ_late=2269)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 12268 samples (elapsed 0h 1m)
+  τ₀․₅=258.8, τ₀․₃=207.0, rel_diff=20.0%
+  Length ratio (after burn=10τ): 37.41 vs requirement 70
+⏱ Adaptive check_interval = 2587 (10×τ_late=2588)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 14855 samples (elapsed 0h 1m)
+  τ₀․₅=293.6, τ₀․₃=238.0, rel_diff=18.9%
+  Length ratio (after burn=10τ): 40.60 vs requirement 70
+⏱ Adaptive check_interval = 2935 (10×τ_late=2936)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 17790 samples (elapsed 0h 1m)
+  τ₀․₅=279.0, τ₀․₃=233.4, rel_diff=16.3%
+  Length ratio (after burn=10τ): 53.77 vs requirement 70
+⏱ Adaptive check_interval = 2789 (10×τ_late=2790)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 20579 samples (elapsed 0h 2m)
+  τ₀․₅=291.2, τ₀․₃=247.7, rel_diff=14.9%
+  Length ratio (after burn=10τ): 60.67 vs requirement 70
+⏱ Adaptive check_interval = 2912 (10×τ_late=2912)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 23491 samples (elapsed 0h 2m)
+  τ₀․₅=319.5, τ₀․₃=282.5, rel_diff=11.6%
+  Length ratio (after burn=10τ): 63.52 vs requirement 70
+⏱ Adaptive check_interval = 3195 (10×τ_late=3195)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 26686 samples (elapsed 0h 2m)
+  τ₀․₅=353.8, τ₀․₃=342.5, rel_diff=3.2%
+  Length ratio (after burn=10τ): 65.43 vs requirement 70
+⏱ Adaptive check_interval = 3537 (10×τ_late=3538)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 30223 samples (elapsed 0h 3m)
+  τ₀․₅=360.4, τ₀․₃=341.6, rel_diff=5.2%
+  Length ratio (after burn=10τ): 73.86 vs requirement 70
+⏱ Adaptive check_interval = 3603 (10×τ_late=3604)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 33826 samples (elapsed 0h 3m)
+  τ₀․₅=425.3, τ₀․₃=330.2, rel_diff=22.4%
+  Length ratio (after burn=10τ): 69.53 vs requirement 70
+⏱ Adaptive check_interval = 4253 (10×τ_late=4253)
+Sampling time: 00:00:25
+
+🔍 Checkpoint @ 38079 samples (elapsed 0h 3m)
+  τ₀․₅=444.4, τ₀․₃=362.2, rel_diff=18.5%
+  Length ratio (after burn=10τ): 75.70 vs requirement 70
+⏱ Adaptive check_interval = 4443 (10×τ_late=4444)
+Sampling time: 00:00:26
+
+🔍 Checkpoint @ 42522 samples (elapsed 0h 4m)
+  τ₀․₅=416.8, τ₀․₃=361.8, rel_diff=13.2%
+  Length ratio (after burn=10τ): 92.03 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:04:20
+📏 τ₀․₅=416.8, τ₀․₃=361.8, τ_late=416.8 → burn-in=4167
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42164_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42164_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42164_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 73818
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4055    10.4055
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.28 0.29 0.29 0.27 0.27 0.30 0.29 0.28 0.25 
+	0.29 0.27 0.28 0.27 0.27 0.29 0.28 0.24 0.28 
+	0.29 0.28 0.26 0.27 0.28 0.29 0.26 0.24 0.28 
+	0.26 0.27 0.29 
+n_steps/60: 50.00
+autocorrelation time: [ 86 173  90 105 103  75 117  86]
+This test took 39.1354 seconds.
+Starting Time: 2026-06-14 09:13:44
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=88.5, τ₀․₃=81.2, rel_diff=8.3%
+  Length ratio (after burn=10τ): 102.99 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=885)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=93.7, τ₀․₃=85.7, rel_diff=8.5%
+  Length ratio (after burn=10τ): 118.14 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:12
+📏 τ₀․₅=93.7, τ₀․₃=85.7, τ_late=93.7 → burn-in=936
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73818_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73818_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HD_73818_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 43050
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4679    10.4679
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.25 0.25 0.25 0.28 0.24 0.25 0.26 0.26 0.25 
+	0.24 0.26 0.26 0.25 0.24 0.15 0.25 0.25 0.23 
+	0.27 0.24 0.26 0.27 0.25 0.24 0.26 0.23 0.27 
+	0.24 0.26 0.25 
+n_steps/60: 50.00
+autocorrelation time: [ 92 232 238 116 225  86 347  94]
+This test took 38.3312 seconds.
+Starting Time: 2026-06-14 09:16:14
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=222.2, τ₀․₃=182.4, rel_diff=17.9%
+  Length ratio (after burn=10τ): 35.01 vs requirement 70
+⏱ Adaptive check_interval = 2221 (10×τ_late=2222)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 12221 samples (elapsed 0h 1m)
+  τ₀․₅=352.5, τ₀․₃=228.5, rel_diff=35.2%
+  Length ratio (after burn=10τ): 24.67 vs requirement 70
+⏱ Adaptive check_interval = 3524 (10×τ_late=3525)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 15745 samples (elapsed 0h 1m)
+  τ₀․₅=374.0, τ₀․₃=248.6, rel_diff=33.5%
+  Length ratio (after burn=10τ): 32.11 vs requirement 70
+⏱ Adaptive check_interval = 3739 (10×τ_late=3740)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 19484 samples (elapsed 0h 1m)
+  τ₀․₅=418.0, τ₀․₃=257.3, rel_diff=38.4%
+  Length ratio (after burn=10τ): 36.62 vs requirement 70
+⏱ Adaptive check_interval = 4179 (10×τ_late=4180)
+Sampling time: 00:00:25
+
+🔍 Checkpoint @ 23663 samples (elapsed 0h 2m)
+  τ₀․₅=356.2, τ₀․₃=308.0, rel_diff=13.5%
+  Length ratio (after burn=10τ): 56.43 vs requirement 70
+⏱ Adaptive check_interval = 3562 (10×τ_late=3562)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 27225 samples (elapsed 0h 2m)
+  τ₀․₅=346.1, τ₀․₃=293.3, rel_diff=15.3%
+  Length ratio (after burn=10τ): 68.66 vs requirement 70
+⏱ Adaptive check_interval = 3461 (10×τ_late=3461)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 30686 samples (elapsed 0h 3m)
+  τ₀․₅=362.8, τ₀․₃=224.6, rel_diff=38.1%
+  Length ratio (after burn=10τ): 74.58 vs requirement 70
+⏱ Adaptive check_interval = 3628 (10×τ_late=3628)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 34314 samples (elapsed 0h 3m)
+  τ₀․₅=366.5, τ₀․₃=266.3, rel_diff=27.3%
+  Length ratio (after burn=10τ): 83.63 vs requirement 70
+⏱ Adaptive check_interval = 3664 (10×τ_late=3665)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 37978 samples (elapsed 0h 3m)
+  τ₀․₅=492.0, τ₀․₃=433.3, rel_diff=11.9%
+  Length ratio (after burn=10τ): 67.19 vs requirement 70
+⏱ Adaptive check_interval = 4920 (10×τ_late=4920)
+Sampling time: 00:00:29
+
+🔍 Checkpoint @ 42898 samples (elapsed 0h 4m)
+  τ₀․₅=602.4, τ₀․₃=520.9, rel_diff=13.5%
+  Length ratio (after burn=10τ): 61.22 vs requirement 70
+⏱ Adaptive check_interval = 6023 (10×τ_late=6024)
+Sampling time: 00:00:36
+
+🔍 Checkpoint @ 48921 samples (elapsed 0h 5m)
+  τ₀․₅=599.1, τ₀․₃=565.0, rel_diff=5.7%
+  Length ratio (after burn=10τ): 71.66 vs requirement 70
+⏱ Adaptive check_interval = 5990 (10×τ_late=5991)
+Sampling time: 00:00:36
+
+🔍 Checkpoint @ 54911 samples (elapsed 0h 5m)
+  τ₀․₅=634.3, τ₀․₃=514.4, rel_diff=18.9%
+  Length ratio (after burn=10τ): 76.57 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:05:38
+📏 τ₀․₅=634.3, τ₀․₃=514.4, τ_late=634.3 → burn-in=6343
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_43050_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_43050_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_43050_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42578
+Loaded u-regularized grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_variable_list_regular: ['u', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+u_grid shape: (1392,)
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+read_all_at_once: True
+save_float32: True
+u_save_range: [0.0, 1.0]
+u_grid_was_cropped: False
+n_u_original: 1392
+n_u_saved: 1392
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0937    13.9992
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.3560    10.3560
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.20-2.60 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.21 0.24 0.24 0.26 0.23 0.24 0.20 0.24 0.20 
+	0.23 0.24 0.25 0.23 0.25 0.23 0.23 0.22 0.24 
+	0.24 0.22 0.24 0.24 0.25 0.25 0.22 0.25 0.22 
+	0.21 0.26 0.26 
+n_steps/60: 50.00
+autocorrelation time: [ 85 102  82 178 195  96 167 110]
+This test took 40.1903 seconds.
+Starting Time: 2026-06-14 09:24:01
+🔄 Starting initial sampling...
+Sampling time: 00:01:03
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=252.5, τ₀․₃=216.0, rel_diff=14.5%
+  Length ratio (after burn=10τ): 29.61 vs requirement 70
+⏱ Adaptive check_interval = 2524 (10×τ_late=2525)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 12524 samples (elapsed 0h 1m)
+  τ₀․₅=318.5, τ₀․₃=245.3, rel_diff=23.0%
+  Length ratio (after burn=10τ): 29.32 vs requirement 70
+⏱ Adaptive check_interval = 3185 (10×τ_late=3185)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 15709 samples (elapsed 0h 1m)
+  τ₀․₅=381.5, τ₀․₃=269.8, rel_diff=29.3%
+  Length ratio (after burn=10τ): 31.18 vs requirement 70
+⏱ Adaptive check_interval = 3814 (10×τ_late=3815)
+Sampling time: 00:00:24
+
+🔍 Checkpoint @ 19523 samples (elapsed 0h 2m)
+  τ₀․₅=353.3, τ₀․₃=263.6, rel_diff=25.4%
+  Length ratio (after burn=10τ): 45.25 vs requirement 70
+⏱ Adaptive check_interval = 3533 (10×τ_late=3533)
+Sampling time: 00:00:22
+
+🔍 Checkpoint @ 23056 samples (elapsed 0h 2m)
+  τ₀․₅=472.2, τ₀․₃=339.3, rel_diff=28.1%
+  Length ratio (after burn=10τ): 38.83 vs requirement 70
+⏱ Adaptive check_interval = 4721 (10×τ_late=4722)
+Sampling time: 00:00:29
+
+🔍 Checkpoint @ 27777 samples (elapsed 0h 2m)
+  τ₀․₅=493.0, τ₀․₃=412.8, rel_diff=16.3%
+  Length ratio (after burn=10τ): 46.35 vs requirement 70
+⏱ Adaptive check_interval = 4929 (10×τ_late=4930)
+Sampling time: 00:00:31
+
+🔍 Checkpoint @ 32706 samples (elapsed 0h 3m)
+  τ₀․₅=515.0, τ₀․₃=425.5, rel_diff=17.4%
+  Length ratio (after burn=10τ): 53.51 vs requirement 70
+⏱ Adaptive check_interval = 5150 (10×τ_late=5150)
+Sampling time: 00:00:32
+
+🔍 Checkpoint @ 37856 samples (elapsed 0h 4m)
+  τ₀․₅=550.0, τ₀․₃=486.7, rel_diff=11.5%
+  Length ratio (after burn=10τ): 58.82 vs requirement 70
+⏱ Adaptive check_interval = 5500 (10×τ_late=5500)
+Sampling time: 00:00:35
+
+🔍 Checkpoint @ 43356 samples (elapsed 0h 4m)
+  τ₀․₅=565.8, τ₀․₃=424.9, rel_diff=24.9%
+  Length ratio (after burn=10τ): 66.63 vs requirement 70
+⏱ Adaptive check_interval = 5657 (10×τ_late=5658)
+Sampling time: 00:00:35
+
+🔍 Checkpoint @ 49013 samples (elapsed 0h 5m)
+  τ₀․₅=578.7, τ₀․₃=473.9, rel_diff=18.1%
+  Length ratio (after burn=10τ): 74.70 vs requirement 70
+⏱ Adaptive check_interval = 5786 (10×τ_late=5787)
+Sampling time: 00:00:36
+
+🔍 Checkpoint @ 54799 samples (elapsed 0h 5m)
+  τ₀․₅=580.6, τ₀․₃=531.9, rel_diff=8.4%
+  Length ratio (after burn=10τ): 84.38 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:05:50
+📏 τ₀․₅=580.6, τ₀․₃=531.9, τ_late=580.6 → burn-in=5806
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42578_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42578_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42578_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42766
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4556    10.4556
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.23 0.21 0.24 0.18 0.24 0.20 0.25 0.18 0.19 
+	0.19 0.21 0.23 0.21 0.22 0.22 0.22 0.24 0.22 
+	0.22 0.20 0.20 0.19 0.20 0.24 0.22 0.20 0.18 
+	0.23 0.21 0.23 
+n_steps/60: 50.00
+autocorrelation time: [ 83 201  94 166 198  60 239  73]
+This test took 38.7975 seconds.
+Starting Time: 2026-06-14 09:31:46
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=256.4, τ₀․₃=210.5, rel_diff=17.9%
+  Length ratio (after burn=10τ): 29.01 vs requirement 70
+⏱ Adaptive check_interval = 2563 (10×τ_late=2564)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 12563 samples (elapsed 0h 1m)
+  τ₀․₅=311.5, τ₀․₃=269.3, rel_diff=13.6%
+  Length ratio (after burn=10τ): 30.33 vs requirement 70
+⏱ Adaptive check_interval = 3115 (10×τ_late=3115)
+Sampling time: 00:00:18
+
+🔍 Checkpoint @ 15678 samples (elapsed 0h 1m)
+  τ₀․₅=341.2, τ₀․₃=289.6, rel_diff=15.1%
+  Length ratio (after burn=10τ): 35.95 vs requirement 70
+⏱ Adaptive check_interval = 3411 (10×τ_late=3412)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 19089 samples (elapsed 0h 1m)
+  τ₀․₅=394.4, τ₀․₃=344.3, rel_diff=12.7%
+  Length ratio (after burn=10τ): 38.40 vs requirement 70
+⏱ Adaptive check_interval = 3944 (10×τ_late=3944)
+Sampling time: 00:00:23
+
+🔍 Checkpoint @ 23033 samples (elapsed 0h 2m)
+  τ₀․₅=460.6, τ₀․₃=408.3, rel_diff=11.3%
+  Length ratio (after burn=10τ): 40.01 vs requirement 70
+⏱ Adaptive check_interval = 4605 (10×τ_late=4606)
+Sampling time: 00:00:27
+
+🔍 Checkpoint @ 27638 samples (elapsed 0h 2m)
+  τ₀․₅=566.9, τ₀․₃=487.7, rel_diff=14.0%
+  Length ratio (after burn=10τ): 38.76 vs requirement 70
+⏱ Adaptive check_interval = 5668 (10×τ_late=5669)
+Sampling time: 00:00:33
+
+🔍 Checkpoint @ 33306 samples (elapsed 0h 3m)
+  τ₀․₅=541.5, τ₀․₃=431.7, rel_diff=20.3%
+  Length ratio (after burn=10τ): 51.51 vs requirement 70
+⏱ Adaptive check_interval = 5415 (10×τ_late=5415)
+Sampling time: 00:00:32
+
+🔍 Checkpoint @ 38721 samples (elapsed 0h 3m)
+  τ₀․₅=566.6, τ₀․₃=369.5, rel_diff=34.8%
+  Length ratio (after burn=10τ): 58.34 vs requirement 70
+⏱ Adaptive check_interval = 5665 (10×τ_late=5666)
+Sampling time: 00:00:33
+
+🔍 Checkpoint @ 44386 samples (elapsed 0h 4m)
+  τ₀․₅=578.6, τ₀․₃=506.8, rel_diff=12.4%
+  Length ratio (after burn=10τ): 66.72 vs requirement 70
+⏱ Adaptive check_interval = 5785 (10×τ_late=5786)
+Sampling time: 00:00:34
+
+🔍 Checkpoint @ 50171 samples (elapsed 0h 5m)
+  τ₀․₅=636.4, τ₀․₃=544.6, rel_diff=14.4%
+  Length ratio (after burn=10τ): 68.84 vs requirement 70
+⏱ Adaptive check_interval = 6363 (10×τ_late=6364)
+Sampling time: 00:00:37
+
+🔍 Checkpoint @ 56534 samples (elapsed 0h 5m)
+  τ₀․₅=678.7, τ₀․₃=652.2, rel_diff=3.9%
+  Length ratio (after burn=10τ): 73.30 vs requirement 70
+⏱ Adaptive check_interval = 6787 (10×τ_late=6787)
+Sampling time: 00:00:40
+
+🔍 Checkpoint @ 63321 samples (elapsed 0h 6m)
+  τ₀․₅=664.6, τ₀․₃=523.0, rel_diff=21.3%
+  Length ratio (after burn=10τ): 85.28 vs requirement 70
+⏱ Adaptive check_interval = 6645 (10×τ_late=6646)
+Sampling time: 00:00:39
+
+🔍 Checkpoint @ 69966 samples (elapsed 0h 7m)
+  τ₀․₅=660.4, τ₀․₃=501.2, rel_diff=24.1%
+  Length ratio (after burn=10τ): 95.94 vs requirement 70
+⏱ Adaptive check_interval = 6604 (10×τ_late=6604)
+Sampling time: 00:00:39
+
+🔍 Checkpoint @ 76570 samples (elapsed 0h 7m)
+  τ₀․₅=703.2, τ₀․₃=487.0, rel_diff=30.7%
+  Length ratio (after burn=10τ): 98.88 vs requirement 70
+⏱ Adaptive check_interval = 7032 (10×τ_late=7032)
+Sampling time: 00:00:41
+
+🔍 Checkpoint @ 83602 samples (elapsed 0h 8m)
+  τ₀․₅=718.0, τ₀․₃=568.0, rel_diff=20.9%
+  Length ratio (after burn=10τ): 106.44 vs requirement 70
+⏱ Adaptive check_interval = 7179 (10×τ_late=7180)
+Sampling time: 00:00:42
+
+🔍 Checkpoint @ 90781 samples (elapsed 0h 9m)
+  τ₀․₅=718.7, τ₀․₃=690.9, rel_diff=3.9%
+  Length ratio (after burn=10τ): 116.32 vs requirement 70
+⏱ Adaptive check_interval = 7186 (10×τ_late=7187)
+Sampling time: 00:00:43
+
+🔍 Checkpoint @ 97967 samples (elapsed 0h 9m)
+  τ₀․₅=809.7, τ₀․₃=806.1, rel_diff=0.4%
+  Length ratio (after burn=10τ): 110.99 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:09:53
+📏 τ₀․₅=809.7, τ₀․₃=806.1, τ_late=809.7 → burn-in=8096
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42766_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42766_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42766_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 73449
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.3009    10.3009
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.90-2.30 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.25 0.25 0.25 0.26 0.25 0.26 0.27 0.25 0.29 
+	0.28 0.25 0.24 0.23 0.24 0.25 0.24 0.24 0.28 
+	0.28 0.24 0.27 0.25 0.25 0.23 0.26 0.25 0.28 
+	0.28 0.26 0.28 
+n_steps/60: 50.00
+autocorrelation time: [ 74 163  98 109 125  57 253  65]
+This test took 38.0999 seconds.
+Starting Time: 2026-06-14 09:44:11
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=149.8, τ₀․₃=128.0, rel_diff=14.5%
+  Length ratio (after burn=10τ): 56.75 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1498)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=160.8, τ₀․₃=145.0, rel_diff=9.8%
+  Length ratio (after burn=10τ): 64.64 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1608)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=158.1, τ₀․₃=142.1, rel_diff=10.1%
+  Length ratio (after burn=10τ): 78.56 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1581)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 16000 samples (elapsed 0h 1m)
+  τ₀․₅=163.3, τ₀․₃=142.1, rel_diff=13.0%
+  Length ratio (after burn=10τ): 87.97 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:35
+📏 τ₀․₅=163.3, τ₀․₃=142.1, τ_late=163.3 → burn-in=1633
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73449_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73449_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HD_73449_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42485
+Loaded u-regularized grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_variable_list_regular: ['u', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+u_grid shape: (1392,)
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+read_all_at_once: True
+save_float32: True
+u_save_range: [0.0, 1.0]
+u_grid_was_cropped: False
+n_u_original: 1392
+n_u_saved: 1392
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0937    13.9992
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4876    10.4876
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.20-2.60 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.26 0.28 0.28 0.26 0.28 0.24 0.29 0.27 0.27 
+	0.27 0.25 0.28 0.29 0.29 0.29 0.23 0.30 0.31 
+	0.26 0.29 0.28 0.27 0.26 0.28 0.29 0.30 0.28 
+	0.29 0.26 0.26 
+n_steps/60: 50.00
+autocorrelation time: [ 49 201 131 236 134  49 124  59]
+This test took 40.0700 seconds.
+Starting Time: 2026-06-14 09:47:20
+🔄 Starting initial sampling...
+Sampling time: 00:01:03
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=229.8, τ₀․₃=167.6, rel_diff=27.1%
+  Length ratio (after burn=10τ): 33.51 vs requirement 70
+⏱ Adaptive check_interval = 2298 (10×τ_late=2298)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 12298 samples (elapsed 0h 1m)
+  τ₀․₅=229.4, τ₀․₃=195.3, rel_diff=14.8%
+  Length ratio (after burn=10τ): 43.61 vs requirement 70
+⏱ Adaptive check_interval = 2293 (10×τ_late=2294)
+Sampling time: 00:00:14
+
+🔍 Checkpoint @ 14591 samples (elapsed 0h 1m)
+  τ₀․₅=238.0, τ₀․₃=216.8, rel_diff=8.9%
+  Length ratio (after burn=10τ): 51.32 vs requirement 70
+⏱ Adaptive check_interval = 2379 (10×τ_late=2380)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 16970 samples (elapsed 0h 1m)
+  τ₀․₅=236.6, τ₀․₃=214.1, rel_diff=9.5%
+  Length ratio (after burn=10τ): 61.74 vs requirement 70
+⏱ Adaptive check_interval = 2365 (10×τ_late=2366)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 19335 samples (elapsed 0h 2m)
+  τ₀․₅=257.5, τ₀․₃=248.4, rel_diff=3.5%
+  Length ratio (after burn=10τ): 65.09 vs requirement 70
+⏱ Adaptive check_interval = 2574 (10×τ_late=2575)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 21909 samples (elapsed 0h 2m)
+  τ₀․₅=270.2, τ₀․₃=258.7, rel_diff=4.3%
+  Length ratio (after burn=10τ): 71.07 vs requirement 70
+⏱ Adaptive check_interval = 2702 (10×τ_late=2702)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 24611 samples (elapsed 0h 2m)
+  τ₀․₅=287.4, τ₀․₃=267.8, rel_diff=6.8%
+  Length ratio (after burn=10τ): 75.62 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:02:37
+📏 τ₀․₅=287.4, τ₀․₃=267.8, τ_late=287.4 → burn-in=2874
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42485_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42485_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42485_Praesepe_PARSEC_DIRECT_u_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 73711
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4103    10.4103
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.90-2.30 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.26 0.25 0.24 0.25 0.26 0.24 0.27 0.26 0.26 
+	0.25 0.25 0.24 0.25 0.26 0.27 0.15 0.24 0.24 
+	0.26 0.24 0.28 0.25 0.26 0.25 0.28 0.25 0.27 
+	0.24 0.28 0.26 
+n_steps/60: 50.00
+autocorrelation time: [ 65 109  97 170 163  51 128  56]
+This test took 38.8030 seconds.
+Starting Time: 2026-06-14 09:51:28
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=278.0, τ₀․₃=189.4, rel_diff=31.9%
+  Length ratio (after burn=10τ): 25.98 vs requirement 70
+⏱ Adaptive check_interval = 2779 (10×τ_late=2780)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 12779 samples (elapsed 0h 1m)
+  τ₀․₅=288.9, τ₀․₃=229.9, rel_diff=20.4%
+  Length ratio (after burn=10τ): 34.23 vs requirement 70
+⏱ Adaptive check_interval = 2889 (10×τ_late=2889)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 15668 samples (elapsed 0h 1m)
+  τ₀․₅=328.7, τ₀․₃=209.5, rel_diff=36.3%
+  Length ratio (after burn=10τ): 37.66 vs requirement 70
+⏱ Adaptive check_interval = 3287 (10×τ_late=3287)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 18955 samples (elapsed 0h 1m)
+  τ₀․₅=299.4, τ₀․₃=283.3, rel_diff=5.4%
+  Length ratio (after burn=10τ): 53.31 vs requirement 70
+⏱ Adaptive check_interval = 2993 (10×τ_late=2994)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 21948 samples (elapsed 0h 2m)
+  τ₀․₅=353.8, τ₀․₃=284.1, rel_diff=19.7%
+  Length ratio (after burn=10τ): 52.03 vs requirement 70
+⏱ Adaptive check_interval = 3538 (10×τ_late=3538)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 25486 samples (elapsed 0h 2m)
+  τ₀․₅=364.6, τ₀․₃=284.9, rel_diff=21.9%
+  Length ratio (after burn=10τ): 59.90 vs requirement 70
+⏱ Adaptive check_interval = 3645 (10×τ_late=3646)
+Sampling time: 00:00:21
+
+🔍 Checkpoint @ 29131 samples (elapsed 0h 2m)
+  τ₀․₅=325.6, τ₀․₃=303.3, rel_diff=6.8%
+  Length ratio (after burn=10τ): 79.46 vs requirement 70
+⏱ Adaptive check_interval = 3256 (10×τ_late=3256)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 32387 samples (elapsed 0h 3m)
+  τ₀․₅=335.9, τ₀․₃=306.3, rel_diff=8.8%
+  Length ratio (after burn=10τ): 86.43 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:03:14
+📏 τ₀․₅=335.9, τ₀․₃=306.3, τ_late=335.9 → burn-in=3358
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73711_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_73711_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HD_73711_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 42952
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           8.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         0.4924    10.4924
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.60-2.00 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.22 0.26 0.26 0.26 0.24 0.20 0.25 0.22 0.28 
+	0.24 0.23 0.28 0.25 0.24 0.23 0.24 0.24 0.29 
+	0.25 0.23 0.23 0.22 0.27 0.25 0.24 0.24 0.28 
+	0.24 0.27 0.25 
+n_steps/60: 50.00
+autocorrelation time: [ 92 151 105 198 161  80 202  80]
+This test took 38.0996 seconds.
+Starting Time: 2026-06-14 09:56:17
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=284.9, τ₀․₃=208.9, rel_diff=26.7%
+  Length ratio (after burn=10τ): 25.11 vs requirement 70
+⏱ Adaptive check_interval = 2848 (10×τ_late=2849)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 12848 samples (elapsed 0h 1m)
+  τ₀․₅=295.7, τ₀․₃=240.6, rel_diff=18.7%
+  Length ratio (after burn=10τ): 33.45 vs requirement 70
+⏱ Adaptive check_interval = 2957 (10×τ_late=2957)
+Sampling time: 00:00:17
+
+🔍 Checkpoint @ 15805 samples (elapsed 0h 1m)
+  τ₀․₅=337.3, τ₀․₃=248.0, rel_diff=26.5%
+  Length ratio (after burn=10τ): 36.85 vs requirement 70
+⏱ Adaptive check_interval = 3373 (10×τ_late=3373)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 19178 samples (elapsed 0h 1m)
+  τ₀․₅=394.6, τ₀․₃=311.4, rel_diff=21.1%
+  Length ratio (after burn=10τ): 38.61 vs requirement 70
+⏱ Adaptive check_interval = 3945 (10×τ_late=3946)
+Sampling time: 00:00:23
+
+🔍 Checkpoint @ 23123 samples (elapsed 0h 2m)
+  τ₀․₅=417.9, τ₀․₃=322.5, rel_diff=22.8%
+  Length ratio (after burn=10τ): 45.34 vs requirement 70
+⏱ Adaptive check_interval = 4178 (10×τ_late=4179)
+Sampling time: 00:00:25
+
+🔍 Checkpoint @ 27301 samples (elapsed 0h 2m)
+  τ₀․₅=493.6, τ₀․₃=446.8, rel_diff=9.5%
+  Length ratio (after burn=10τ): 45.31 vs requirement 70
+⏱ Adaptive check_interval = 4935 (10×τ_late=4936)
+Sampling time: 00:00:29
+
+🔍 Checkpoint @ 32236 samples (elapsed 0h 3m)
+  τ₀․₅=492.8, τ₀․₃=416.5, rel_diff=15.5%
+  Length ratio (after burn=10τ): 55.41 vs requirement 70
+⏱ Adaptive check_interval = 4928 (10×τ_late=4928)
+Sampling time: 00:00:29
+
+🔍 Checkpoint @ 37164 samples (elapsed 0h 3m)
+  τ₀․₅=556.0, τ₀․₃=381.1, rel_diff=31.5%
+  Length ratio (after burn=10τ): 56.84 vs requirement 70
+⏱ Adaptive check_interval = 5559 (10×τ_late=5560)
+Sampling time: 00:00:33
+
+🔍 Checkpoint @ 42723 samples (elapsed 0h 4m)
+  τ₀․₅=659.7, τ₀․₃=485.1, rel_diff=26.5%
+  Length ratio (after burn=10τ): 54.76 vs requirement 70
+⏱ Adaptive check_interval = 6596 (10×τ_late=6597)
+Sampling time: 00:00:39
+
+🔍 Checkpoint @ 49319 samples (elapsed 0h 4m)
+  τ₀․₅=648.8, τ₀․₃=476.1, rel_diff=26.6%
+  Length ratio (after burn=10τ): 66.02 vs requirement 70
+⏱ Adaptive check_interval = 6487 (10×τ_late=6488)
+Sampling time: 00:00:38
+
+🔍 Checkpoint @ 55806 samples (elapsed 0h 5m)
+  τ₀․₅=663.2, τ₀․₃=601.0, rel_diff=9.4%
+  Length ratio (after burn=10τ): 74.15 vs requirement 70
+⏱ Adaptive check_interval = 6632 (10×τ_late=6632)
+Sampling time: 00:00:39
+
+🔍 Checkpoint @ 62438 samples (elapsed 0h 6m)
+  τ₀․₅=721.4, τ₀․₃=621.3, rel_diff=13.9%
+  Length ratio (after burn=10τ): 76.56 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:06:17
+📏 τ₀․₅=721.4, τ₀․₃=621.3, τ_late=721.4 → burn-in=7213
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42952_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_42952_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.14±0.093)/target_HIP_42952_Praesepe_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+###############################################################################
+******************************* Pleiades *************************************
+###############################################################################
+>>>>>>>>>> Now working on Target: HIP 17527
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.2222    12.2222
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 3.15-3.85 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.31 0.33 0.34 0.32 0.34 0.32 0.34 0.29 0.34 
+	0.32 0.33 0.31 0.34 0.34 0.34 0.32 0.32 0.32 
+	0.31 0.33 0.34 0.35 0.34 0.31 0.35 0.32 0.33 
+	0.33 0.28 0.35 
+n_steps/60: 50.00
+autocorrelation time: [ 71 114  56 108  88  28  70  26]
+This test took 38.4108 seconds.
+Starting Time: 2026-06-14 10:04:34
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=108.8, τ₀․₃=96.3, rel_diff=11.5%
+  Length ratio (after burn=10τ): 81.94 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1088)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=123.9, τ₀․₃=112.2, rel_diff=9.4%
+  Length ratio (after burn=10τ): 86.88 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:13
+📏 τ₀․₅=123.9, τ₀․₃=112.2, τ_late=123.9 → burn-in=1238
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17527_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17527_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17527_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17851
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.2414    12.2414
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 3.05-3.75 Msun
+Running a test with 3000 samples...
+WARNING:root:Too few points to create valid contours
+acceptance ratio:
+	0.27 0.27 0.24 0.26 0.24 0.24 0.24 0.29 0.28 
+	0.27 0.24 0.26 0.27 0.26 0.26 0.27 0.26 0.24 
+	0.28 0.27 0.26 0.19 0.25 0.20 0.27 0.21 0.26 
+	0.28 0.29 0.27 
+n_steps/60: 50.00
+autocorrelation time: [364 370 198  99 333  53 118  22]
+This test took 37.8108 seconds.
+Starting Time: 2026-06-14 10:07:03
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=95.4, τ₀․₃=94.3, rel_diff=1.2%
+  Length ratio (after burn=10τ): 94.78 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=954)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=100.2, τ₀․₃=90.5, rel_diff=9.6%
+  Length ratio (after burn=10τ): 109.78 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:11
+📏 τ₀․₅=100.2, τ₀․₃=90.5, τ_late=100.2 → burn-in=1001
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17851_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17851_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17851_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17776
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.6909    12.6909
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 3.15-3.85 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.33 0.33 0.32 0.29 0.32 0.31 0.34 0.32 0.28 
+	0.31 0.32 0.32 0.33 0.34 0.31 0.29 0.31 0.33 
+	0.33 0.31 0.32 0.32 0.32 0.30 0.31 0.33 0.32 
+	0.12 0.33 0.34 
+n_steps/60: 50.00
+autocorrelation time: [102 205  74  82  99  32 147  19]
+This test took 38.0156 seconds.
+Starting Time: 2026-06-14 10:09:30
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=113.8, τ₀․₃=98.2, rel_diff=13.7%
+  Length ratio (after burn=10τ): 77.89 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1138)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=135.4, τ₀․₃=108.7, rel_diff=19.7%
+  Length ratio (after burn=10τ): 78.60 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:12
+📏 τ₀․₅=135.4, τ₀․₃=108.7, τ_late=135.4 → burn-in=1354
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17776_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17776_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17776_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17579
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.3053    12.3053
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.65-3.35 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.29 0.27 0.30 0.30 0.27 0.28 0.28 0.28 0.27 
+	0.28 0.28 0.28 0.26 0.28 0.28 0.20 0.25 0.29 
+	0.30 0.29 0.27 0.27 0.27 0.08 0.31 0.29 0.28 
+	0.29 0.28 0.28 
+n_steps/60: 50.00
+autocorrelation time: [161 253  91 104 208  31 206  26]
+This test took 37.8830 seconds.
+Starting Time: 2026-06-14 10:11:59
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=163.4, τ₀․₃=148.3, rel_diff=9.2%
+  Length ratio (after burn=10τ): 51.21 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1634)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=196.4, τ₀․₃=166.5, rel_diff=15.2%
+  Length ratio (after burn=10τ): 51.11 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1964)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=226.8, τ₀․₃=195.0, rel_diff=14.0%
+  Length ratio (after burn=10τ): 51.73 vs requirement 70
+⏱ Adaptive check_interval = 2267 (10×τ_late=2268)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 16267 samples (elapsed 0h 1m)
+  τ₀․₅=269.9, τ₀․₃=221.1, rel_diff=18.1%
+  Length ratio (after burn=10τ): 50.26 vs requirement 70
+⏱ Adaptive check_interval = 2699 (10×τ_late=2699)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 18966 samples (elapsed 0h 1m)
+  τ₀․₅=255.4, τ₀․₃=194.8, rel_diff=23.7%
+  Length ratio (after burn=10τ): 64.28 vs requirement 70
+⏱ Adaptive check_interval = 2553 (10×τ_late=2554)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 21519 samples (elapsed 0h 2m)
+  τ₀․₅=271.6, τ₀․₃=221.6, rel_diff=18.4%
+  Length ratio (after burn=10τ): 69.24 vs requirement 70
+⏱ Adaptive check_interval = 2715 (10×τ_late=2716)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 24234 samples (elapsed 0h 2m)
+  τ₀․₅=263.0, τ₀․₃=216.7, rel_diff=17.6%
+  Length ratio (after burn=10τ): 82.13 vs requirement 70
+⏱ Adaptive check_interval = 2630 (10×τ_late=2630)
+Sampling time: 00:00:15
+
+🔍 Checkpoint @ 26864 samples (elapsed 0h 2m)
+  τ₀․₅=260.0, τ₀․₃=225.0, rel_diff=13.5%
+  Length ratio (after burn=10τ): 93.31 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:02:42
+📏 τ₀․₅=260.0, τ₀․₃=225.0, τ_late=260.0 → burn-in=2600
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17579_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17579_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17579_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17900
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.4625    12.4625
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.75-3.45 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.31 0.33 0.30 0.32 0.33 0.32 0.32 0.30 0.34 
+	0.33 0.32 0.33 0.30 0.32 0.32 0.30 0.31 0.33 
+	0.32 0.26 0.30 0.32 0.31 0.33 0.32 0.32 0.31 
+	0.31 0.30 0.32 
+n_steps/60: 50.00
+autocorrelation time: [ 47 105  61  68  97  28 105  30]
+This test took 38.1314 seconds.
+Starting Time: 2026-06-14 10:16:13
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=102.3, τ₀․₃=78.4, rel_diff=23.4%
+  Length ratio (after burn=10τ): 87.74 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1023)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=129.5, τ₀․₃=112.0, rel_diff=13.5%
+  Length ratio (after burn=10τ): 82.66 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1295)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=142.7, τ₀․₃=123.4, rel_diff=13.6%
+  Length ratio (after burn=10τ): 88.08 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:25
+📏 τ₀․₅=142.7, τ₀․₃=123.4, τ_late=142.7 → burn-in=1427
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17900_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17900_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17900_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17892
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.2959    12.2959
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.10-2.50 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.32 0.32 0.32 0.31 0.30 0.30 0.31 0.31 0.32 
+	0.30 0.31 0.31 0.32 0.33 0.32 0.31 0.28 0.31 
+	0.30 0.30 0.30 0.30 0.31 0.30 0.30 0.28 0.31 
+	0.32 0.29 0.32 
+n_steps/60: 50.00
+autocorrelation time: [ 40 126  72  93 116  21  80  20]
+This test took 39.0161 seconds.
+Starting Time: 2026-06-14 10:18:59
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=134.4, τ₀․₃=114.6, rel_diff=14.7%
+  Length ratio (after burn=10τ): 64.41 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1344)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=148.7, τ₀․₃=122.6, rel_diff=17.5%
+  Length ratio (after burn=10τ): 70.72 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1487)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=152.4, τ₀․₃=127.6, rel_diff=16.3%
+  Length ratio (after burn=10τ): 81.84 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:24
+📏 τ₀․₅=152.4, τ₀․₃=127.6, τ_late=152.4 → burn-in=1524
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17892_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17892_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17892_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17862
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.1894    12.1894
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.45-2.95 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.29 0.31 0.30 0.31 0.28 0.27 0.29 0.29 0.33 
+	0.29 0.27 0.30 0.30 0.29 0.30 0.30 0.29 0.30 
+	0.30 0.28 0.27 0.30 0.28 0.27 0.32 0.29 0.30 
+	0.32 0.25 0.30 
+n_steps/60: 50.00
+autocorrelation time: [ 59 141  60  96 100  23  69  25]
+This test took 38.3523 seconds.
+Starting Time: 2026-06-14 10:21:42
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=130.1, τ₀․₃=102.6, rel_diff=21.2%
+  Length ratio (after burn=10τ): 66.84 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1301)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=126.6, τ₀․₃=113.8, rel_diff=10.1%
+  Length ratio (after burn=10τ): 84.82 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1266)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=128.6, τ₀․₃=119.3, rel_diff=7.2%
+  Length ratio (after burn=10τ): 98.88 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:25
+📏 τ₀․₅=128.6, τ₀․₃=119.3, τ_late=128.6 → burn-in=1285
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17862_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17862_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17862_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17588
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.4231    12.4231
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.55-3.05 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.30 0.35 0.33 0.33 0.34 0.36 0.34 0.34 0.34 
+	0.31 0.32 0.34 0.33 0.31 0.35 0.34 0.34 0.35 
+	0.31 0.30 0.34 0.34 0.34 0.33 0.33 0.30 0.33 
+	0.33 0.34 0.36 
+n_steps/60: 50.00
+autocorrelation time: [ 67 207  57 145  98  18 161  22]
+This test took 38.1262 seconds.
+Starting Time: 2026-06-14 10:24:27
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=130.3, τ₀․₃=98.1, rel_diff=24.7%
+  Length ratio (after burn=10τ): 66.74 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1303)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=120.5, τ₀․₃=92.7, rel_diff=23.0%
+  Length ratio (after burn=10τ): 89.62 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1205)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=115.3, τ₀․₃=107.7, rel_diff=6.6%
+  Length ratio (after burn=10τ): 111.41 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1153)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 16000 samples (elapsed 0h 1m)
+  τ₀․₅=131.8, τ₀․₃=116.3, rel_diff=11.7%
+  Length ratio (after burn=10τ): 111.39 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:38
+📏 τ₀․₅=131.8, τ₀․₃=116.3, τ_late=131.8 → burn-in=1318
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17588_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17588_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17588_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 23629
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.1999    12.1999
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.45-2.95 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.21 0.24 0.15 0.23 0.17 0.18 0.17 0.22 0.19 
+	0.24 0.25 0.23 0.21 0.23 0.24 0.21 0.19 0.22 
+	0.25 0.24 0.23 0.23 0.22 0.23 0.22 0.21 0.11 
+	0.23 0.24 0.24 
+n_steps/60: 50.00
+autocorrelation time: [334 368 116 157 183  25 234  16]
+This test took 38.3045 seconds.
+Starting Time: 2026-06-14 10:27:28
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=193.3, τ₀․₃=147.4, rel_diff=23.7%
+  Length ratio (after burn=10τ): 41.73 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1933)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=188.1, τ₀․₃=161.7, rel_diff=14.0%
+  Length ratio (after burn=10τ): 53.78 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1881)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=202.3, τ₀․₃=169.8, rel_diff=16.1%
+  Length ratio (after burn=10τ): 59.20 vs requirement 70
+⏱ Adaptive check_interval = 2023 (10×τ_late=2023)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 16023 samples (elapsed 0h 1m)
+  τ₀․₅=207.2, τ₀․₃=192.8, rel_diff=7.0%
+  Length ratio (after burn=10τ): 67.32 vs requirement 70
+⏱ Adaptive check_interval = 2072 (10×τ_late=2072)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 18095 samples (elapsed 0h 1m)
+  τ₀․₅=216.6, τ₀․₃=187.4, rel_diff=13.5%
+  Length ratio (after burn=10τ): 73.54 vs requirement 70
+⏱ Adaptive check_interval = 2166 (10×τ_late=2166)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 20261 samples (elapsed 0h 2m)
+  τ₀․₅=218.8, τ₀․₃=174.6, rel_diff=20.2%
+  Length ratio (after burn=10τ): 82.62 vs requirement 70
+⏱ Adaptive check_interval = 2187 (10×τ_late=2188)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 22448 samples (elapsed 0h 2m)
+  τ₀․₅=210.9, τ₀․₃=159.9, rel_diff=24.2%
+  Length ratio (after burn=10τ): 96.42 vs requirement 70
+⏱ Adaptive check_interval = 2109 (10×τ_late=2109)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 24557 samples (elapsed 0h 2m)
+  τ₀․₅=204.9, τ₀․₃=168.2, rel_diff=17.9%
+  Length ratio (after burn=10τ): 109.85 vs requirement 70
+⏱ Adaptive check_interval = 2049 (10×τ_late=2049)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 26606 samples (elapsed 0h 2m)
+  τ₀․₅=195.5, τ₀․₃=153.5, rel_diff=21.5%
+  Length ratio (after burn=10τ): 126.06 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1955)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 28606 samples (elapsed 0h 2m)
+  τ₀․₅=198.6, τ₀․₃=159.5, rel_diff=19.7%
+  Length ratio (after burn=10τ): 134.06 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1986)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 30606 samples (elapsed 0h 3m)
+  τ₀․₅=203.4, τ₀․₃=184.5, rel_diff=9.3%
+  Length ratio (after burn=10τ): 140.45 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:03:07
+📏 τ₀․₅=203.4, τ₀․₃=184.5, τ_late=203.4 → burn-in=2034
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23629_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23629_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HD_23629_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17000
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.3736    12.3736
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.30-2.70 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.24 0.26 0.28 0.28 0.28 0.29 0.19 0.28 0.23 
+	0.24 0.23 0.28 0.27 0.27 0.28 0.26 0.26 0.27 
+	0.23 0.26 0.26 0.28 0.27 0.26 0.29 0.27 0.28 
+	0.29 0.29 0.28 
+n_steps/60: 50.00
+autocorrelation time: [130 301  97 117 133  26 171  22]
+This test took 38.4221 seconds.
+Starting Time: 2026-06-14 10:32:12
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=151.2, τ₀․₃=106.2, rel_diff=29.8%
+  Length ratio (after burn=10τ): 56.16 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1512)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=141.4, τ₀․₃=124.0, rel_diff=12.3%
+  Length ratio (after burn=10τ): 74.89 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1414)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=143.0, τ₀․₃=130.4, rel_diff=8.8%
+  Length ratio (after burn=10τ): 87.92 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:25
+📏 τ₀․₅=143.0, τ₀․₃=130.4, τ_late=143.0 → burn-in=1429
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17000_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17000_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17000_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17034
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.7028    12.7028
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.00-2.40 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.24 0.26 0.23 0.25 0.24 0.26 0.25 0.25 0.26 
+	0.24 0.24 0.26 0.26 0.18 0.24 0.23 0.25 0.25 
+	0.21 0.21 0.25 0.27 0.26 0.25 0.27 0.24 0.25 
+	0.20 0.28 0.20 
+n_steps/60: 50.00
+autocorrelation time: [ 39 253  93 247 280  25 175  24]
+This test took 38.3446 seconds.
+Starting Time: 2026-06-14 10:34:55
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=201.2, τ₀․₃=157.3, rel_diff=21.8%
+  Length ratio (after burn=10τ): 39.69 vs requirement 70
+⏱ Adaptive check_interval = 2012 (10×τ_late=2012)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12012 samples (elapsed 0h 1m)
+  τ₀․₅=211.1, τ₀․₃=190.8, rel_diff=9.6%
+  Length ratio (after burn=10τ): 46.91 vs requirement 70
+⏱ Adaptive check_interval = 2110 (10×τ_late=2111)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14122 samples (elapsed 0h 1m)
+  τ₀․₅=223.5, τ₀․₃=193.1, rel_diff=13.6%
+  Length ratio (after burn=10τ): 53.18 vs requirement 70
+⏱ Adaptive check_interval = 2235 (10×τ_late=2235)
+Sampling time: 00:00:13
+
+🔍 Checkpoint @ 16357 samples (elapsed 0h 1m)
+  τ₀․₅=280.6, τ₀․₃=240.8, rel_diff=14.2%
+  Length ratio (after burn=10τ): 48.30 vs requirement 70
+⏱ Adaptive check_interval = 2805 (10×τ_late=2806)
+Sampling time: 00:00:16
+
+🔍 Checkpoint @ 19162 samples (elapsed 0h 1m)
+  τ₀․₅=315.1, τ₀․₃=254.8, rel_diff=19.1%
+  Length ratio (after burn=10τ): 50.82 vs requirement 70
+⏱ Adaptive check_interval = 3150 (10×τ_late=3151)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 22312 samples (elapsed 0h 2m)
+  τ₀․₅=330.0, τ₀․₃=302.4, rel_diff=8.3%
+  Length ratio (after burn=10τ): 57.62 vs requirement 70
+⏱ Adaptive check_interval = 3299 (10×τ_late=3300)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 25611 samples (elapsed 0h 2m)
+  τ₀․₅=331.8, τ₀․₃=259.2, rel_diff=21.9%
+  Length ratio (after burn=10τ): 67.20 vs requirement 70
+⏱ Adaptive check_interval = 3317 (10×τ_late=3318)
+Sampling time: 00:00:19
+
+🔍 Checkpoint @ 28928 samples (elapsed 0h 2m)
+  τ₀․₅=337.4, τ₀․₃=280.7, rel_diff=16.8%
+  Length ratio (after burn=10τ): 75.75 vs requirement 70
+⏱ Adaptive check_interval = 3373 (10×τ_late=3374)
+Sampling time: 00:00:20
+
+🔍 Checkpoint @ 32301 samples (elapsed 0h 3m)
+  τ₀․₅=322.7, τ₀․₃=258.9, rel_diff=19.8%
+  Length ratio (after burn=10τ): 90.11 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:03:16
+📏 τ₀․₅=322.7, τ₀․₃=258.9, τ_late=322.7 → burn-in=3226
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17034_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17034_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17034_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 23948
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.3156    12.3156
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.80-2.20 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.30 0.32 0.26 0.27 0.30 0.30 0.29 0.27 0.29 
+	0.28 0.29 0.28 0.29 0.29 0.30 0.31 0.27 0.29 
+	0.27 0.27 0.30 0.30 0.29 0.30 0.29 0.27 0.29 
+	0.30 0.30 0.33 
+n_steps/60: 50.00
+autocorrelation time: [ 26  96  87  80 111  21  73  18]
+This test took 38.4978 seconds.
+Starting Time: 2026-06-14 10:39:48
+🔄 Starting initial sampling...
+Sampling time: 00:01:00
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=112.9, τ₀․₃=100.4, rel_diff=11.1%
+  Length ratio (after burn=10τ): 78.56 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1129)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=119.9, τ₀․₃=108.4, rel_diff=9.6%
+  Length ratio (after burn=10τ): 90.05 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:12
+📏 τ₀․₅=119.9, τ₀․₃=108.4, τ_late=119.9 → burn-in=1199
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23948_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23948_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HD_23948_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HIP 17692
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.3129    12.3129
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 2.10-2.50 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.30 0.32 0.33 0.30 0.30 0.30 0.31 0.30 0.31 
+	0.31 0.32 0.29 0.33 0.32 0.31 0.31 0.31 0.32 
+	0.33 0.30 0.31 0.32 0.31 0.31 0.32 0.29 0.30 
+	0.33 0.29 0.36 
+n_steps/60: 50.00
+autocorrelation time: [ 32  92  95 108 107  20  95  29]
+This test took 38.2336 seconds.
+Starting Time: 2026-06-14 10:42:16
+🔄 Starting initial sampling...
+Sampling time: 00:01:01
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 1m)
+  τ₀․₅=143.6, τ₀․₃=138.2, rel_diff=3.8%
+  Length ratio (after burn=10τ): 59.63 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1436)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=173.1, τ₀․₃=128.8, rel_diff=25.6%
+  Length ratio (after burn=10τ): 59.34 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1731)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 14000 samples (elapsed 0h 1m)
+  τ₀․₅=174.8, τ₀․₃=159.1, rel_diff=9.0%
+  Length ratio (after burn=10τ): 70.10 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1748)
+Sampling time: 00:00:12
+
+🔍 Checkpoint @ 16000 samples (elapsed 0h 1m)
+  τ₀․₅=178.4, τ₀․₃=151.8, rel_diff=14.9%
+  Length ratio (after burn=10τ): 79.71 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:38
+📏 τ₀․₅=178.4, τ₀․₃=151.8, τ_late=178.4 → burn-in=1783
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17692_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HIP_17692_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HIP_17692_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************
+>>>>>>>>>> Now working on Target: HD 23872
+Loaded regularized Mini grid.
+grid_type: with_inc
+interp_variable_list: ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination']
+interp_output_list: ['Mass', 'omega', 'Req', 'Rpol', 'G', 'G_BP', 'G_RP', 'B_T', 'V_T', 'J', 'H', 'Ks']
+grid_outputs shape: (1392, 201, 12, 7, 11, 12)
+grid_bounds shape: (201, 12, 7, 11, 2)
+grid_outputs dtype: float32
+grid_bounds dtype: float32
+save_float32: True
+read_all_at_once: True
+total grid memory: 11835.89 MB (11.56 GB)
+Sampling parameter space:
+Parameter           Min        Max
+----------------------------------
+Mini             0.0900    14.0000
+logAge           6.0000     9.3010
+MH              -0.7900     0.3100
+omega_ini        0.0000     0.9900
+Inclination      0.0000     1.5708
+parallax         2.0128    12.0128
+sigma            0.0000     0.1000
+extinction       0.0000     1.0000
+Estimating rough mass...
+====> Using default Vrot prior: 1.90-2.30 Msun
+Running a test with 3000 samples...
+acceptance ratio:
+	0.31 0.35 0.34 0.29 0.35 0.33 0.33 0.35 0.33 
+	0.32 0.32 0.34 0.30 0.34 0.33 0.33 0.32 0.32 
+	0.34 0.32 0.34 0.30 0.33 0.32 0.34 0.30 0.33 
+	0.33 0.34 0.32 
+n_steps/60: 50.00
+autocorrelation time: [ 30 141  93  50 184  21  62  16]
+This test took 39.8323 seconds.
+Starting Time: 2026-06-14 10:45:18
+🔄 Starting initial sampling...
+Sampling time: 00:00:59
+🚀 Standard criteria in use 💪: N/τ > 70, τ_diff < 20%
+
+🔍 Checkpoint @ 10000 samples (elapsed 0h 0m)
+  τ₀․₅=118.0, τ₀․₃=108.1, rel_diff=8.4%
+  Length ratio (after burn=10τ): 74.78 vs requirement 70
+⏱ Adaptive check_interval = 2000 (10×τ_late=1180)
+Sampling time: 00:00:11
+
+🔍 Checkpoint @ 12000 samples (elapsed 0h 1m)
+  τ₀․₅=128.9, τ₀․₃=104.6, rel_diff=18.9%
+  Length ratio (after burn=10τ): 83.07 vs requirement 70
+✅ Converged: τ stable (2×) rel_diff < 0.2, N/τ > 70
+Total sampling time: 00:01:11
+📏 τ₀․₅=128.9, τ₀․₃=104.6, τ_late=128.9 → burn-in=1289
+Your plots and samples will be saved at 
+	/Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23872_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)
+True values: [None, None, None, None, None, None]
+Saved object to: /Users/ziyinggu/Programming/GitHub/BELFAST/results/HD_23872_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V (G-Tomo A_V prior, MH prior 0.01±0.081)/target_HD_23872_Pleiades_PARSEC_DIRECT_Mini_grid_sigma1_A_V.npz
+Finished saving plots.
+**********************************************************************************************************************

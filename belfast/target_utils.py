@@ -633,6 +633,7 @@ def query_tycho_2(tyc_id):
     """
     from astroquery.vizier import Vizier
 
+
     def _nan():
         return np.nan
 
@@ -994,6 +995,7 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
     """
     from astroquery.vizier import Vizier
 
+
     MAG_ERR_FACTOR = 2.5 / np.log(10.0)  # 1.085736...
 
     def _nan():
@@ -1036,6 +1038,33 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
         except Exception:
             return np.nan
 
+    def _table_value(row, name, default=np.nan):
+        try:
+            return row[name]
+        except Exception:
+            return default
+
+    def _query_gaia_archive(sid_value):
+        try:
+            from astroquery.gaia import Gaia
+            query = (
+                "SELECT source_id, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, "
+                "phot_g_mean_flux, phot_bp_mean_flux, phot_rp_mean_flux, "
+                "phot_g_mean_flux_error, phot_bp_mean_flux_error, phot_rp_mean_flux_error, "
+                "parallax, parallax_error, ruwe, ra, dec, pmra, pmdec, pmra_error, pmdec_error, "
+                "radial_velocity, radial_velocity_error, "
+                "vbroad, vbroad_error "
+                f"FROM gaiadr3.gaia_source WHERE source_id={sid_value}"
+            )
+            job = Gaia.launch_job(query)
+            tab = job.get_results()
+            if len(tab) == 0:
+                return None
+            return tab[0]
+        except Exception as e:
+            warnings.append(f"Gaia Archive fallback failed: {type(e).__name__}: {e}")
+            return None
+
     # ---- normalize id (avoid float precision loss) ----
     sid = "" if gaia_dr3_id is None else str(gaia_dr3_id).strip()
     if sid == "" or sid.lower() in ("nan", "none"):
@@ -1049,8 +1078,8 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
             "warnings": ["Empty Gaia DR3 ID."],
             "raw": {},
             "EBP_RP": _nan(),
-            "EBP_RP_lower_error": _nan(),
-            "EBP_RP_upper_error": _nan(),
+            "EBP_RP_lower": _nan(),
+            "EBP_RP_upper": _nan(),
         }
         if verbose:
             print(out["warnings"][0])
@@ -1066,14 +1095,26 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
 
     # optional outputs
     EBP_RP = _nan()
-    EBP_RP_lower_error = _nan()
-    EBP_RP_upper_error = _nan()
+    EBP_RP_lower = _nan()
+    EBP_RP_upper = _nan()
 
     # -----------------------------
     # 1) I/355 main
     # -----------------------------
     v355_cols = [
         "Source", "source_id",
+
+        # coordinates
+        "RA_ICRS", "DE_ICRS", "RAJ2000", "DEJ2000",
+        "ra", "dec",
+
+        # proper motions
+        "pmRA", "e_pmRA", "pmDE", "e_pmDE",
+        "pmra", "pmra_error", "pmdec", "pmdec_error",
+
+        # radial velocity
+        "RV", "e_RV",
+        "radial_velocity", "radial_velocity_error",
 
         # mags (two naming styles)
         "Gmag", "BPmag", "RPmag",
@@ -1101,10 +1142,16 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
         "E(BP-RP)", "b_E(BP-RP)", "B_E(BP-RP)",
         "E(BP/RP)", "b_E(BP/RP)", "B_E(BP/RP)",
     ]
-    v355 = Vizier(columns=v355_cols, row_limit=row_limit)
+    v355 = Vizier(columns=v355_cols, row_limit=1)
 
     try:
         res355 = v355.query_constraints(catalog="I/355", Source=sid)
+        if verbose:
+            if res355 is None or len(res355) == 0:
+                print(f"VizieR I/355 returned no matches for source_id={sid}")
+            else:
+                print(res355)
+
         if res355 is None or len(res355) == 0 or len(res355[0]) == 0:
             res355 = v355.query_constraints(catalog="I/355", source_id=sid)
 
@@ -1179,9 +1226,23 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
             phot["e_BP"] = _to_pyfloat(eBP)
             phot["e_RP"] = _to_pyfloat(eRP)
 
+            # ---- coordinates ----
+            astro["ra"] = _safe_float(_pick_first(row, cols, ["RA_ICRS", "RAJ2000", "ra"]))
+            astro["dec"] = _safe_float(_pick_first(row, cols, ["DE_ICRS", "DEJ2000", "dec"]))
+
+            # ---- proper motions ----
+            astro["pmra"] = _safe_float(_pick_first(row, cols, ["pmRA", "pmra"]))
+            astro["pmdec"] = _safe_float(_pick_first(row, cols, ["pmDE", "pmdec"]))
+            astro["pmra_error"] = _safe_float(_pick_first(row, cols, ["e_pmRA", "pmra_error"]))
+            astro["pmdec_error"] = _safe_float(_pick_first(row, cols, ["e_pmDE", "pmdec_error"]))
+
             # ---- parallax ----
             astro["parallax"] = _safe_float(_pick_first(row, cols, ["Plx", "parallax"]))
             astro["e_parallax"] = _safe_float(_pick_first(row, cols, ["e_Plx", "parallax_error"]))
+
+            # ---- radial velocity ----
+            astro["rv"] = _safe_float(_pick_first(row, cols, ["RV", "radial_velocity"]))
+            astro["rv_error"] = _safe_float(_pick_first(row, cols, ["e_RV", "radial_velocity_error"]))
 
             # ---- RUWE ----
             astro["RUWE"] = _safe_float(_pick_first(row, cols, ["RUWE", "ruwe"]))
@@ -1193,14 +1254,64 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
             # ---- optional E(BP-RP) ----
             # different mirrors may name it E(BP-RP) or E(BP/RP)
             EBP_RP = _safe_float(_pick_first(row, cols, ["E(BP-RP)", "E(BP/RP)"]))
-            EBP_RP_lower_error = _safe_float(_pick_first(row, cols, ["b_E(BP-RP)", "b_E(BP/RP)"]))
-            EBP_RP_upper_error = _safe_float(_pick_first(row, cols, ["B_E(BP-RP)", "B_E(BP/RP)"]))
+            EBP_RP_lower = _safe_float(_pick_first(row, cols, ["b_E(BP-RP)", "b_E(BP/RP)"]))
+            EBP_RP_upper = _safe_float(_pick_first(row, cols, ["B_E(BP-RP)", "B_E(BP/RP)"]))
 
         else:
             warnings.append(f"I/355: No match for source_id={sid} (VizieR).")
 
     except Exception as e:
         warnings.append(f"I/355 query failed: {type(e).__name__}: {e}")
+
+    # fallback to direct Gaia Archive if VizieR could not resolve the source
+    if not np.isfinite(phot.get("G", np.nan)) or not np.isfinite(phot.get("BP", np.nan)) or not np.isfinite(phot.get("RP", np.nan)) or not np.isfinite(astro.get("parallax", np.nan)):
+        gaia_row = _query_gaia_archive(sid)
+        if gaia_row is not None:
+            phot["G"] = _safe_float(_table_value(gaia_row, "phot_g_mean_mag"))
+            phot["BP"] = _safe_float(_table_value(gaia_row, "phot_bp_mean_mag"))
+            phot["RP"] = _safe_float(_table_value(gaia_row, "phot_rp_mean_mag"))
+
+            g_flux = _safe_float(_table_value(gaia_row, "phot_g_mean_flux"))
+            g_flux_err = _safe_float(_table_value(gaia_row, "phot_g_mean_flux_error"))
+            bp_flux = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux"))
+            bp_flux_err = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux_error"))
+            rp_flux = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux"))
+            rp_flux_err = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux_error"))
+
+            g_flux_over_err = _safe_float(_table_value(gaia_row, "phot_g_mean_flux_over_error", np.nan))
+            bp_flux_over_err = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux_over_error", np.nan))
+            rp_flux_over_err = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux_over_error", np.nan))
+            if not np.isfinite(g_flux_over_err):
+                g_flux_over_err = _safe_div(g_flux, g_flux_err)
+            if not np.isfinite(bp_flux_over_err):
+                bp_flux_over_err = _safe_div(bp_flux, bp_flux_err)
+            if not np.isfinite(rp_flux_over_err):
+                rp_flux_over_err = _safe_div(rp_flux, rp_flux_err)
+
+            phot["e_G"] = _to_pyfloat(MAG_ERR_FACTOR * (g_flux_err / g_flux)) if np.isfinite(g_flux) and np.isfinite(g_flux_err) and g_flux > 0 else np.nan
+            phot["e_BP"] = _to_pyfloat(MAG_ERR_FACTOR * (bp_flux_err / bp_flux)) if np.isfinite(bp_flux) and np.isfinite(bp_flux_err) and bp_flux > 0 else np.nan
+            phot["e_RP"] = _to_pyfloat(MAG_ERR_FACTOR * (rp_flux_err / rp_flux)) if np.isfinite(rp_flux) and np.isfinite(rp_flux_err) and rp_flux > 0 else np.nan
+
+            astro["ra"] = _safe_float(_table_value(gaia_row, "ra"))
+            astro["dec"] = _safe_float(_table_value(gaia_row, "dec"))
+            astro["pmra"] = _safe_float(_table_value(gaia_row, "pmra"))
+            astro["pmdec"] = _safe_float(_table_value(gaia_row, "pmdec"))
+            astro["pmra_error"] = _safe_float(_table_value(gaia_row, "pmra_error"))
+            astro["pmdec_error"] = _safe_float(_table_value(gaia_row, "pmdec_error"))
+            astro["parallax"] = _safe_float(_table_value(gaia_row, "parallax"))
+            astro["e_parallax"] = _safe_float(_table_value(gaia_row, "parallax_error"))
+            astro["rv"] = _safe_float(_table_value(gaia_row, "radial_velocity"))
+            astro["rv_error"] = _safe_float(_table_value(gaia_row, "radial_velocity_error"))
+            astro["RUWE"] = _safe_float(_table_value(gaia_row, "ruwe"))
+
+            raw["gaia_archive_fallback"] = {
+                "source_id": sid,
+                "query": "gaia_dr3",
+            }
+            
+            # ---- vbroad + uncertainty ----
+            rot["Vbroad"] = _safe_float(_table_value(gaia_row, "vbroad"))
+            rot["e_Vbroad"] = _safe_float(_table_value(gaia_row, "vbroad_error"))
 
     # -----------------------------
     # 1.5) I/355/paramp: Pbin
@@ -1301,8 +1412,8 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
 
         # optional: may be NaN if not provided by the table view
         "EBP_RP": EBP_RP,
-        "EBP_RP_lower_error": EBP_RP_lower_error,
-        "EBP_RP_upper_error": EBP_RP_upper_error,
+        "EBP_RP_lower": EBP_RP_lower,
+        "EBP_RP_upper": EBP_RP_upper,
     }
 
     if verbose and warnings:
@@ -1320,7 +1431,7 @@ def print_summary_card_aligned(
     tycho_vals,
     mass_vals,
     *,
-    total_width=120,
+    total_width=None,
     col1=34,
     col2=45,
     col3=40,
@@ -1328,11 +1439,8 @@ def print_summary_card_aligned(
     """
     Stable 3-column aligned summary card.
 
-    Updates:
-    1) Distance(pc) now includes propagated uncertainty from Gaia parallax:
-         d = 1000/plx(mas),  sigma_d = 1000*sigma_plx / plx^2
-    2) Middle-column labels have ':' aligned to the longest label (dynamic).
-       e.g. "E(BP-RP)" and "Parallax" won't shift the ':' positions.
+    Layout:
+        General info | Gaia DR3 | Tycho-2 / 2MASS
     """
 
     def isfin(x):
@@ -1360,6 +1468,20 @@ def print_summary_card_aligned(
         c = (c if c is not None else "").ljust(col3)
         return f"{a} | {b} | {c}"
 
+    def format_percent(x, w=7, p=2):
+        """
+        Format Gaia DR3 Pbin / P_binary.
+
+        If 0 <= x <= 1, treat it as probability and convert to percent.
+        If 1 < x <= 100, treat it as already percent.
+        """
+        if not isfin(x):
+            return "nan"
+        x = float(x)
+        if 0.0 <= x <= 1.0:
+            x = 100.0 * x
+        return f"{x:{w}.{p}f}%"
+
     # --- unpack SIMBAD ---
     HIP, HD, GaiaID, TYC, TMASS, Other, SpT, ObjT, RA, DEC = simbad_info
 
@@ -1370,16 +1492,20 @@ def print_summary_card_aligned(
     flags = gaia_res.get("flags", {})
 
     EBP_RP    = gaia_res.get("EBP_RP", np.nan)
-    EBP_RP_lo = gaia_res.get("EBP_RP_lower_error", np.nan)
-    EBP_RP_hi = gaia_res.get("EBP_RP_upper_error", np.nan)
+    EBP_RP_lo = gaia_res.get("EBP_RP_lower", np.nan)
+    EBP_RP_hi = gaia_res.get("EBP_RP_upper", np.nan)
+
+    # Compatible with both names
+    P_binary = gaia_res.get("Pbin", gaia_res.get("P_binary", np.nan))
 
     plx  = astro.get("parallax", np.nan)
     eplx = astro.get("e_parallax", np.nan)
 
-    # distance + uncertainty (pc)
+    # distance + uncertainty
     if isfin(plx) and float(plx) > 0:
         plx_f = float(plx)
         dist_pc = 1000.0 / plx_f
+
         if isfin(eplx):
             eplx_f = float(eplx)
             dist_pc_err = 1000.0 * eplx_f / (plx_f ** 2)
@@ -1393,71 +1519,107 @@ def print_summary_card_aligned(
     BT, VT, eBT, eVT = tycho_vals
     J, H, Ks, eJ, eH, eKs, Q, R, B, C, X, A = mass_vals
 
-    # --- header ---
+    # --- width ---
+    if total_width is None:
+        total_width = col1 + col2 + col3 + 6
+
     W = total_width
-    print("=" * W)
-    print(f"Target : {target_name}")
-    print(f"IDs    : Gaia DR3 {fval(GaiaID)} | HIP {fval(HIP)} | HD {fval(HD)} | 2MASS {fval(TMASS)}")
-    # print(f"Type   : {fval(SpT)} | {fval(ObjT)}")
-    print("-" * W)
 
     # -----------------------------
     # Middle column: ':' aligned
     # -----------------------------
-    mid_labels = ["G", "G_BP", "G_RP", "Parallax", "RUWE", "Vbroad", "E(BP-RP)"]
+    mid_labels = [
+        "G", "G_BP", "G_RP", "Parallax", "RUWE",
+        "Vbroad", "E(BP-RP)", "P_binary"
+    ]
     labw = max(len(x) for x in mid_labels)
 
     def mid_kv(label, rhs):
-        # "label<labw> : rhs"
         return f"{label:<{labw}} : {rhs}"
 
-    mid_G = mid_kv("G", f"{fnum(phot.get('G'),8,4)} ± {fnum(phot.get('e_G'),8,4)} mag")
-    mid_BP = mid_kv("G_BP", f"{fnum(phot.get('BP'),8,4)} ± {fnum(phot.get('e_BP'),8,4)} mag")
-    mid_RP = mid_kv("G_RP", f"{fnum(phot.get('RP'),8,4)} ± {fnum(phot.get('e_RP'),8,4)} mag")
-    mid_Plx = mid_kv("Parallax", f"{fnum(plx,8,4)} ± {fnum(eplx,8,4)} mas")
-    mid_RUWE = mid_kv("RUWE", f"{fnum(astro.get('RUWE'),8,4)}")
+    mid_G = mid_kv(
+        "G",
+        f"{fnum(phot.get('G'),8,4)} ± {fnum(phot.get('e_G'),8,4)} mag"
+    )
+    mid_BP = mid_kv(
+        "G_BP",
+        f"{fnum(phot.get('BP'),8,4)} ± {fnum(phot.get('e_BP'),8,4)} mag"
+    )
+    mid_RP = mid_kv(
+        "G_RP",
+        f"{fnum(phot.get('RP'),8,4)} ± {fnum(phot.get('e_RP'),8,4)} mag"
+    )
+    mid_Plx = mid_kv(
+        "Parallax",
+        f"{fnum(plx,8,4)} ± {fnum(eplx,8,4)} mas"
+    )
+    mid_RUWE = mid_kv(
+        "RUWE",
+        f"{fnum(astro.get('RUWE'),8,4)}"
+    )
     mid_Vb = mid_kv(
         "Vbroad",
-        f"{fnum(rot.get('Vbroad'),8,)} ± {fnum(rot.get('e_Vbroad'),8,2)} km/s"
+        f"{fnum(rot.get('Vbroad'),8,4)} ± {fnum(rot.get('e_Vbroad'),8,2)} km/s"
     )
 
     if isfin(EBP_RP):
+        if isfin(EBP_RP_lo):
+            EBP_RP_lo_err = float(EBP_RP) - float(EBP_RP_lo)
+        else:
+            EBP_RP_lo_err = np.nan
+
+        if isfin(EBP_RP_hi):
+            EBP_RP_hi_err = float(EBP_RP_hi) - float(EBP_RP)
+        else:
+            EBP_RP_hi_err = np.nan
+
         mid_E_rhs = (
-            f"{fnum(EBP_RP,8,4)} "
-            f"(-{fnum(EBP_RP_lo,6,4)}, +{fnum(EBP_RP_hi,6,4)}) mag"
+            f"{fnum(EBP_RP, 8, 4)} "
+            f"(-{fnum(EBP_RP_lo_err, 6, 4)}, +{fnum(EBP_RP_hi_err, 6, 4)}) mag"
         )
     else:
         mid_E_rhs = "nan"
+
     mid_E = mid_kv("E(BP-RP)", mid_E_rhs)
+    mid_Pbin = mid_kv("P_binary", format_percent(P_binary))
 
     # -----------------------------
     # Right column
     # -----------------------------
     right_BT = f"B_T : {fnum(BT,8,4)} ± {fnum(eBT,8,4)} mag"
     right_VT = f"V_T : {fnum(VT,8,4)} ± {fnum(eVT,8,4)} mag"
-    right_sep = "-" * 25
+    right_sep = "-" * min(35, col3)
+    right_2mass_header = "2MASS"
     right_J  = f"J   : {fnum(J,8,4)} ± {fnum(eJ,8,4)} mag"
     right_H  = f"H   : {fnum(H,8,4)} ± {fnum(eH,8,4)} mag"
     right_K  = f"Ks  : {fnum(Ks,8,4)} ± {fnum(eKs,8,4)} mag"
-    # right_f  = f"Q={fval(Q)}    R={fval(R)}    B={fval(B)}"
 
     # -----------------------------
     # Left column
     # -----------------------------
-    left_RA  =  f"RA            : {fnum(RA,8,4).strip()}"
-    left_Dec =  f"Dec           : {fnum(DEC,8,4).strip()}"
-    left_SpT =  f"Spectral Type : {fval(SpT):<10}"
-    left_Obj =  f"Object Type   : {fval(ObjT):<10}"
+    left_RA   = f"RA            : {fnum(RA,8,4).strip()}"
+    left_Dec  = f"Dec           : {fnum(DEC,8,4).strip()}"
+    left_SpT  = f"Spectral Type : {fval(SpT):<10}"
+    left_Obj  = f"Object Type   : {fval(ObjT):<10}"
     left_Dist = f"Distance      : {fnum(dist_pc,8,2).strip()} ± {fnum(dist_pc_err,8,2).strip()} pc"
 
-    # --- lines (all 3 columns) ---
-    print(row3(left_RA,   mid_G,   right_BT))
-    print(row3(left_Dec,  mid_BP,  right_VT))
-    print(row3(left_SpT,  mid_RP,  right_sep))
-    print(row3(left_Obj,  mid_Plx, right_J))
-    print(row3(left_Dist, mid_RUWE, right_H))
-    print(row3("",        mid_Vb,   right_K))
-    print(row3("",        mid_E,    ""))
+    # -----------------------------
+    # Print card
+    # -----------------------------
+    print("=" * W)
+    print(f"Target : {target_name}")
+    print(f"IDs    : Gaia DR3 {fval(GaiaID)} | HIP {fval(HIP)} | HD {fval(HD)} | 2MASS {fval(TMASS)}")
+    print("-" * W)
+
+    print(row3("General info", "Gaia DR3", "Tycho-2"))
+    print(row3(left_RA,   mid_G,    right_BT))
+    print(row3(left_Dec,  mid_BP,   right_VT))
+    print(row3(left_SpT,  mid_RP,   right_sep))
+    print(row3(left_Obj,  mid_Plx,  right_2mass_header))
+    print(row3(left_Dist, mid_RUWE, right_J))
+    print(row3("",        mid_Vb,   right_H))
+    print(row3("",        mid_E,    right_K))
+    print(row3("",        mid_Pbin, ""))
 
     print("-" * W)
 
@@ -1478,8 +1640,7 @@ def print_summary_card_aligned(
     print("=" * W)
 
 
-
-def query_data(target_name, max_retries=3, return_df=False, verbose=True):
+def query_data(target_name, max_retries=3, return_df=False, verbose=True, return_banyan_cols=False):
     """
     Query SIMBAD + Tycho-2 + 2MASS + Gaia DR3 (VizieR) for a target.
 
@@ -1661,7 +1822,10 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
         gaia_dr3_res = {
             "source_id": str(Gaia_DR3_ID),
             "photometry": {"G": np.nan, "BP": np.nan, "RP": np.nan, "e_G": np.nan, "e_BP": np.nan, "e_RP": np.nan},
-            "astrometry": {"parallax": np.nan, "e_parallax": np.nan, "RUWE": np.nan},
+            "astrometry": {
+                "ra": np.nan, "dec": np.nan, "pmra": np.nan, "pmdec": np.nan, "pmra_error": np.nan, "pmdec_error": np.nan,
+                "parallax": np.nan, "e_parallax": np.nan, "rv": np.nan,  "rv_error": np.nan, "RUWE": np.nan
+            },
             "rotation": {"Vbroad": np.nan, "e_Vbroad": np.nan},
             "Pbin": np.nan,
             "flags": {"is_nss": False, "is_variable": False, "is_spurious": False},
@@ -1679,9 +1843,32 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
     G_RP_err_mag = gaia_dr3_res["photometry"]["e_RP"]
 
     # astrometry
+    gaia_ra = gaia_dr3_res["astrometry"].get("ra", RA)
+    gaia_dec = gaia_dr3_res["astrometry"].get("dec", DEC)
+    gaia_pmra = gaia_dr3_res["astrometry"].get("pmra", np.nan)
+    gaia_pmdec = gaia_dr3_res["astrometry"].get("pmdec", np.nan)
+    gaia_pmra_error = gaia_dr3_res["astrometry"].get("pmra_error", np.nan)
+    gaia_pmdec_error = gaia_dr3_res["astrometry"].get("pmdec_error", np.nan)
+
     parallax_obs = gaia_dr3_res["astrometry"]["parallax"]
     parallax_obs_err = gaia_dr3_res["astrometry"]["e_parallax"]
     RUWE = gaia_dr3_res["astrometry"].get("RUWE", np.nan)
+
+    gaia_rv = gaia_dr3_res["astrometry"].get("rv", np.nan)
+    gaia_rv_error = gaia_dr3_res["astrometry"].get("rv_error", np.nan)
+
+    banyan_cols = {
+        "ra": gaia_ra,
+        "dec": gaia_dec,
+        "pmra": gaia_pmra,
+        "pmdec": gaia_pmdec,
+        "pmra_error": gaia_pmra_error,
+        "pmdec_error": gaia_pmdec_error,
+        "parallax": parallax_obs,
+        "parallax_error": parallax_obs_err,
+        "rv": gaia_rv,
+        "rv_error": gaia_rv_error,
+    }
 
     # rotation (vbroad)
     vsini_obs = gaia_dr3_res["rotation"]["Vbroad"]
@@ -1697,8 +1884,10 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
 
     # E(BP-RP)
     EBP_RP_obs = gaia_dr3_res.get("EBP_RP", np.nan)
-    EBP_RP_obs_lower = gaia_dr3_res.get("EBP_RP_lower_error", np.nan)
-    EBP_RP_obs_upper = gaia_dr3_res.get("EBP_RP_upper_error", np.nan)
+    EBP_RP_obs_lower = gaia_dr3_res.get("EBP_RP_lower", np.nan)
+    EBP_RP_obs_upper = gaia_dr3_res.get("EBP_RP_upper", np.nan)
+    EBP_RP_obs_lower_error = EBP_RP_obs_lower - EBP_RP_obs
+    EBP_RP_obs_upper_error = EBP_RP_obs_upper - EBP_RP_obs
 
     # -----------------------------
     # 5) Pack outputs
@@ -1745,14 +1934,15 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
 
         # E(BP-RP)
         "EBP_RP": EBP_RP_obs,
-        "EBP_RP_lower_error": EBP_RP_obs_lower,
-        "EBP_RP_upper_error": EBP_RP_obs_upper,
+        "EBP_RP_lower_error": EBP_RP_obs_lower_error,
+        "EBP_RP_upper_error": EBP_RP_obs_upper_error,
     }
 
     # -----------------------------
     # 6) print query results
     # -----------------------------
-    print_summary_card_aligned(target_name, name_res, gaia_dr3_res, result_tycho2, result_2mass)
+    if verbose:
+        print_summary_card_aligned(target_name, name_res, gaia_dr3_res, result_tycho2, result_2mass)
 
     # -----------------------------
     # 7) Return dataframe if requested
@@ -1815,9 +2005,14 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True):
             "2mass_warnings": "; ".join(map(str, quality_2mass.get("warnings", []))),
             "gaia_warnings": "; ".join(map(str, gaia_warnings)),
         }
+        if return_banyan_cols:
+            row.update(banyan_cols)
         import pandas as pd
 
         return pd.DataFrame([row])
+
+    if return_banyan_cols:
+        return obs_mags, obs_err_mags, vsini_obs, vsini_obs_err, parallax_obs, parallax_obs_err, EBP_RP_obs, EBP_RP_obs_lower, EBP_RP_obs_upper, additional_info, banyan_cols
 
     return obs_mags, obs_err_mags, vsini_obs, vsini_obs_err, parallax_obs, parallax_obs_err, EBP_RP_obs, EBP_RP_obs_lower, EBP_RP_obs_upper, additional_info
 

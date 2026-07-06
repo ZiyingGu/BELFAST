@@ -13,8 +13,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
+from belfast.isochrone_utils import rearrange_isochrones, check_rearranged_isochrones
+
 # Suppress SSL certificate warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+from pathlib import Path
+import tarfile
+from urllib.request import urlretrieve
+
+from belfast.paths import DATA_DIR
+
+
 
 def initialize_selenium():
     # Initialize selenium (You only need to run this cell once.)
@@ -170,7 +181,7 @@ def download_isochrone(
         element.send_keys(str(value))
 
     if name_suffix is not None:
-        folder_name = f'{age_initial}_{age_end}yr_{age_type}_isochrones ({name_suffix})'
+        folder_name = f'{age_initial}_{age_end}yr_{age_type}_isochrones_({name_suffix.replace(' ', '_')})'
     else:
         folder_name = f'{age_initial}_{age_end}yr_{age_type}_isochrones'
 
@@ -180,7 +191,7 @@ def download_isochrone(
         if name_suffix is not None:
             output_name = (
                 f"omega_ini{omega_ini:.2f}_{age_type}_age{age_initial}to{age_end}d{age_interval}_"
-                f"{metallicity_type}{metallicity_initial}to{metallicity_end}d{metallicity_interval} ({name_suffix})"
+                f"{metallicity_type}{metallicity_initial}to{metallicity_end}d{metallicity_interval}_({name_suffix.replace(' ', '_')})"
             )
         else:
             output_name = (
@@ -360,3 +371,240 @@ def download_isochrone(
 
     finally:
         driver.quit()
+
+
+
+def _as_dir_string(path):
+    """
+    Convert path to absolute directory string with trailing slash.
+    Needed because downstream functions use string concatenation.
+    """
+    path = Path(path).expanduser().resolve()
+    path.mkdir(parents=True, exist_ok=True)
+
+    path_str = str(path)
+    if not path_str.endswith(os.sep):
+        path_str += os.sep
+
+    return path_str
+
+
+def download_PARSECv2_isochrones(
+    download_dir=None,
+    age_type='linear',
+    age_initial='1e6',
+    age_end='2001e6',
+    age_interval='10e6',
+    omega_ini_list=None,
+    metallicity_type='Z',
+    metallicity_list=None,
+    metallicity_initial=None,
+    metallicity_end=None,
+    metallicity_interval=None,
+    wait_time=600,
+    overwrite=True,
+    unzip_flag=False
+):
+    if download_dir is None:
+        download_dir = DATA_DIR / "isochrones" / "PARSEC_v2"
+
+    download_dir = _as_dir_string(download_dir)
+
+    if omega_ini_list is None:
+        omega_ini_list = [0.00, 0.30, 0.60, 0.80, 0.90, 0.95, 0.99]
+
+    if metallicity_type.upper() not in ['Z', 'MH']:
+        raise ValueError('"metallicity_type" must be "Z" or "MH" (str).')
+    else:
+        metallicity_type = metallicity_type.upper()
+
+    default_Z_list = [
+        0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.004, 0.006, 0.008,
+        0.01, 0.014, 0.017, 0.02, 0.03
+    ]
+    range_params = [metallicity_initial, metallicity_end, metallicity_interval]
+    all_none = metallicity_list is None and all(v is None for v in range_params)
+    range_all_none = all(v is None for v in range_params)
+    range_all_given = all(v is not None for v in range_params)
+    range_partial = not range_all_none and not range_all_given
+    if metallicity_type == "Z" and all_none:
+        metallicity_list = default_Z_list
+    elif metallicity_type == "MH" and all_none:
+        raise ValueError(
+            "For metallicity_type='MH', metallicity_list or "
+            "metallicity_initial/end/interval must be provided."
+        )
+    elif metallicity_list is None and not range_all_given:
+        raise ValueError(
+            "If metallicity_list is None, metallicity_initial, "
+            "metallicity_end, and metallicity_interval must all be provided."
+        )
+    elif range_partial:
+        raise ValueError(
+            "metallicity_initial, metallicity_end, and metallicity_interval "
+            "must be provided together."
+        )
+    if metallicity_list is not None:
+        for omega_ini in omega_ini_list:
+            for metal in metallicity_list:
+                download_isochrone(
+                    download_dir=download_dir,
+                    name_suffix='gaia dr3',
+                    filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
+                    # name_suffix='2mass & tycho2',
+                    # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
+                    omega_ini=omega_ini,
+                    age_type=age_type,
+                    age_initial=age_initial,
+                    age_end=age_end,
+                    age_interval=age_interval,
+                    metallicity_type=metallicity_type,
+                    metallicity_initial=metal,
+                    metallicity_end=metal,
+                    metallicity_interval=0.0,
+                    wait_time=wait_time,
+                    overwrite=overwrite,
+                    unzip_flag=unzip_flag,
+                )
+                download_isochrone(
+                    download_dir=download_dir,
+                    # name_suffix='gaia dr3',
+                    # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
+                    name_suffix='2mass & tycho2',
+                    filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
+                    omega_ini=omega_ini,
+                    age_type=age_type,
+                    age_initial=age_initial,
+                    age_end=age_end,
+                    age_interval=age_interval,
+                    metallicity_type=metallicity_type,
+                    metallicity_initial=metal,
+                    metallicity_end=metal,
+                    metallicity_interval=0.0,
+                    wait_time=wait_time,
+                    overwrite=overwrite,
+                    unzip_flag=unzip_flag,
+                )
+    else:
+        for omega_ini in omega_ini_list:
+            download_isochrone(
+                    download_dir=download_dir,
+                    name_suffix='gaia dr3',
+                    filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
+                    # name_suffix='2mass & tycho2',
+                    # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
+                    omega_ini=omega_ini,
+                    age_type=age_type,
+                    age_initial=age_initial,
+                    age_end=age_end,
+                    age_interval=age_interval,
+                    metallicity_type=metallicity_type,
+                    metallicity_initial=metallicity_initial,
+                    metallicity_end=metallicity_end,
+                    metallicity_interval=metallicity_interval,
+                    wait_time=wait_time,
+                    overwrite=overwrite,
+                    unzip_flag=unzip_flag,
+                )
+            download_isochrone(
+                    download_dir=download_dir,
+                    # name_suffix='gaia dr3',
+                    # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
+                    name_suffix='2mass & tycho2',
+                    filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
+                    omega_ini=omega_ini,
+                    age_type=age_type,
+                    age_initial=age_initial,
+                    age_end=age_end,
+                    age_interval=age_interval,
+                    metallicity_type=metallicity_type,
+                    metallicity_initial=metallicity_initial,
+                    metallicity_end=metallicity_end,
+                    metallicity_interval=metallicity_interval,
+                    wait_time=wait_time,
+                    overwrite=overwrite,
+                    unzip_flag=unzip_flag,
+                )
+
+    print('*' * 100)
+    rearrange_isochrones(
+        iso_paths_list=[download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (2mass & tycho2)/*'.replace(' ', '_'),
+                        download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (gaia dr3)/*'.replace(' ', '_')],
+        selected_bands_list=[['J', 'H', 'Ks', 'B_T', 'V_T'], ['G', 'G_BP', 'G_RP']],
+        name_suffix='2mass & tycho2 & gaia dr3'.replace(' ', '_'),
+        saved_folder_dir=download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged')
+
+    print('*' * 100)
+    check_rearranged_isochrones(
+        rearranged_iso_path=download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged (2mass & tycho2 & gaia dr3)/*'.replace(' ', '_'),
+        original_iso_path_list=[download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (2mass & tycho2)/*'.replace(' ', '_'),
+                                download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (gaia dr3)/*'.replace(' ', '_')],
+        selected_bands_list=[['J', 'H', 'Ks', 'B_T', 'V_T'], ['G', 'G_BP', 'G_RP']],
+        verbose=False,
+        )
+
+
+
+
+def download_MIST_isochrones(
+    output_dir=None,
+    version="v1.2",
+    vvcrit_list=(0.4, 0.0),
+    datasets=("full_isos", "UBVRIplus"),
+    overwrite=False,
+    extract=True,
+    remove_archive=False,
+):
+    """
+    Download and optionally extract MIST isochrone files.
+
+    Default output:
+        REPO_ROOT/data/isochrones/MIST
+
+    Examples
+    --------
+    download_mist_isochrones()
+
+    download_mist_isochrones(datasets=("full_isos",))
+
+    download_mist_isochrones(vvcrit_list=(0.4,), datasets=("UBVRIplus",))
+    """
+
+    if output_dir is None:
+        output_dir = DATA_DIR / "isochrones" / "MIST"
+
+    output_dir = Path(output_dir).expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    base_url = f"https://waps.cfa.harvard.edu/MIST/data/tarballs_{version}"
+
+    archive_paths = []
+
+    for vvcrit in vvcrit_list:
+        for dataset in datasets:
+            filename = f"MIST_{version}_vvcrit{vvcrit:.1f}_{dataset}.txz"
+            url = f"{base_url}/{filename}"
+            archive_path = output_dir / filename
+
+            if archive_path.exists() and not overwrite:
+                print(f"[skip download] {archive_path}")
+            else:
+                print(f"[download] {url}")
+                urlretrieve(url, archive_path)
+                print(f"[saved] {archive_path}")
+
+            archive_paths.append(archive_path)
+
+            if extract:
+                print(f"[extract] {archive_path} -> {output_dir}")
+
+                with tarfile.open(archive_path, mode="r:xz") as tar:
+                    tar.extractall(path=output_dir, filter="data")
+
+                print(f"[done extract] {archive_path}")
+
+                if remove_archive:
+                    archive_path.unlink()
+                    print(f"[removed archive] {archive_path}")
+
+    return archive_paths

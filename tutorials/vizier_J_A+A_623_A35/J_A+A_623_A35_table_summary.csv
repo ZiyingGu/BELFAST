@@ -1,0 +1,2 @@
+table_index,vizier_table_name,saved_csv,source_column_used,target_prefix,n_rows_downloaded,n_columns_saved,columns,description
+1,J/A+A/623/A35/tablec1,vizier_J_A+A_623_A35/J_A+A_623_A35_table1.csv,ID,Gaia DR2 ,1764,18,"target_name, recno, ID, RAICRS, DEICRS, pmRA*, pmDE, Plx, Gmag, bx, by, bz, Dist, c, Mass, RV, _RA.icrs, _DE.icrs",Members of the Hyades cluster
