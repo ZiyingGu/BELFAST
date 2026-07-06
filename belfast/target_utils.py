@@ -633,6 +633,7 @@ def query_tycho_2(tyc_id):
     """
     from astroquery.vizier import Vizier
 
+
     def _nan():
         return np.nan
 
@@ -994,6 +995,7 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
     """
     from astroquery.vizier import Vizier
 
+
     MAG_ERR_FACTOR = 2.5 / np.log(10.0)  # 1.085736...
 
     def _nan():
@@ -1035,6 +1037,33 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
             return float(x)
         except Exception:
             return np.nan
+
+    def _table_value(row, name, default=np.nan):
+        try:
+            return row[name]
+        except Exception:
+            return default
+
+    def _query_gaia_archive(sid_value):
+        try:
+            from astroquery.gaia import Gaia
+            query = (
+                "SELECT source_id, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, "
+                "phot_g_mean_flux, phot_bp_mean_flux, phot_rp_mean_flux, "
+                "phot_g_mean_flux_error, phot_bp_mean_flux_error, phot_rp_mean_flux_error, "
+                "parallax, parallax_error, ruwe, ra, dec, pmra, pmdec, pmra_error, pmdec_error, "
+                "radial_velocity, radial_velocity_error, "
+                "vbroad, vbroad_error "
+                f"FROM gaiadr3.gaia_source WHERE source_id={sid_value}"
+            )
+            job = Gaia.launch_job(query)
+            tab = job.get_results()
+            if len(tab) == 0:
+                return None
+            return tab[0]
+        except Exception as e:
+            warnings.append(f"Gaia Archive fallback failed: {type(e).__name__}: {e}")
+            return None
 
     # ---- normalize id (avoid float precision loss) ----
     sid = "" if gaia_dr3_id is None else str(gaia_dr3_id).strip()
@@ -1113,10 +1142,16 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
         "E(BP-RP)", "b_E(BP-RP)", "B_E(BP-RP)",
         "E(BP/RP)", "b_E(BP/RP)", "B_E(BP/RP)",
     ]
-    v355 = Vizier(columns=v355_cols, row_limit=row_limit)
+    v355 = Vizier(columns=v355_cols, row_limit=1)
 
     try:
         res355 = v355.query_constraints(catalog="I/355", Source=sid)
+        if verbose:
+            if res355 is None or len(res355) == 0:
+                print(f"VizieR I/355 returned no matches for source_id={sid}")
+            else:
+                print(res355)
+
         if res355 is None or len(res355) == 0 or len(res355[0]) == 0:
             res355 = v355.query_constraints(catalog="I/355", source_id=sid)
 
@@ -1227,6 +1262,56 @@ def query_gaia_dr3_vizier(gaia_dr3_id, row_limit=1, verbose=True, snr_lower_limi
 
     except Exception as e:
         warnings.append(f"I/355 query failed: {type(e).__name__}: {e}")
+
+    # fallback to direct Gaia Archive if VizieR could not resolve the source
+    if not np.isfinite(phot.get("G", np.nan)) or not np.isfinite(phot.get("BP", np.nan)) or not np.isfinite(phot.get("RP", np.nan)) or not np.isfinite(astro.get("parallax", np.nan)):
+        gaia_row = _query_gaia_archive(sid)
+        if gaia_row is not None:
+            phot["G"] = _safe_float(_table_value(gaia_row, "phot_g_mean_mag"))
+            phot["BP"] = _safe_float(_table_value(gaia_row, "phot_bp_mean_mag"))
+            phot["RP"] = _safe_float(_table_value(gaia_row, "phot_rp_mean_mag"))
+
+            g_flux = _safe_float(_table_value(gaia_row, "phot_g_mean_flux"))
+            g_flux_err = _safe_float(_table_value(gaia_row, "phot_g_mean_flux_error"))
+            bp_flux = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux"))
+            bp_flux_err = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux_error"))
+            rp_flux = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux"))
+            rp_flux_err = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux_error"))
+
+            g_flux_over_err = _safe_float(_table_value(gaia_row, "phot_g_mean_flux_over_error", np.nan))
+            bp_flux_over_err = _safe_float(_table_value(gaia_row, "phot_bp_mean_flux_over_error", np.nan))
+            rp_flux_over_err = _safe_float(_table_value(gaia_row, "phot_rp_mean_flux_over_error", np.nan))
+            if not np.isfinite(g_flux_over_err):
+                g_flux_over_err = _safe_div(g_flux, g_flux_err)
+            if not np.isfinite(bp_flux_over_err):
+                bp_flux_over_err = _safe_div(bp_flux, bp_flux_err)
+            if not np.isfinite(rp_flux_over_err):
+                rp_flux_over_err = _safe_div(rp_flux, rp_flux_err)
+
+            phot["e_G"] = _to_pyfloat(MAG_ERR_FACTOR * (g_flux_err / g_flux)) if np.isfinite(g_flux) and np.isfinite(g_flux_err) and g_flux > 0 else np.nan
+            phot["e_BP"] = _to_pyfloat(MAG_ERR_FACTOR * (bp_flux_err / bp_flux)) if np.isfinite(bp_flux) and np.isfinite(bp_flux_err) and bp_flux > 0 else np.nan
+            phot["e_RP"] = _to_pyfloat(MAG_ERR_FACTOR * (rp_flux_err / rp_flux)) if np.isfinite(rp_flux) and np.isfinite(rp_flux_err) and rp_flux > 0 else np.nan
+
+            astro["ra"] = _safe_float(_table_value(gaia_row, "ra"))
+            astro["dec"] = _safe_float(_table_value(gaia_row, "dec"))
+            astro["pmra"] = _safe_float(_table_value(gaia_row, "pmra"))
+            astro["pmdec"] = _safe_float(_table_value(gaia_row, "pmdec"))
+            astro["pmra_error"] = _safe_float(_table_value(gaia_row, "pmra_error"))
+            astro["pmdec_error"] = _safe_float(_table_value(gaia_row, "pmdec_error"))
+            astro["parallax"] = _safe_float(_table_value(gaia_row, "parallax"))
+            astro["e_parallax"] = _safe_float(_table_value(gaia_row, "parallax_error"))
+            astro["rv"] = _safe_float(_table_value(gaia_row, "radial_velocity"))
+            astro["rv_error"] = _safe_float(_table_value(gaia_row, "radial_velocity_error"))
+            astro["RUWE"] = _safe_float(_table_value(gaia_row, "ruwe"))
+
+            raw["gaia_archive_fallback"] = {
+                "source_id": sid,
+                "query": "gaia_dr3",
+            }
+            
+            # ---- vbroad + uncertainty ----
+            rot["Vbroad"] = _safe_float(_table_value(gaia_row, "vbroad"))
+            rot["e_Vbroad"] = _safe_float(_table_value(gaia_row, "vbroad_error"))
 
     # -----------------------------
     # 1.5) I/355/paramp: Pbin
