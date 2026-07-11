@@ -35,6 +35,7 @@ __pycache__/
 /tutorials/*
 !/tutorials/01_preparation.ipynb
 !/tutorials/02a_age_estimation_for_single_star_mock.ipynb
+!/tutorials/02b_age_estimation_for_single_star_real.ipynb
 !/tutorials/03_plotting_figures.ipynb
 !/tutorials/04a_select_cluster_targets.ipynb
 !/tutorials/04b_Banyan_Sigma.ipynb
