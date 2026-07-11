@@ -128,7 +128,7 @@ def rearrange_isochrones(iso_paths_list, selected_bands_list, saved_folder_dir, 
     """
 
     if name_suffix is not None:
-        saved_folder_dir += f'_({name_suffix.replace(" ", "_")})'
+        saved_folder_dir += f'_{name_suffix.replace(" ", "_")}'
 
     os.makedirs(saved_folder_dir, exist_ok=True)
 
@@ -144,16 +144,6 @@ def rearrange_isochrones(iso_paths_list, selected_bands_list, saved_folder_dir, 
 
     # all_df_merged_list = []
     for iso_file_i in range(len(iso_file_list[0])):
-        # filename = os.path.basename(iso_file_list[0][iso_file_i])
-        # filename_no_paren = re.sub(r"\s*\([^)]*\)", "", filename)
-        # file_name_body, file_name_ext = os.path.splitext(filename_no_paren.strip())
-        #
-        # if name_suffix is not None:
-        #     file_name_body += f' ({name_suffix})'
-        # final_file_name = file_name_body + file_name_ext
-        #
-        # out_path = os.path.join(saved_folder_dir, final_file_name)
-        # print(f'Now generating: {out_path}')
 
         filename = os.path.basename(iso_file_list[0][iso_file_i])
         filename_no_paren = re.sub(r"[\s_]*\([^)]*\)", "", filename).strip()
@@ -169,7 +159,7 @@ def rearrange_isochrones(iso_paths_list, selected_bands_list, saved_folder_dir, 
             file_name_body, file_name_ext = os.path.splitext(filename_no_paren)
 
         if name_suffix is not None:
-            file_name_body += f"_({name_suffix.replace(" ", "_")})"
+            file_name_body += f"_{name_suffix.replace(" ", "_")}"
 
         final_file_name = file_name_body + file_name_ext
 
@@ -386,7 +376,7 @@ def restructure_inclination(df):
 
 
 
-def add_iso_inc(df_iso_list, omega_ini):
+def add_iso_inc_rot_age(df_iso_list, omega_ini):
     df_inc_list = []
 
     for df_i in df_iso_list:
@@ -402,6 +392,10 @@ def add_iso_inc(df_iso_list, omega_ini):
         df_inc.insert(idx_omega, "omega_ini", omega_ini)
         idx_omega = df_inc.columns.get_loc("omega")
         df_inc.insert(idx_omega + 1, "omega_k", omega_k)
+
+        idx_logAge = df_inc.columns.get_loc("logAge")
+        age = np.round(10.0 ** (df_inc["logAge"].to_numpy() - 6.0), 8)
+        df_inc.insert(idx_logAge + 1, "Age", age)
 
         df_inc_list.append(df_inc)
 
@@ -505,7 +499,7 @@ def PARSECv2_collect_data(
             continue
 
         df = read_isochrones(path, use_tqdm=False)
-        df = add_iso_inc(df, omega_ini)
+        df = add_iso_inc_rot_age(df, omega_ini)
 
         # Early filters
         if label_set is not None:
@@ -580,7 +574,7 @@ def _process_one_Mini_group(args):
         Mini_grid,
         dtype,
         grid_type,
-        logAge_to_idx,
+        Age_to_idx,
         MH_to_idx,
         omega_ini_to_idx,
         Inclination_to_idx,
@@ -697,12 +691,12 @@ def _process_one_Mini_group(args):
 
         y_grid[valid_mask, j] = f(Mini_grid[valid_mask]).astype(dtype)
 
-    idx_logAge = logAge_to_idx[group_info["logAge"]]
+    idx_Age = Age_to_idx[group_info["Age"]]
     idx_MH = MH_to_idx[group_info["MH"]]
     idx_omega_ini = omega_ini_to_idx[group_info["omega_ini"]]
 
     if grid_type == "without_inc":
-        grid_index = (idx_logAge, idx_MH, idx_omega_ini)
+        grid_index = (idx_Age, idx_MH, idx_omega_ini)
     else:
         inc_value = np.round(group_info["Inclination"], 3)
 
@@ -711,7 +705,7 @@ def _process_one_Mini_group(args):
             return result
 
         idx_inc = Inclination_to_idx[inc_value]
-        grid_index = (idx_logAge, idx_MH, idx_omega_ini, idx_inc)
+        grid_index = (idx_Age, idx_MH, idx_omega_ini, idx_inc)
 
     result["status"] = "filled"
     result["filled_group_count"] = 1
@@ -780,15 +774,15 @@ def regularization_on_Mini_from_files(
         print(path_list)
 
     if grid_type == "without_inc":
-        in_cols = ["Mini", "logAge", "MH", "omega_ini"]
-        interp_variable_list = ["Mini", "logAge", "MH", "omega_ini"]
-        group_cols = ["logAge", "MH", "omega_ini"]
+        in_cols = ["Mini", "Age", "MH", "omega_ini"]
+        interp_variable_list = ["Mini", "Age", "MH", "omega_ini"]
+        group_cols = ["Age", "MH", "omega_ini"]
         interp_output_list = ["Mass", "omega", "logL", "Req", "Rpol"]
 
     elif grid_type == "with_inc":
-        in_cols = ["Mini", "logAge", "MH", "omega_ini", "Inclination"]
-        interp_variable_list = ["Mini", "logAge", "MH", "omega_ini", "Inclination"]
-        group_cols = ["logAge", "MH", "omega_ini", "Inclination"]
+        in_cols = ["Mini", "Age", "MH", "omega_ini", "Inclination"]
+        interp_variable_list = ["Mini", "Age", "MH", "omega_ini", "Inclination"]
+        group_cols = ["Age", "MH", "omega_ini", "Inclination"]
         interp_output_list = [
             "Mass", "omega", "Req", "Rpol",
             "G", "G_BP", "G_RP",
@@ -861,7 +855,7 @@ def regularization_on_Mini_from_files(
 
     Mini_min_list = []
     Mini_max_list = []
-    logAge_list = []
+    Age_list = []
     MH_list = []
     omega_ini_list = []
     Inclination_axis_list = []
@@ -876,7 +870,7 @@ def regularization_on_Mini_from_files(
         Mini_min_list.append(np.nanmin(df["Mini"].values))
         Mini_max_list.append(np.nanmax(df["Mini"].values))
 
-        logAge_list.append(df["logAge"].dropna().unique())
+        Age_list.append(df["Age"].dropna().unique())
         MH_list.append(df["MH"].dropna().unique())
         omega_ini_list.append(df["omega_ini"].dropna().unique())
 
@@ -908,7 +902,7 @@ def regularization_on_Mini_from_files(
             Mini_min_list.append(np.nanmin(df["Mini"].values))
             Mini_max_list.append(np.nanmax(df["Mini"].values))
 
-            logAge_list.append(df["logAge"].dropna().unique())
+            Age_list.append(df["Age"].dropna().unique())
             MH_list.append(df["MH"].dropna().unique())
             omega_ini_list.append(df["omega_ini"].dropna().unique())
 
@@ -939,7 +933,11 @@ def regularization_on_Mini_from_files(
         ) / 100.0
     )
 
-    logAge_grid = np.sort(np.unique(np.concatenate(logAge_list)))
+    # Age_grid = np.sort(np.unique(np.concatenate(Age_list)))
+    Age_grid = np.round(
+        np.sort(np.unique(np.concatenate(Age_list))),
+        8,
+    )
     MH_grid = np.sort(np.unique(np.concatenate(MH_list)))
     omega_ini_grid = np.sort(np.unique(np.concatenate(omega_ini_list)))
 
@@ -949,7 +947,7 @@ def regularization_on_Mini_from_files(
     else:
         Inclination_grid = None
 
-    logAge_to_idx = {v: i for i, v in enumerate(logAge_grid)}
+    Age_to_idx = {v: i for i, v in enumerate(Age_grid)}
     MH_to_idx = {v: i for i, v in enumerate(MH_grid)}
     omega_ini_to_idx = {v: i for i, v in enumerate(omega_ini_grid)}
 
@@ -962,7 +960,7 @@ def regularization_on_Mini_from_files(
         grid_outputs = np.full(
             (
                 len(Mini_grid),
-                len(logAge_grid),
+                len(Age_grid),
                 len(MH_grid),
                 len(omega_ini_grid),
                 len(interp_output_list),
@@ -973,7 +971,7 @@ def regularization_on_Mini_from_files(
 
         grid_bounds = np.full(
             (
-                len(logAge_grid),
+                len(Age_grid),
                 len(MH_grid),
                 len(omega_ini_grid),
                 2,
@@ -986,7 +984,7 @@ def regularization_on_Mini_from_files(
         grid_outputs = np.full(
             (
                 len(Mini_grid),
-                len(logAge_grid),
+                len(Age_grid),
                 len(MH_grid),
                 len(omega_ini_grid),
                 len(Inclination_grid),
@@ -998,7 +996,7 @@ def regularization_on_Mini_from_files(
 
         grid_bounds = np.full(
             (
-                len(logAge_grid),
+                len(Age_grid),
                 len(MH_grid),
                 len(omega_ini_grid),
                 len(Inclination_grid),
@@ -1010,7 +1008,7 @@ def regularization_on_Mini_from_files(
 
     print(f"Mini_grid:  [min: {np.min(Mini_grid)}, max: {np.max(Mini_grid)}]")
     print(f"Mini_grid shape: {Mini_grid.shape}")
-    print(f"logAge_grid shape: {logAge_grid.shape}")
+    print(f"Age_grid shape: {Age_grid.shape}")
     print(f"MH_grid shape: {MH_grid.shape}")
     print(f"omega_ini_grid shape: {omega_ini_grid.shape}")
     if grid_type == "with_inc":
@@ -1075,7 +1073,7 @@ def regularization_on_Mini_from_files(
                     Mini_grid,
                     dtype,
                     grid_type,
-                    logAge_to_idx,
+                    Age_to_idx,
                     MH_to_idx,
                     omega_ini_to_idx,
                     Inclination_to_idx,
@@ -1110,16 +1108,16 @@ def regularization_on_Mini_from_files(
             grid_index = res["grid_index"]
 
             if grid_type == "without_inc":
-                idx_logAge, idx_MH, idx_omega_ini = grid_index
+                idx_Age, idx_MH, idx_omega_ini = grid_index
 
-                grid_outputs[:, idx_logAge, idx_MH, idx_omega_ini, :] = y_grid
-                grid_bounds[idx_logAge, idx_MH, idx_omega_ini, :] = bounds_i
+                grid_outputs[:, idx_Age, idx_MH, idx_omega_ini, :] = y_grid
+                grid_bounds[idx_Age, idx_MH, idx_omega_ini, :] = bounds_i
 
             else:
-                idx_logAge, idx_MH, idx_omega_ini, idx_inc = grid_index
+                idx_Age, idx_MH, idx_omega_ini, idx_inc = grid_index
 
-                grid_outputs[:, idx_logAge, idx_MH, idx_omega_ini, idx_inc, :] = y_grid
-                grid_bounds[idx_logAge, idx_MH, idx_omega_ini, idx_inc, :] = bounds_i
+                grid_outputs[:, idx_Age, idx_MH, idx_omega_ini, idx_inc, :] = y_grid
+                grid_bounds[idx_Age, idx_MH, idx_omega_ini, idx_inc, :] = bounds_i
 
             filled_group_count += res["filled_group_count"]
 
@@ -1135,18 +1133,22 @@ def regularization_on_Mini_from_files(
 
     save_dict = dict(
         Mini_grid=Mini_grid,
-        logAge_grid=logAge_grid,
+        Age_grid=Age_grid,
         MH_grid=MH_grid,
         omega_ini_grid=omega_ini_grid,
         grid_outputs=grid_outputs,
         grid_bounds=grid_bounds,
-        Mini_bounds_output_list=np.array(["Mini_min", "Mini_max"], dtype=object),
+        Mini_bounds_output_list=np.array(
+            ["Mini_min", "Mini_max"],
+            dtype=object,
+        ),
         in_cols=np.array(in_cols, dtype=object),
         interp_output_list=np.array(interp_output_list, dtype=object),
         interp_variable_list=np.array(interp_variable_list, dtype=object),
         group_cols=np.array(group_cols, dtype=object),
         grid_type=np.array(grid_type),
         label_list=np.array(label_list),
+        age_unit=np.array("Myr"),
         save_float32=np.array(save_float32),
         read_all_at_once=np.array(read_all_at_once),
         grid_dtype=np.array(str(grid_outputs.dtype)),
@@ -1165,7 +1167,7 @@ def regularization_on_Mini_from_files(
         grid_outputs.nbytes
         + grid_bounds.nbytes
         + Mini_grid.nbytes
-        + logAge_grid.nbytes
+        + Age_grid.nbytes
         + MH_grid.nbytes
         + omega_ini_grid.nbytes
     )
@@ -1202,7 +1204,7 @@ def load_regularized_Mini_interpolator(npz_path, force_float64=False):
     grid_type = str(data["grid_type"])
 
     Mini_grid = data["Mini_grid"]
-    logAge_grid = data["logAge_grid"]
+    Age_grid = data["Age_grid"]
     MH_grid = data["MH_grid"]
     omega_ini_grid = data["omega_ini_grid"]
 
@@ -1223,16 +1225,22 @@ def load_regularized_Mini_interpolator(npz_path, force_float64=False):
     interp_variable_list = data["interp_variable_list"].astype(str).tolist()
     interp_output_list = data["interp_output_list"].astype(str).tolist()
 
+    if "Age" not in interp_variable_list:
+        raise ValueError(
+            "This grid does not use Age as its age coordinate. "
+            f"interp_variable_list={interp_variable_list}"
+        )
+
     if grid_type == "without_inc":
         points = (
             Mini_grid,
-            logAge_grid,
+            Age_grid,
             MH_grid,
             omega_ini_grid,
         )
 
         param_points = (
-            logAge_grid,
+            Age_grid,
             MH_grid,
             omega_ini_grid,
         )
@@ -1242,14 +1250,14 @@ def load_regularized_Mini_interpolator(npz_path, force_float64=False):
 
         points = (
             Mini_grid,
-            logAge_grid,
+            Age_grid,
             MH_grid,
             omega_ini_grid,
             Inclination_grid,
         )
 
         param_points = (
-            logAge_grid,
+            Age_grid,
             MH_grid,
             omega_ini_grid,
             Inclination_grid,
@@ -1364,13 +1372,16 @@ def load_regularized_Mini_interpolator(npz_path, force_float64=False):
         grid_outputs.nbytes
         + grid_bounds.nbytes
         + Mini_grid.nbytes
-        + logAge_grid.nbytes
+        + Age_grid.nbytes
         + MH_grid.nbytes
         + omega_ini_grid.nbytes
     )
 
     if grid_type == "with_inc":
         total_grid_bytes += Inclination_grid.nbytes
+
+    print(f"Age_grid: [{np.min(Age_grid)}, {np.max(Age_grid)}] {str(data['age_unit'])}")
+    print(f"Age_grid shape: {Age_grid.shape}")
 
     print("Loaded regularized Mini grid.")
     print(f"grid_type: {grid_type}")
@@ -1448,7 +1459,7 @@ def regularize_PARSECv2_Mini_grid(
     age_end="2001e6",
     age_interval="10e6",
     age_type="linear",
-    photometry_suffix="2mass & tycho2 & gaia dr3",
+    photometry_suffix="2mass_tycho2_gaia_dr3",
     grid_type="with_inc",
     label_list=None,
     print_path_list=False,
@@ -1476,7 +1487,10 @@ def regularize_PARSECv2_Mini_grid(
         path = [
             str(
                 parsec_dir
-                / f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged ({photometry_suffix})"
+                / (
+                    f"{age_initial}_{age_end}yr_{age_type}_"
+                    f"isochrones_rearranged_{photometry_suffix.replace(' ', '_')}"
+                )
                 / "*"
             )
         ]
@@ -1561,19 +1575,19 @@ def load_default_regularized_PARSECv2_Mini_interpolator(
 
 def _get_u_grid_columns(grid_type):
     if grid_type == "without_inc":
-        interp_variable_list = ["Mini", "logAge", "MH", "omega_ini"]
+        interp_variable_list = ["Mini", "Age", "MH", "omega_ini"]
         interp_output_list = ["Mass", "omega", "logL", "Req", "Rpol"]
-        other_interp_variable_list = ["logAge", "MH", "omega_ini"]
+        other_interp_variable_list = ["Age", "MH", "omega_ini"]
 
     elif grid_type == "with_inc":
-        interp_variable_list = ["Mini", "logAge", "MH", "omega_ini", "Inclination"]
+        interp_variable_list = ["Mini", "Age", "MH", "omega_ini", "Inclination"]
         interp_output_list = [
             "Mass", "omega", "Req", "Rpol",
             "G", "G_BP", "G_RP",
             "B_T", "V_T",
             "J", "H", "Ks",
         ]
-        other_interp_variable_list = ["logAge", "MH", "omega_ini", "Inclination"]
+        other_interp_variable_list = ["Age", "MH", "omega_ini", "Inclination"]
 
     else:
         raise ValueError('grid_type must be "without_inc" or "with_inc".')
@@ -1929,6 +1943,13 @@ def regularization_on_u_from_files(
     axis_grids = {}
     for c in other_interp_variable_list:
         axis_grids[c] = np.sort(np.unique(np.concatenate(axis_values[c])))
+
+    if "Age" not in other_interp_variable_list:
+        raise ValueError(
+            "This u-grid does not use Age as its age coordinate. "
+            f"other_interp_variable_list="
+            f"{other_interp_variable_list}"
+        )
 
     if Mini_min_mode is None:
         df_bounds["Mini_min_used"] = df_bounds["Mini_min_orig"]
@@ -2432,7 +2453,7 @@ def regularize_PARSECv2_u_grid(
     age_end="2001e6",
     age_interval="10e6",
     age_type="linear",
-    photometry_suffix="2mass & tycho2 & gaia dr3",
+    photometry_suffix="2mass_tycho2_gaia_dr3",
     grid_type="with_inc",
     label_list=None,
     min_width_threshold=0.01,
@@ -2464,7 +2485,7 @@ def regularize_PARSECv2_u_grid(
         path = [
             str(
                 parsec_dir
-                / f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged ({photometry_suffix})"
+                / f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged_{photometry_suffix.replace(' ', '_')}"
                 / "*"
             )
         ]
@@ -2995,12 +3016,20 @@ def standardize_mist_dataframe(df_mist):
     df_new = df_mist[required_cols].copy()
     df_new = df_new.rename(columns=col_map)
 
+    idx_logAge = df_new.columns.get_loc("logAge")
+    age = np.round(
+        10.0 ** (df_new["logAge"].to_numpy(dtype=np.float64) - 6.0),
+        8,
+    )
+    df_new.insert(idx_logAge + 1, "Age", age)
+
     df_new["Req"] = 10.0 ** df_new["log_R"]
     df_new = df_new.drop(columns=["log_R"])
 
     keep_cols = [
         "Mini",
         "logAge",
+        "Age",
         "MH",
         "omega_ini",
         "Mass",
@@ -3048,7 +3077,7 @@ def _process_one_MIST_Mini_group(args):
     Regularize one group along Mini.
 
     One group is fixed:
-        logAge, MH, omega_ini
+        Age, MH, omega_ini
 
     The function interpolates:
         Mass, omega, logL, Req
@@ -3064,7 +3093,7 @@ def _process_one_MIST_Mini_group(args):
         interp_output_list,
         Mini_grid,
         dtype,
-        logAge_to_idx,
+        Age_to_idx,
         MH_to_idx,
         omega_ini_to_idx,
         pair_i,
@@ -3188,11 +3217,17 @@ def _process_one_MIST_Mini_group(args):
 
         y_grid[valid_mask, j] = f(Mini_grid[valid_mask]).astype(dtype)
 
-    idx_logAge = logAge_to_idx[group_info["logAge"]]
+    idx_Age = Age_to_idx[group_info["Age"]]
     idx_MH = MH_to_idx[group_info["MH"]]
-    idx_omega_ini = omega_ini_to_idx[group_info["omega_ini"]]
+    idx_omega_ini = omega_ini_to_idx[
+        group_info["omega_ini"]
+    ]
 
-    grid_index = (idx_logAge, idx_MH, idx_omega_ini)
+    grid_index = (
+        idx_Age,
+        idx_MH,
+        idx_omega_ini,
+    )
 
     result["status"] = "filled"
     result["filled_group_count"] = 1
@@ -3279,8 +3314,8 @@ def regularization_on_Mini_from_MIST_folders(
 
     dtype = np.float32 if save_float32 else np.float64
 
-    interp_variable_list = ["Mini", "logAge", "MH", "omega_ini"]
-    group_cols = ["logAge", "MH", "omega_ini"]
+    interp_variable_list = ["Mini", "Age", "MH", "omega_ini"]
+    group_cols = ["Age", "MH", "omega_ini"]
     interp_output_list = ["Mass", "omega", "logL", "Req"]
 
     in_cols = interp_variable_list
@@ -3375,7 +3410,7 @@ def regularization_on_Mini_from_MIST_folders(
     # ----------------------------
     print("Collecting axis values...")
 
-    logAge_list = []
+    Age_list = []
     MH_list = []
     omega_ini_list = []
 
@@ -3386,7 +3421,7 @@ def regularization_on_Mini_from_MIST_folders(
         if len(missing_cols) > 0:
             raise ValueError(f"Missing columns in df_all: {missing_cols}")
 
-        logAge_list.append(df["logAge"].dropna().unique())
+        Age_list.append(df["Age"].dropna().unique())
         MH_list.append(df["MH"].dropna().unique())
         omega_ini_list.append(df["omega_ini"].dropna().unique())
 
@@ -3407,17 +3442,17 @@ def regularization_on_Mini_from_MIST_folders(
                     f"Missing columns in pair {pair_i}: {missing_cols}"
                 )
 
-            logAge_list.append(df["logAge"].dropna().unique())
+            Age_list.append(df["Age"].dropna().unique())
             MH_list.append(df["MH"].dropna().unique())
             omega_ini_list.append(df["omega_ini"].dropna().unique())
 
             del df
 
-    logAge_grid = np.sort(np.unique(np.concatenate(logAge_list)))
+    Age_grid = np.sort(np.unique(np.concatenate(Age_list)))
     MH_grid = np.sort(np.unique(np.concatenate(MH_list)))
     omega_ini_grid = np.sort(np.unique(np.concatenate(omega_ini_list)))
 
-    logAge_to_idx = {v: i for i, v in enumerate(logAge_grid)}
+    Age_to_idx = {v: i for i, v in enumerate(Age_grid)}
     MH_to_idx = {v: i for i, v in enumerate(MH_grid)}
     omega_ini_to_idx = {v: i for i, v in enumerate(omega_ini_grid)}
 
@@ -3427,7 +3462,7 @@ def regularization_on_Mini_from_MIST_folders(
     grid_outputs = np.full(
         (
             len(Mini_grid),
-            len(logAge_grid),
+            len(Age_grid),
             len(MH_grid),
             len(omega_ini_grid),
             len(interp_output_list),
@@ -3438,7 +3473,12 @@ def regularization_on_Mini_from_MIST_folders(
 
     print(f"Mini_grid: [min: {np.min(Mini_grid)}, max: {np.max(Mini_grid)}]")
     print(f"Mini_grid shape: {Mini_grid.shape}")
-    print(f"logAge_grid shape: {logAge_grid.shape}")
+    print(
+        f"Age_grid: "
+        f"[min: {np.min(Age_grid)}, "
+        f"max: {np.max(Age_grid)}] Myr"
+    )
+    print(f"Age_grid shape: {Age_grid.shape}")
     print(f"MH_grid shape: {MH_grid.shape}")
     print(f"omega_ini_grid shape: {omega_ini_grid.shape}")
     print(f"grid_outputs shape: {grid_outputs.shape}")
@@ -3500,7 +3540,7 @@ def regularization_on_Mini_from_MIST_folders(
                     interp_output_list,
                     Mini_grid,
                     dtype,
-                    logAge_to_idx,
+                    Age_to_idx,
                     MH_to_idx,
                     omega_ini_to_idx,
                     pair_i,
@@ -3525,9 +3565,9 @@ def regularization_on_Mini_from_MIST_folders(
                 continue
 
             y_grid = res["y_grid"]
-            idx_logAge, idx_MH, idx_omega_ini = res["grid_index"]
+            idx_Age, idx_MH, idx_omega_ini = res["grid_index"]
 
-            grid_outputs[:, idx_logAge, idx_MH, idx_omega_ini, :] = y_grid
+            grid_outputs[:, idx_Age, idx_MH, idx_omega_ini, :] = y_grid
 
             filled_group_count += res["filled_group_count"]
 
@@ -3544,24 +3584,44 @@ def regularization_on_Mini_from_MIST_folders(
 
     save_file = save_path / save_name
     problematic_path = save_path / "problematic_duplicated_Mini_records_MIST.csv"
-
     save_dict = dict(
         Mini_grid=Mini_grid,
-        logAge_grid=logAge_grid,
+        Age_grid=Age_grid,
         MH_grid=MH_grid,
         omega_ini_grid=omega_ini_grid,
         grid_outputs=grid_outputs,
-        in_cols=np.array(in_cols, dtype=object),
-        interp_variable_list=np.array(interp_variable_list, dtype=object),
-        interp_output_list=np.array(interp_output_list, dtype=object),
-        group_cols=np.array(group_cols, dtype=object),
+        in_cols=np.array(
+            in_cols,
+            dtype=object,
+        ),
+        interp_variable_list=np.array(
+            interp_variable_list,
+            dtype=object,
+        ),
+        interp_output_list=np.array(
+            interp_output_list,
+            dtype=object,
+        ),
+        group_cols=np.array(
+            group_cols,
+            dtype=object,
+        ),
         grid_type=np.array("MIST"),
+        age_unit=np.array("Myr"),
         save_float32=np.array(save_float32),
         read_all_at_once=np.array(read_all_at_once),
-        grid_dtype=np.array(str(grid_outputs.dtype)),
-        safe_duplicate_count=np.array(safe_duplicate_count),
-        filled_group_count=np.array(filled_group_count),
-        skipped_group_count=np.array(skipped_group_count),
+        grid_dtype=np.array(
+            str(grid_outputs.dtype)
+        ),
+        safe_duplicate_count=np.array(
+            safe_duplicate_count
+        ),
+        filled_group_count=np.array(
+            filled_group_count
+        ),
+        skipped_group_count=np.array(
+            skipped_group_count
+        ),
     )
 
     np.savez_compressed(save_file, **save_dict)
@@ -3570,7 +3630,7 @@ def regularization_on_Mini_from_MIST_folders(
     total_bytes = (
         grid_outputs.nbytes
         + Mini_grid.nbytes
-        + logAge_grid.nbytes
+        + Age_grid.nbytes
         + MH_grid.nbytes
         + omega_ini_grid.nbytes
     )
@@ -3598,10 +3658,14 @@ def regularization_on_Mini_from_MIST_folders(
 
 def load_regularized_MIST_interpolator(npz_path, force_float64=False):
     """
-    Load regularized MIST Mini grid and return a RegularGridInterpolator.
+    Load regularized MIST Mini grid and return
+    a RegularGridInterpolator.
 
     Input order:
-        Mini, logAge, MH, omega_ini
+        Mini, Age, MH, omega_ini
+
+    Age unit:
+        Myr
 
     Output order:
         Mass, omega, logL, Req
@@ -3613,7 +3677,7 @@ def load_regularized_MIST_interpolator(npz_path, force_float64=False):
         raise ValueError(f"This does not look like a MIST grid. grid_type={grid_type}")
 
     Mini_grid = data["Mini_grid"]
-    logAge_grid = data["logAge_grid"]
+    Age_grid = data["Age_grid"]
     MH_grid = data["MH_grid"]
     omega_ini_grid = data["omega_ini_grid"]
 
@@ -3623,11 +3687,21 @@ def load_regularized_MIST_interpolator(npz_path, force_float64=False):
         grid_outputs = grid_outputs.astype(np.float64)
 
     interp_variable_list = data["interp_variable_list"].astype(str).tolist()
+    if interp_variable_list != [
+        "Mini",
+        "Age",
+        "MH",
+        "omega_ini",
+    ]:
+        raise ValueError(
+            "Unexpected MIST interpolation variables: "
+            f"{interp_variable_list}"
+        )
     interp_output_list = data["interp_output_list"].astype(str).tolist()
 
     points = (
         Mini_grid,
-        logAge_grid,
+        Age_grid,
         MH_grid,
         omega_ini_grid,
     )
@@ -3642,11 +3716,12 @@ def load_regularized_MIST_interpolator(npz_path, force_float64=False):
     total_grid_bytes = (
         grid_outputs.nbytes
         + Mini_grid.nbytes
-        + logAge_grid.nbytes
+        + Age_grid.nbytes
         + MH_grid.nbytes
         + omega_ini_grid.nbytes
     )
-
+    print(f"Age_grid: [{np.min(Age_grid)}, {np.max(Age_grid)}] {str(data['age_unit'])}")
+    print(f"Age_grid shape: {Age_grid.shape}")
     print("Loaded regularized MIST Mini grid.")
     print(f"grid_type: {grid_type}")
     print(f"interp_variable_list: {interp_variable_list}")

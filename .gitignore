@@ -34,10 +34,10 @@ __pycache__/
 
 /tutorials/*
 !/tutorials/01_preparation.ipynb
-!/tutorials/02_age_estimation_for_single_star.ipynb
+!/tutorials/02a_age_estimation_for_single_star_mock.ipynb
 !/tutorials/03_plotting_figures.ipynb
-!/tutorials/04_select_cluster_targets.ipynb
-!/tutorials/04a_Banyan_Sigma.ipynb
+!/tutorials/04a_select_cluster_targets.ipynb
+!/tutorials/04b_Banyan_Sigma.ipynb
 !/tutorials/05_cluster age_estimation.ipynb
 !/tutorials/06_Neural_Network_training.ipynb
 !/tutorials/vizier_J_A+A_628_A66

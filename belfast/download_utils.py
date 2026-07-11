@@ -181,7 +181,10 @@ def download_isochrone(
         element.send_keys(str(value))
 
     if name_suffix is not None:
-        folder_name = f'{age_initial}_{age_end}yr_{age_type}_isochrones_({name_suffix.replace(' ', '_')})'
+        folder_name = (
+            f"{age_initial}_{age_end}yr_{age_type}_isochrones_"
+            f"{name_suffix.replace(' ', '_')}"
+        )
     else:
         folder_name = f'{age_initial}_{age_end}yr_{age_type}_isochrones'
 
@@ -190,8 +193,11 @@ def download_isochrone(
     if output_name is None:
         if name_suffix is not None:
             output_name = (
-                f"omega_ini{omega_ini:.2f}_{age_type}_age{age_initial}to{age_end}d{age_interval}_"
-                f"{metallicity_type}{metallicity_initial}to{metallicity_end}d{metallicity_interval}_({name_suffix.replace(' ', '_')})"
+                f"omega_ini{omega_ini:.2f}_"
+                f"{age_type}_age{age_initial}to{age_end}d{age_interval}_"
+                f"{metallicity_type}{metallicity_initial}to"
+                f"{metallicity_end}d{metallicity_interval}_"
+                f"{name_suffix.replace(' ', '_')}"
             )
         else:
             output_name = (
@@ -528,20 +534,21 @@ def download_PARSECv2_isochrones(
 
     print('*' * 100)
     rearrange_isochrones(
-        iso_paths_list=[download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (2mass & tycho2)/*'.replace(' ', '_'),
-                        download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (gaia dr3)/*'.replace(' ', '_')],
+        iso_paths_list=[download_dir + f"{age_initial}_{age_end}yr_{age_type}_isochrones_2mass_tycho2/*",
+                        download_dir + f"{age_initial}_{age_end}yr_{age_type}_isochrones_gaia_dr3/*"],
         selected_bands_list=[['J', 'H', 'Ks', 'B_T', 'V_T'], ['G', 'G_BP', 'G_RP']],
-        name_suffix='2mass & tycho2 & gaia dr3'.replace(' ', '_'),
-        saved_folder_dir=download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged')
+        name_suffix='2mass_tycho2_gaia_dr3',
+        saved_folder_dir=download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged'
+    )
 
     print('*' * 100)
     check_rearranged_isochrones(
-        rearranged_iso_path=download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged (2mass & tycho2 & gaia dr3)/*'.replace(' ', '_'),
-        original_iso_path_list=[download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (2mass & tycho2)/*'.replace(' ', '_'),
-                                download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones (gaia dr3)/*'.replace(' ', '_')],
+        rearranged_iso_path= download_dir + f"{age_initial}_{age_end}yr_{age_type}_isochrones_rearranged_2mass_tycho2_gaia_dr3/*",
+        original_iso_path_list=[download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_2mass_tycho2/*',
+                                download_dir + f'{age_initial}_{age_end}yr_{age_type}_isochrones_gaia_dr3/*'],
         selected_bands_list=[['J', 'H', 'Ks', 'B_T', 'V_T'], ['G', 'G_BP', 'G_RP']],
         verbose=False,
-        )
+    )
 
 
 

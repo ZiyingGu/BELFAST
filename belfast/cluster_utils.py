@@ -1,21 +1,22 @@
-from belfast.target_utils import query_data, cal_obs_mag, cal_abs_mag, remove_extinction
-from belfast.isochrone_utils import rearrange_isochrones, read_isochrones, check_rearranged_isochrones
-
 import re
-from glob import glob
-from scipy.stats import gaussian_kde
-from scipy.special import logsumexp
-import numpy as np
-from math import erf, sqrt
-
-import pandas as pd
-
 import os
-
+import time
+import emcee
+import numpy as np
+import pandas as pd
+from glob import glob
+from pathlib import Path
+from math import erf, sqrt
 import matplotlib.pyplot as plt
+from scipy.special import logsumexp
+from scipy.stats import gaussian_kde
 from matplotlib.patches import Patch
+from urllib.parse import quote
+from urllib.request import urlopen
+from astroquery.vizier import Vizier
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from belfast.target_utils import query_data, cal_abs_mag, remove_extinction
 
-import matplotlib.colors as mcolors
 
 # === KDE 估计 PDF ===
 def kde_pdf(samples, grid):
@@ -43,7 +44,7 @@ def compute_act(samples_2d):
     """
     Compute integrated autocorrelation time (ACT) for 2D samples: (n_walkers, n_steps)
     """
-    import emcee
+
     try:
         act = emcee.autocorr.integrated_time(samples_2d, quiet=True, tol=0)
         # emcee 返回 shape=(n_walkers,)，我们只取最大值
@@ -52,12 +53,6 @@ def compute_act(samples_2d):
         act_val = np.nan
     return act_val
 
-import numpy as np
-from scipy.special import logsumexp
-
-
-import numpy as np
-from scipy.special import logsumexp
 
 
 def combine_posteriors_age_unflat(
@@ -162,18 +157,9 @@ def combine_posteriors_age_unflat(
 
 
 
-# ---------- Step 1. 读取 SIMBAD-HIP 对照表 ----------
 
-# df_targets = df_targets.dropna(subset=["HIP_ID"]).copy()
-# df_targets["HIP_ID"] = df_targets["HIP_ID"].str.strip()
-
-# ---------- Step 2. 准备 posterior 路径 ----------
-
-
-
-# ---------- Step 3. 定义 ACT 计算 ----------
 def compute_act(samples_2d):
-    import emcee
+
     try:
         act = emcee.autocorr.integrated_time(samples_2d, quiet=True, tol=0)
         act_val = np.nanmax(act)
@@ -262,36 +248,20 @@ def summarize_cluster_age(
         # Parameter indices are assumed to be fixed by the sampling code
         mass_index = data['output_list'].tolist().index('Mass')
         mass_chain = blobs[:, :, mass_index].T
-        logage_index = data['param_names'].tolist().index('logAge')
-        logage_chain = samples[:, :, logage_index].T
+        age_index = data['param_names'].tolist().index('Age')
+        age_chain = samples[:, :, age_index].T
         u_index = data['output_list'].tolist().index('u')
         u_chain = blobs[:, :, u_index].T
         sigma_index = data['param_names'].tolist().index('sigma')
         sigma_chain = samples[:, :, sigma_index].T
 
-
-        # n_steps = logage_chain.shape[1]
-
-        # ------------------------------------------------------------------
-        # Step 2. Estimate burn-in using autocorrelation time (ACT)
-        # ------------------------------------------------------------------
-        # half_idx = int(0.5 * n_steps)
-        # third_idx = int(0.7 * n_steps)
-        #
-        # act_half = compute_act(logage_chain[:, half_idx:])
-        # act_third = compute_act(logage_chain[:, third_idx:])
-        # act_max = np.nanmax([act_half, act_third])
-        #
-        # burnin = int(min(n_steps, 10 * act_max))
-        # if not np.isfinite(burnin) or burnin >= n_steps:
-        #     burnin = n_steps // 2
         burnin = int(data['n_discard'])
 
         # ------------------------------------------------------------------
         # Step 3. Extract post–burn-in samples
         # ------------------------------------------------------------------
         mass_post = mass_chain[:, burnin:]
-        age_post = 10 ** (logage_chain[:, burnin:] - 6.0)  # convert to Myr
+        age_post = age_chain[:, burnin:]  # Myr
         u_post = u_chain[:, burnin:]
         sigma_post = sigma_chain[:, burnin:]
 
@@ -382,6 +352,7 @@ def plot_mass_age(
     title=None,
     save_name=None,
     age_xlim=None,
+    legend_loc='upper left',
 ):
     """
     Plot the mass–age relation of cluster members (left panel) together with
@@ -421,8 +392,9 @@ def plot_mass_age(
     for path in post_paths:
         data = np.load(path, allow_pickle=True)
         samples = data["samples"]
-        logage = samples[:, :, 1]
-        star_age_samples.append(10 ** (logage - 6.0))
+        age_index = data['param_names'].tolist().index('Age')
+        age = samples[:, :, age_index]
+        star_age_samples.append(age)
 
     # ============================================================
     # Step 2. Combine cluster age posterior
@@ -512,12 +484,13 @@ def plot_mass_age(
             rf"{med:.0f}^{{+{err_high:.0f}}}_{{-{err_low:.0f}}}\,Myr$"
         ),
     )
+
     ax_left.legend(
         handles=[legend_patch],
         frameon=False,
         fontsize=legend_fs,
+        loc=legend_loc,
     )
-
     # ============================================================
     # Right panel
     # ============================================================
@@ -540,10 +513,12 @@ def plot_mass_age(
     )
 
     ax_right.set_xlabel("Probability density", fontsize=label_fs)
-    if title == False:
-        ax_right.set_title(None)
+    if title is False:
+        ax_right.set_title("")
+    elif title is None:
+        ax_right.set_title("Cluster Age posterior")
     else:
-        ax_right.set_title("Cluster Age posterior")  # Title unchanged
+        ax_right.set_title(str(title))
     ax_right.tick_params(axis="both", labelsize=tick_fs)
 
     if age_xlim is not None:
@@ -614,8 +589,9 @@ def plot_mass_age_rot90(
     for path in post_paths:
         data = np.load(path, allow_pickle=True)
         samples = data["samples"]
-        logage = samples[:, :, 1]
-        star_age_samples.append(10 ** (logage - 6.0))  # Myr
+        age_index = data['param_names'].tolist().index('Age')
+        age = samples[:, :, age_index]
+        star_age_samples.append(age)
 
     # ============================================================
     # Step 2. Combine cluster age posterior
@@ -685,8 +661,12 @@ def plot_mass_age_rot90(
 
     ax_top.set_ylabel(r"Mass ($M_\odot$)", fontsize=label_fs)
 
-    if title != False:
-        ax_top.set_title(title)  # title font unchanged
+    if title is False:
+        ax_top.set_title("")
+    elif title is None:
+        ax_top.set_title("Cluster Age posterior")
+    else:
+        ax_top.set_title(str(title))
 
     ax_top.tick_params(axis="both", labelsize=tick_fs)
     ax_top.tick_params(labelbottom=False)  # hide x tick labels on top
@@ -754,13 +734,47 @@ def plot_mass_age_rot90(
 
 
 
-from pathlib import Path
-from urllib.request import urlopen
-from urllib.parse import quote
+def plot_cluster_age(
+        cluster,
+        df_summary_posterior,
+        method,
+        rot90deg=False,
+        weight=False,
+        title=None,
+        save_name=None,
+        age_xlim=None,
+        legend_loc='upper left',
+):
 
-import numpy as np
-import pandas as pd
-from astroquery.vizier import Vizier
+
+    if rot90deg == True:
+        save_path = Path(save_name)
+        save_stem = save_path.stem
+        save_suffix = save_path.suffix
+        plot_mass_age_rot90(
+            cluster,
+            df_summary_posterior,
+            method,
+            weight=weight,
+            title=title,
+            save_name=save_stem + '_rot90deg' + save_suffix,
+            age_xlim=age_xlim,
+            legend_loc=legend_loc,
+        )
+    else:
+        plot_mass_age(
+            cluster,
+            df_summary_posterior,
+            method,
+            weight=weight,
+            title=title,
+            save_name=save_name,
+            age_xlim=age_xlim,
+            legend_loc=legend_loc,
+        )
+
+
+
 
 
 def safe_catalog_name(catalog_id):
@@ -997,15 +1011,6 @@ def download_vizier_catalog_with_target_name(
         "tables": tables,
     }
 
-
-
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import pandas as pd
-import numpy as np
-import time
-
-# from belfast.target_utils import query_data
 
 
 BANYAN_COLS = [
@@ -1310,11 +1315,6 @@ def append_query_data_and_banyan_cols_to_table(
 
     return df_out
 
-
-
-import numpy as np
-import pandas as pd
-import re
 
 
 def parallax_to_distance(parallax_mas, parallax_err_mas):

@@ -1,20 +1,15 @@
-# import necessary packages
 import os
-# import pandas as pd
-# import warnings
+import emcee
 import numpy as np
-# from tqdm import tqdm
-# import re
 from glob import glob
 from pathlib import Path
-import json
-import inspect
-# from itertools import product
-# from belfast.isochrone_utils import read_isochrones, PARSECv2_collect_data, MIST_collect_data, make_model
-from belfast.isochrone_utils import PARSECv2_collect_data, load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
-from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
-from belfast.PARS_utils import extract_MH, make_limb_darkening_files
+
 from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
+from belfast.PARS_utils import extract_MH, make_limb_darkening_files
+from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
+from belfast.mcmc_utils import select_Vrot_prior_by_rough_mass, log_prior_Vrot_dict, _log_prior_mixture_maxwell_lagged_truncated
+from belfast.isochrone_utils import load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
+
 
 class Target:
     def __init__(self, name, bands_list, obs_mags, obs_err_mags,
@@ -102,11 +97,11 @@ class Target:
         self.max_sigma_adjustment_parameter = max_sigma_adjustment_parameter
 
         # if collect_variables_list is None:
-        #     collect_variables_list = ['Mini', 'logAge', 'MH', 'logTe', 'logL', 'logg', 'Req', 'Rpol', 'vtaneq', 'Inclination', 'omega_ini'] # Do not change the order of this list; Delete if needed
+        #     collect_variables_list = ['Mini', 'Age', 'MH', 'logTe', 'logL', 'logg', 'Req', 'Rpol', 'vtaneq', 'Inclination', 'omega_ini'] # Do not change the order of this list; Delete if needed
         if interp_variables_list is None:
-            interp_variables_list = ['Mini', 'logAge', 'MH', 'omega_ini'] # Do not change the order of this list; Delete if needed
+            interp_variables_list = ['Mini', 'Age', 'MH', 'omega_ini'] # Do not change the order of this list; Delete if needed
         if sampling_variables_list is None:
-            sampling_variables_list = ['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination', 'parallax'] # Do not change the order of this list; Delete if needed
+            sampling_variables_list = ['Mini', 'Age', 'MH', 'omega_ini', 'Inclination', 'parallax'] # Do not change the order of this list; Delete if needed
 
         if self.sigma_adjustment_parameter in {0, False}:
             sampling_variables_list = sampling_variables_list
@@ -132,7 +127,7 @@ class Target:
                                                        max_sigma_adjustment_parameter=max_sigma_adjustment_parameter)
 
         self.known_Mini = None
-        self.known_logAge = None
+        self.known_Age = None
         self.known_MH = None
         self.known_omega_ini = None
         self.known_Inclination = None
@@ -144,7 +139,7 @@ class Target:
             self,
             true_values=None,
             known_Mini=None,
-            known_logAge=None,
+            known_Age=None,
             known_MH=None,
             known_omega_ini=None,
             known_Inclination=None,
@@ -157,10 +152,10 @@ class Target:
 
         1. Provide `true_values` directly:
            `true_values` must contain six values in the order:
-           [Mini, logAge, MH, omega_ini, Inclination, parallax].
+           [Mini, Age, MH, omega_ini, Inclination, parallax].
 
         2. Provide individual known values:
-           known_Mini, known_logAge, known_MH, known_omega_ini,
+           known_Mini, known_Age, known_MH, known_omega_ini,
            known_Inclination, and known_parallax.
 
         If neither `true_values` nor an individual value is provided for a
@@ -169,9 +164,9 @@ class Target:
         Args:
             true_values (array-like, optional):
                 True parameter values in the order
-                [Mini, logAge, MH, omega_ini, Inclination, parallax].
+                [Mini, Age, MH, omega_ini, Inclination, parallax].
             known_Mini (float, optional): Known initial stellar mass.
-            known_logAge (float, optional): Known log(age).
+            known_Age (float, optional): Known log(age).
             known_MH (float, optional): Known metallicity.
             known_omega_ini (float, optional): Known initial rotation parameter.
             known_Inclination (float, optional): Known inclination.
@@ -184,12 +179,12 @@ class Target:
             if true_values.shape != (6,):
                 raise ValueError(
                     "`true_values` must have length 6 in the order "
-                    "[Mini, logAge, MH, omega_ini, Inclination, parallax]."
+                    "[Mini, Age, MH, omega_ini, Inclination, parallax]."
                 )
 
             (
                 self.known_Mini,
-                self.known_logAge,
+                self.known_Age,
                 self.known_MH,
                 self.known_omega_ini,
                 self.known_Inclination,
@@ -200,7 +195,7 @@ class Target:
 
         else:
             self.known_Mini = known_Mini
-            self.known_logAge = known_logAge
+            self.known_Age = known_Age
             self.known_MH = known_MH
             self.known_omega_ini = known_omega_ini
             self.known_Inclination = known_Inclination
@@ -209,7 +204,7 @@ class Target:
             self.true_values = np.array(
                 [
                     known_Mini,
-                    known_logAge,
+                    known_Age,
                     known_MH,
                     known_omega_ini,
                     known_Inclination,
@@ -229,17 +224,34 @@ class Target:
                    MIST_MH_offset=0.018,
                    flag_64=False,
                     # PARS setting
-                   PARS_limb_darkening_path=None,
-                   PARS_filters=None,
+                   PARS_limb_darkening_path=DATA_DIR / 'Kurucz_limb_darkening' / 'i[pm]*k*.pck*',
+                   PARS_filters=DATA_DIR / 'PARS_filters' / '*.dat',
                    PARS_nz=100,
-                   PARS_MH_offset=-0.046, # [M/H] zeropoint converison from Caffau et. (2011) to Grevesse & Sauval (1998)
+                   PARS_MH_offset=-0.046, # [M/H] zeropoint conversion from Caffau et. (2011) to Grevesse & Sauval (1998)
                    # NN setting
                    # NN_prepare_data=False,
                    # NN_photo_err_scaler=40,
                    ):
 
+        iso_name = iso_name.upper()
+        METHOD = METHOD.upper()
+
         if grids_path is None:
-            grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+            if iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'DIRECT':
+                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+            elif iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'PARS':
+                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
+            elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'DIRECT':
+                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+            elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'PARS':
+                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
+            elif iso_name == 'MIST' and grids_type == 'Mini' and METHOD == 'PARS':
+                grids_path = DATA_DIR / 'isochrones' / 'regular_MIST_Mini_grids' / 'regularized_MIST_Mini_grid.npz'
+            else:
+                raise ValueError('"iso_name" must be either "PARSEC" or "MIST".\n'
+                                 'If using PARSEC v2.0 isochrones, "grids_type" can be either "Mini" or "u" and "METHOD" can be either "DIRECT" or "PARS".\n'
+                                 'If using MIST v1.2 isochrones,  "grids_type" must be either "Mini" and "METHOD" must be "PARS".')
+
         if isinstance(grids_path, os.PathLike):
             grids_path = str(grids_path)
         if isinstance(PARS_limb_darkening_path, os.PathLike):
@@ -247,42 +259,26 @@ class Target:
         if isinstance(PARS_filters, os.PathLike):
             PARS_filters = str(PARS_filters)
 
-        available_grids_type = ['Mini', 'u']
-        available_METHOD = ['DIRECT', 'PARS', 'NN']
-        if not isinstance(grids_path, str) or grids_type not in available_grids_type:
-            raise Exception(f'Grids path must be a string and one type of {available_grids_type}')
-        if not isinstance(METHOD, str) or METHOD not in available_METHOD:
-            raise TypeError(f'METHOD must be a string and one of {available_METHOD}')
-
         if self.cluster != '':
             self.cluster_name = '_' + self.cluster
         else:
             self.cluster_name = self.cluster
 
-        if iso_name.upper() == 'PARSEC':
-            pass
-        elif iso_name.upper() == 'MIST':
-            if grids_type == 'u':
-                raise ValueError("MIST isochrones could only use 'Mini' grids.")
-            if METHOD == 'DIRECT':
-                raise ValueError("MIST isochrones could only use the 'PARS' method.")
-        else:
-            raise ValueError("iso_name must be either 'PARSEC' or 'MIST'.")
-        self.iso_name = iso_name.upper()
+        self.iso_name = iso_name
+        self.grids_path = grids_path
+        self.grids_type = grids_type
+        self.METHOD = METHOD
+        self.PARS_limb_darkening_path = PARS_limb_darkening_path
+        self.PARS_filters = PARS_filters
+        self.correct_MIST_MH_zeropoint = correct_MIST_MH_zeropoint
+        self.MIST_MH_offset = MIST_MH_offset
+        self.flag_64 = flag_64
+        self.interp_upper_limit = []
+        self.interp_lower_limit = []
 
         print('*' * 100)
         print(f'Using {iso_name} isochrones with {grids_type} grids and {METHOD} method.')
         print('*' * 100)
-
-        self.grids_path = grids_path
-        self.grids_type = grids_type
-        self.iso_name = iso_name.upper()
-        self.correct_MIST_MH_zeropoint = correct_MIST_MH_zeropoint
-        self.MIST_MH_offset = MIST_MH_offset
-        self.METHOD = METHOD
-        self.flag_64 = flag_64
-        self.interp_upper_limit = []
-        self.interp_lower_limit = []
 
         if grids_type == 'Mini':
             if iso_name.lower() == 'PARSEC'.lower():
@@ -339,8 +335,7 @@ class Target:
                 raise Exception('PARS_limb_darkening_path must be defined.')
             if PARS_filters is None:
                 raise Exception('PARS_filters must be defined.')
-            self.PARS_limb_darkening_path = PARS_limb_darkening_path
-            self.PARS_filters = PARS_filters
+
             PARS_limb_darkening_filelist = glob(PARS_limb_darkening_path)
             PARS_limb_darkening_filelist.sort()
             limb_darkening_MH_dic = {file: extract_MH(file) for file in PARS_limb_darkening_filelist if extract_MH(file) is not None}
@@ -369,9 +364,10 @@ class Target:
                      sigma_limit=None,
                      extinction_limit=None,
 
+                     emcee_moves=None,
                      Vrot_prior=None,
                      mini_prior='default',
-                     logAge_prior='default',
+                     Age_prior='default',
                      MH_prior='default',
                      omega_ini_prior='default',
                      inclination_prior='default',
@@ -388,7 +384,7 @@ class Target:
             sigma_limit (list): Sigma prior limits [min, max] or list of such for multiple sigmas.
             extinction_limit (list): Extinction prior limits [min, max].
             mini_prior (str/callable): Prior for mini.
-            logAge_prior (str/callable): Prior for logAge.
+            Age_prior (str/callable): Prior for Age.
             MH_prior (str/callable): Prior for metallicity.
             omega_ini_prior (str/callable): Prior for rotation parameter.
             inclination_prior (str/callable): Prior for inclination.
@@ -404,6 +400,11 @@ class Target:
         if extinction_limit is None:
             extinction_limit = [1e-8, 1]
 
+        if emcee_moves is None:
+            self.emcee_moves = [
+                (emcee.moves.StretchMove(a=2.0),         0.95),
+                (emcee.moves.KDEMove(),                  0.05),
+            ]
         self.age_limit = age_limit
         self.parallax_limit = parallax_limit
         self.sigma_limit = sigma_limit
@@ -417,8 +418,8 @@ class Target:
         invalid_keys = []
         if mini_prior != 'default' and not callable(mini_prior):
             invalid_keys.append('mini_prior')
-        if logAge_prior != 'default' and not callable(logAge_prior):
-            invalid_keys.append('logAge_prior')
+        if Age_prior != 'default' and not callable(Age_prior):
+            invalid_keys.append('Age_prior')
         if MH_prior != 'default' and not callable(MH_prior):
             invalid_keys.append('MH_prior')
         if omega_ini_prior != 'default' and not callable(omega_ini_prior):
@@ -445,7 +446,7 @@ class Target:
             raise ValueError(message)
 
         self.mini_prior = mini_prior
-        self.logAge_prior = logAge_prior
+        self.Age_prior = Age_prior
         self.MH_prior = MH_prior
         self.omega_ini_prior = omega_ini_prior
         self.inclination_prior = inclination_prior
@@ -484,8 +485,8 @@ class Target:
             sampling_upper_limit_original[self.sampling_variables_list.index('extinction')] = extinction_limit[1]
 
         if age_limit is not None:
-            sampling_lower_limit_original[self.sampling_variables_list.index('logAge')] = age_limit[0]
-            sampling_upper_limit_original[self.sampling_variables_list.index('logAge')] = age_limit[1]
+            sampling_lower_limit_original[self.sampling_variables_list.index('Age')] = age_limit[0]
+            sampling_upper_limit_original[self.sampling_variables_list.index('Age')] = age_limit[1]
 
         self.sampling_lower_limit = sampling_lower_limit_original
         self.sampling_upper_limit = sampling_upper_limit_original
@@ -512,15 +513,17 @@ class Target:
             high_str = f"{high:.4f}" if np.isfinite(high) else "nan"
             print(f"{name:<12} {low_str:>10} {high_str:>10}")
 
-
-    def save(self, filename, verbose=True):
+    def save(
+            self,
+            filename,
+            verbose=True,
+    ):
         """
-        Save the current object configuration to an npz file.
+        Save the current Target object configuration to an NPZ file.
 
         Notes
         -----
-        The following runtime objects are not saved and should be rebuilt
-        when loading the object:
+        The following runtime objects are not saved directly:
 
             Model_interp
             interp_u
@@ -528,14 +531,32 @@ class Target:
             interp_u_bounds
             data
             made_limb_darkening_dict
+            emcee_moves
 
-        User-defined prior functions are saved as source-code strings
-        using inspect.getsource().
+        ``emcee_moves`` is converted into a JSON-compatible
+        ``emcee_move_config`` dictionary before saving.
+
+        User-defined prior functions are saved as source-code strings using
+        ``inspect.getsource()``.
         """
+        import inspect
+        import json
+        import os
+        from pathlib import Path
+
+        import emcee
+        import numpy as np
 
         filename = Path(filename)
-        filename.parent.mkdir(parents=True, exist_ok=True)
 
+        filename.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # ============================================================
+        # Runtime-only attributes
+        # ============================================================
         skip_keys = {
             "Model_interp",
             "interp_u",
@@ -543,12 +564,22 @@ class Target:
             "interp_u_bounds",
             "data",
             "made_limb_darkening_dict",
+
+            # emcee Move objects are not JSON serializable.
+            "emcee_moves",
+
+            # This is generated explicitly from self.emcee_moves below.
+            # Skip any possibly stale existing attribute.
+            "emcee_move_config",
         }
 
+        # ============================================================
+        # Prior attributes
+        # ============================================================
         prior_keys = {
             "Vrot_prior",
             "mini_prior",
-            "logAge_prior",
+            "Age_prior",
             "MH_prior",
             "omega_ini_prior",
             "inclination_prior",
@@ -559,146 +590,512 @@ class Target:
         arrays_to_save = {}
         config = {}
 
+        # ============================================================
+        # Convert ordinary values to JSON-compatible objects
+        # ============================================================
         def to_jsonable(value):
-            """Convert values to JSON-serializable objects."""
+            """
+            Convert a Python or NumPy value into a JSON-compatible value.
+            """
             if value is None:
                 return None
 
-            if isinstance(value, (str, int, float, bool)):
+            if isinstance(
+                    value,
+                    (
+                            str,
+                            int,
+                            float,
+                            bool,
+                    ),
+            ):
                 return value
 
-            if isinstance(value, (np.integer, np.floating, np.bool_)):
+            if isinstance(
+                    value,
+                    (
+                            np.integer,
+                            np.floating,
+                            np.bool_,
+                    ),
+            ):
                 return value.item()
 
-            if isinstance(value, Path):
+            if isinstance(
+                    value,
+                    Path,
+            ):
                 return str(value)
 
-            if isinstance(value, np.ndarray):
+            if isinstance(
+                    value,
+                    np.ndarray,
+            ):
                 return value.tolist()
 
-            if isinstance(value, (list, tuple)):
-                return [to_jsonable(v) for v in value]
+            if isinstance(
+                    value,
+                    (list, tuple),
+            ):
+                return [
+                    to_jsonable(item)
+                    for item in value
+                ]
 
-            if isinstance(value, dict):
-                return {str(k): to_jsonable(v) for k, v in value.items()}
+            if isinstance(
+                    value,
+                    dict,
+            ):
+                return {
+                    str(key): to_jsonable(item)
+                    for key, item in value.items()
+                }
 
             raise TypeError(
-                f"Cannot convert object of type {type(value)} to JSON."
+                "Cannot convert object of type "
+                f"{type(value)} to JSON."
             )
 
-        def serialize_prior(name, prior):
+        # ============================================================
+        # Serialize priors
+        # ============================================================
+        def serialize_prior(
+                name,
+                prior,
+        ):
             """
-            Serialize prior settings.
+            Serialize a prior setting.
 
-            Default priors such as 'default' or None are saved directly.
-            User-defined callable priors are saved by source code.
+            Supported prior values
+            ----------------------
+            None
+            str
+            callable
             """
             if prior is None:
                 return None
 
-            if isinstance(prior, str):
+            if isinstance(
+                    prior,
+                    str,
+            ):
                 return prior
 
             if callable(prior):
                 try:
-                    source = inspect.getsource(prior)
-                except OSError as e:
+                    source = inspect.getsource(
+                        prior
+                    )
+
+                except (
+                        OSError,
+                        TypeError,
+                ) as exc:
                     raise RuntimeError(
                         f"Could not get source code for prior `{name}`. "
-                        "Please define it as a normal Python function."
-                    ) from e
+                        "Please define the prior as a normal Python "
+                        "function or a named lambda in a source file."
+                    ) from exc
 
                 return {
                     "type": "custom_source",
-                    "name": prior.__name__,
+                    "name": getattr(
+                        prior,
+                        "__name__",
+                        name,
+                    ),
                     "source": source,
                 }
 
             raise TypeError(
-                f"Prior `{name}` has unsupported type {type(prior)}. "
-                "Expected None, str, or callable."
+                f"Prior `{name}` has unsupported type "
+                f"{type(prior)}. Expected None, str, or callable."
             )
 
+        # ============================================================
+        # Serialize emcee move objects
+        # ============================================================
+        def serialize_emcee_moves(
+                emcee_moves,
+        ):
+            """
+            Convert emcee move objects into a JSON-compatible dictionary.
+
+            Parameters
+            ----------
+            emcee_moves : list, tuple, or None
+                Example:
+
+                [
+                    (emcee.moves.StretchMove(a=2.0), 0.50),
+                    (emcee.moves.DEMove(gamma0=0.4), 0.20),
+                    (emcee.moves.DESnookerMove(), 0.15),
+                    (emcee.moves.KDEMove(), 0.15),
+                ]
+
+            Returns
+            -------
+            dict or None
+            """
+            if emcee_moves is None:
+                return None
+
+            if not isinstance(
+                    emcee_moves,
+                    (list, tuple),
+            ):
+                raise TypeError(
+                    "self.emcee_moves must be None or a list/tuple "
+                    "of (move, fraction) pairs."
+                )
+
+            if len(emcee_moves) == 0:
+                raise ValueError(
+                    "self.emcee_moves cannot be empty."
+                )
+
+            move_config = {}
+            total_fraction = 0.0
+
+            for move_index, item in enumerate(
+                    emcee_moves
+            ):
+                if (
+                        not isinstance(
+                            item,
+                            (list, tuple),
+                        )
+                        or len(item) != 2
+                ):
+                    raise ValueError(
+                        "Each self.emcee_moves entry must be "
+                        "(move, fraction). "
+                        f"Invalid entry at index {move_index}: "
+                        f"{item!r}"
+                    )
+
+                move, fraction = item
+
+                if not isinstance(
+                        move,
+                        emcee.moves.Move,
+                ):
+                    raise TypeError(
+                        f"Entry {move_index} does not contain "
+                        "an emcee Move object. "
+                        f"Got {type(move).__name__}."
+                    )
+
+                if not isinstance(
+                        fraction,
+                        (
+                                int,
+                                float,
+                                np.integer,
+                                np.floating,
+                        ),
+                ):
+                    raise TypeError(
+                        f"Move fraction at index {move_index} "
+                        "must be numeric."
+                    )
+
+                fraction = float(fraction)
+
+                if (
+                        not np.isfinite(fraction)
+                        or fraction <= 0
+                ):
+                    raise ValueError(
+                        f"Move fraction at index {move_index} "
+                        "must be finite and greater than zero."
+                    )
+
+                total_fraction += fraction
+
+                # ----------------------------------------------------
+                # StretchMove
+                # ----------------------------------------------------
+                if isinstance(
+                        move,
+                        emcee.moves.StretchMove,
+                ):
+                    a = getattr(
+                        move,
+                        "a",
+                        getattr(
+                            move,
+                            "_a",
+                            None,
+                        ),
+                    )
+
+                    if a is None:
+                        raise AttributeError(
+                            "Could not read parameter `a` "
+                            "from StretchMove."
+                        )
+
+                    move_name = "StretchMove"
+
+                    this_config = {
+                        "a": float(a),
+                        "fraction": fraction,
+                    }
+
+                # ----------------------------------------------------
+                # DEMove
+                # ----------------------------------------------------
+                elif isinstance(
+                        move,
+                        emcee.moves.DEMove,
+                ):
+                    gamma0 = getattr(
+                        move,
+                        "gamma0",
+                        getattr(
+                            move,
+                            "_gamma0",
+                            None,
+                        ),
+                    )
+
+                    move_name = "DEMove"
+
+                    this_config = {
+                        "gamma0": (
+                            None
+                            if gamma0 is None
+                            else float(gamma0)
+                        ),
+                        "fraction": fraction,
+                    }
+
+                # ----------------------------------------------------
+                # DESnookerMove
+                # ----------------------------------------------------
+                elif isinstance(
+                        move,
+                        emcee.moves.DESnookerMove,
+                ):
+                    move_name = "DESnookerMove"
+
+                    this_config = {
+                        "fraction": fraction,
+                    }
+
+                # ----------------------------------------------------
+                # KDEMove
+                # ----------------------------------------------------
+                elif isinstance(
+                        move,
+                        emcee.moves.KDEMove,
+                ):
+                    move_name = "KDEMove"
+
+                    this_config = {
+                        "fraction": fraction,
+                    }
+
+                else:
+                    raise ValueError(
+                        "Unsupported emcee move type: "
+                        f"{type(move).__name__}"
+                    )
+
+                # This dictionary format supports one instance
+                # of each move type.
+                if move_name in move_config:
+                    raise ValueError(
+                        "Duplicate emcee move type found: "
+                        f"{move_name}. "
+                        "The current serialization format supports "
+                        "only one instance of each move type."
+                    )
+
+                move_config[
+                    move_name
+                ] = this_config
+
+            if not np.isclose(
+                    total_fraction,
+                    1.0,
+                    rtol=0.0,
+                    atol=1e-8,
+            ):
+                raise ValueError(
+                    "Move fractions must sum to 1. "
+                    f"Got {total_fraction:.12g}."
+                )
+
+            return move_config
+
+        # ============================================================
+        # Save emcee move configuration explicitly
+        # ============================================================
+        config["emcee_move_config"] = (
+            serialize_emcee_moves(
+                getattr(
+                    self,
+                    "emcee_moves",
+                    None,
+                )
+            )
+        )
+
+        # ============================================================
+        # Save attributes
+        # ============================================================
         for key, value in self.__dict__.items():
             if key in skip_keys:
                 continue
 
             if key in prior_keys:
-                config[key] = serialize_prior(key, value)
+                config[key] = serialize_prior(
+                    key,
+                    value,
+                )
                 continue
 
-            if isinstance(value, np.ndarray):
-                # Numeric arrays can be safely saved directly in npz.
-                # Object arrays, usually containing None, are saved in JSON.
+            if isinstance(
+                    value,
+                    np.ndarray,
+            ):
+                # Numeric arrays are saved directly in NPZ.
                 if value.dtype == object:
-                    config[key] = to_jsonable(value)
+                    config[key] = to_jsonable(
+                        value
+                    )
                 else:
                     arrays_to_save[key] = value
+
                 continue
 
-            if isinstance(value, (str, int, float, bool, type(None), list, tuple, dict, Path)):
-                config[key] = to_jsonable(value)
+            if isinstance(
+                    value,
+                    (
+                            str,
+                            int,
+                            float,
+                            bool,
+                            type(None),
+                            list,
+                            tuple,
+                            dict,
+                            Path,
+                    ),
+            ):
+                config[key] = to_jsonable(
+                    value
+                )
                 continue
 
-            if isinstance(value, (np.integer, np.floating, np.bool_)):
-                config[key] = to_jsonable(value)
+            if isinstance(
+                    value,
+                    (
+                            np.integer,
+                            np.floating,
+                            np.bool_,
+                    ),
+            ):
+                config[key] = to_jsonable(
+                    value
+                )
                 continue
 
             raise TypeError(
-                f"Attribute `{key}` has unsupported type {type(value)}. "
-                "Please either add it to `skip_keys` or define how to serialize it."
+                f"Attribute `{key}` has unsupported type "
+                f"{type(value)}. "
+                "Add it to skip_keys or define how to serialize it."
             )
 
-        arrays_to_save["config_json"] = np.array(json.dumps(config, indent=2))
-
-        np.savez(filename, **arrays_to_save)
-
-        if verbose:
-            print(f"Saved object to: {os.path.abspath(filename)}")
-
-
-
-    @classmethod
-    def load(cls, filename):
-        """
-        Load an object from a saved npz file.
-
-        Loading order:
-        1. Read saved config.
-        2. Change directory to saved current_path.
-        3. Restore attributes needed by set_method().
-        4. Call set_method() to rebuild runtime-only objects.
-        5. Restore all saved attributes from file, overriding values set by set_method().
-           Non-prior attributes are restored first, then prior functions are restored.
-        """
-
-        import os
-        import json
-        import textwrap
-        import numpy as np
-        from pathlib import Path
-        from scipy.stats import norm
-
-        from belfast.mcmc_utils import (
-            select_Vrot_prior_by_rough_mass,
-            log_prior_Vrot_dict,
-            _log_prior_mixture_maxwell_lagged_truncated,
+        # ============================================================
+        # Save config and arrays
+        # ============================================================
+        arrays_to_save[
+            "config_json"
+        ] = np.array(
+            json.dumps(
+                config,
+                indent=2,
+            )
         )
 
+        np.savez(
+            filename,
+            **arrays_to_save,
+        )
+
+        if verbose:
+            print(
+                "Saved object to: "
+                f"{os.path.abspath(filename)}"
+            )
+
+    @classmethod
+    def load(
+            cls,
+            filename,
+            grids_path=None,
+    ):
+        """
+        Load a Target object from an NPZ file.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            Saved target NPZ file.
+
+        grids_path : str or pathlib.Path, optional
+            Fallback grid path for older target files that did not save
+            ``grids_path``.
+
+        Loading order
+        -------------
+        1. Read saved config.
+        2. Change to the saved current working directory.
+        3. Restore attributes needed by set_method().
+        4. Call set_method() to rebuild interpolation objects.
+        5. Restore saved ordinary attributes and arrays.
+        6. Restore prior functions.
+        7. Rebuild emcee move objects.
+        """
+        import json
+        import os
+        import textwrap
+        from pathlib import Path
+
+        import emcee
+        import numpy as np
+        from scipy.stats import norm
+
         filename = Path(filename)
-        data = np.load(filename, allow_pickle=False)
 
-        if "config_json" not in data:
-            raise KeyError("`config_json` was not found in the saved npz file.")
+        data = np.load(
+            filename,
+            allow_pickle=False,
+        )
 
-        config = json.loads(str(data["config_json"]))
+        if "config_json" not in data.files:
+            raise KeyError(
+                "`config_json` was not found in the saved NPZ file."
+            )
 
-        obj = cls.__new__(cls)
+        config = json.loads(
+            str(data["config_json"])
+        )
 
+        obj = cls.__new__(
+            cls
+        )
+
+        # ============================================================
+        # Prior attributes
+        # ============================================================
         prior_keys = {
             "Vrot_prior",
             "mini_prior",
-            "logAge_prior",
+            "Age_prior",
             "MH_prior",
             "omega_ini_prior",
             "inclination_prior",
@@ -710,165 +1107,405 @@ class Target:
             "true_values",
         }
 
-        def _clean_source(source):
+        # ============================================================
+        # Clean saved source code
+        # ============================================================
+        def _clean_source(
+                source,
+        ):
             """
-            Clean source code saved by inspect.getsource().
-
-            Handles two common cases:
-            1. Source defined inside another function/class, with leading indentation.
-            2. One-line lambda assignment accidentally ending with a comma.
+            Clean Python source saved by inspect.getsource().
             """
-
-            source = textwrap.dedent(source).strip()
+            source = textwrap.dedent(
+                source
+            ).strip()
 
             lines = source.splitlines()
 
-            # Example:
-            # extinction_prior = lambda x: norm.logpdf(...),
-            if len(lines) == 1 and "lambda" in lines[0] and lines[0].rstrip().endswith(","):
-                lines[0] = lines[0].rstrip().rstrip(",")
+            # Handle:
+            #
+            # prior = lambda x: ...,
+            if (
+                    len(lines) == 1
+                    and "lambda" in lines[0]
+                    and lines[0].rstrip().endswith(",")
+            ):
+                lines[0] = (
+                    lines[0]
+                    .rstrip()
+                    .rstrip(",")
+                )
 
-            return "\n".join(lines)
+            return "\n".join(
+                lines
+            )
 
-        def restore_prior(name, value):
+        # ============================================================
+        # Restore prior
+        # ============================================================
+        def restore_prior(
+                name,
+                value,
+        ):
             """
-            Restore prior.
-
-            - None remains None.
-            - Strings such as 'default' remain strings.
-            - User-defined functions saved as source code are restored by exec().
+            Restore one saved prior.
             """
-
             if value is None:
                 return None
 
-            if isinstance(value, str):
+            if isinstance(
+                    value,
+                    str,
+            ):
                 return value
 
-            if isinstance(value, dict) and value.get("type") == "custom_source":
-                source = _clean_source(value["source"])
-                func_name = value["name"]
+            if (
+                    isinstance(
+                        value,
+                        dict,
+                    )
+                    and value.get("type")
+                    == "custom_source"
+            ):
+                source = _clean_source(
+                    value["source"]
+                )
 
-                # Special handling for Vrot prior.
-                # This avoids problems with closures such as params inside _make_log_prior_Vrot().
+                func_name = value.get(
+                    "name",
+                    name,
+                )
+
+                # ----------------------------------------------------
+                # Reconstruct the default Vrot prior from rough mass.
+                # ----------------------------------------------------
                 if name == "Vrot_prior":
-                    rough_mass = getattr(obj, "rough_mass", None)
-
-                    # Compatibility with your earlier attribute name.
-                    if rough_mass is None:
-                        rough_mass = getattr(obj, "rough_mini", None)
-
-                    if rough_mass is None:
-                        return None
-
-                    _, func = select_Vrot_prior_by_rough_mass(
-                        rough_mass,
-                        log_prior_Vrot_dict,
+                    rough_mass = getattr(
+                        obj,
+                        "rough_mass",
+                        None,
                     )
 
-                    if func is None:
+                    # Compatibility with older attribute name.
+                    if rough_mass is None:
+                        rough_mass = getattr(
+                            obj,
+                            "rough_mini",
+                            None,
+                        )
+
+                    if rough_mass is None:
                         return None
 
-                    return func
+                    _, function = (
+                        select_Vrot_prior_by_rough_mass(
+                            rough_mass,
+                            log_prior_Vrot_dict,
+                        )
+                    )
+
+                    return function
 
                 namespace = {
                     "np": np,
                     "numpy": np,
                     "norm": norm,
 
-                    # For priors like:
-                    # extinction_prior = lambda x: norm.logpdf(x, loc=extinction, scale=extinction_err)
-                    "extinction": getattr(obj, "extinction", None),
-                    "extinction_err": getattr(obj, "extinction_err", None),
+                    # Values sometimes used by extinction priors.
+                    "extinction": getattr(
+                        obj,
+                        "extinction",
+                        None,
+                    ),
+                    "extinction_err": getattr(
+                        obj,
+                        "extinction_err",
+                        None,
+                    ),
 
-                    # For possible custom priors using your internal function.
+                    # Internal prior helper.
                     "_log_prior_mixture_maxwell_lagged_truncated": (
                         _log_prior_mixture_maxwell_lagged_truncated
                     ),
                 }
 
-                exec(source, namespace)
+                exec(
+                    source,
+                    namespace,
+                )
 
                 if func_name in namespace:
-                    func = namespace[func_name]
+                    function = namespace[
+                        func_name
+                    ]
+
                 elif name in namespace:
-                    func = namespace[name]
+                    function = namespace[
+                        name
+                    ]
+
                 else:
                     raise RuntimeError(
                         f"Could not restore prior `{name}`. "
-                        f"Neither `{func_name}` nor `{name}` was found after exec()."
+                        f"Neither `{func_name}` nor `{name}` "
+                        "was found after exec()."
                     )
 
-                # Handle accidental trailing comma:
-                # prior = lambda x: ...,  -> tuple with one function
-                if isinstance(func, tuple):
-                    if len(func) == 1 and callable(func[0]):
-                        func = func[0]
+                # Handle accidental:
+                #
+                # prior = lambda x: ...,
+                if isinstance(
+                        function,
+                        tuple,
+                ):
+                    if (
+                            len(function) == 1
+                            and callable(function[0])
+                    ):
+                        function = function[0]
+
                     else:
                         raise TypeError(
-                            f"Restored prior `{name}` is a tuple, "
-                            f"but not a one-function tuple. Got length {len(func)}."
+                            f"Restored prior `{name}` is a tuple "
+                            "but not a one-function tuple."
                         )
 
-                if not callable(func):
+                if not callable(
+                        function
+                ):
                     raise TypeError(
-                        f"Restored prior `{name}` is not callable. Got {type(func)}."
+                        f"Restored prior `{name}` is not callable. "
+                        f"Got {type(function)}."
                     )
 
-                return func
+                return function
 
             raise TypeError(
-                f"Cannot restore prior `{name}` from type {type(value)}."
+                f"Cannot restore prior `{name}` "
+                f"from type {type(value)}."
             )
 
+        # ============================================================
+        # Restore ordinary saved attributes
+        # ============================================================
         def restore_saved_attributes():
             """
-            Restore all saved attributes.
+            Restore ordinary attributes, arrays, and actual priors.
 
-            Important:
-            Non-prior attributes are restored first, then prior functions.
-            This ensures custom priors depending on saved attributes
-            such as extinction and extinction_err can be reconstructed correctly.
+            Importantly, ordinary dictionary entries such as
+            ``emcee_move_config`` are never sent to restore_prior().
             """
 
-            # ------------------------------------------------------------
-            # 1. Restore non-prior config attributes first.
-            # ------------------------------------------------------------
+            # --------------------------------------------------------
+            # 1. Restore non-prior config attributes
+            # --------------------------------------------------------
             for key, value in config.items():
                 if key in prior_keys:
                     continue
 
                 if key in object_array_keys:
-                    setattr(obj, key, np.array(value, dtype=object))
-                else:
-                    setattr(obj, key, value)
+                    setattr(
+                        obj,
+                        key,
+                        np.array(
+                            value,
+                            dtype=object,
+                        ),
+                    )
 
-            # ------------------------------------------------------------
-            # 2. Restore numeric arrays saved directly in npz.
-            # ------------------------------------------------------------
+                else:
+                    setattr(
+                        obj,
+                        key,
+                        value,
+                    )
+
+            # --------------------------------------------------------
+            # 2. Restore numeric arrays stored directly in NPZ
+            # --------------------------------------------------------
             for key in data.files:
                 if key == "config_json":
                     continue
 
-                setattr(obj, key, data[key])
+                setattr(
+                    obj,
+                    key,
+                    data[key],
+                )
 
-            # ------------------------------------------------------------
-            # 3. Restore prior functions after all other attributes exist.
-            # ------------------------------------------------------------
-            for key, value in config.items():
-                if key in prior_keys:
-                    setattr(obj, key, restore_prior(key, value))
+            # --------------------------------------------------------
+            # 3. Restore only explicitly listed prior attributes
+            # --------------------------------------------------------
+            for key in prior_keys:
+                if key not in config:
+                    continue
 
-        # ------------------------------------------------------------
-        # 1. Set current_path and change working directory first.
-        # ------------------------------------------------------------
-        if "current_path" in config and config["current_path"] is not None:
-            obj.current_path = str(config["current_path"])
-            os.chdir(obj.current_path)
+                setattr(
+                    obj,
+                    key,
+                    restore_prior(
+                        key,
+                        config[key],
+                    ),
+                )
 
-        # ------------------------------------------------------------
-        # 2. Some attributes may be needed by set_method().
-        # ------------------------------------------------------------
+        # ============================================================
+        # Rebuild emcee moves
+        # ============================================================
+        def build_emcee_moves(
+                emcee_move_config,
+        ):
+            """
+            Rebuild emcee move objects from a saved configuration.
+            """
+            if emcee_move_config is None:
+                return None
+
+            if not isinstance(
+                    emcee_move_config,
+                    dict,
+            ):
+                raise TypeError(
+                    "emcee_move_config must be a dictionary or None."
+                )
+
+            emcee_moves = []
+            total_fraction = 0.0
+
+            for move_name, move_config in (
+                    emcee_move_config.items()
+            ):
+                if not isinstance(
+                        move_config,
+                        dict,
+                ):
+                    raise TypeError(
+                        f"Configuration for `{move_name}` "
+                        "must be a dictionary."
+                    )
+
+                if "fraction" not in move_config:
+                    raise KeyError(
+                        f"`fraction` is missing for move "
+                        f"`{move_name}`."
+                    )
+
+                fraction = float(
+                    move_config["fraction"]
+                )
+
+                if (
+                        not np.isfinite(fraction)
+                        or fraction <= 0
+                ):
+                    raise ValueError(
+                        f"Invalid fraction for `{move_name}`: "
+                        f"{fraction}"
+                    )
+
+                total_fraction += fraction
+
+                # ----------------------------------------------------
+                # StretchMove
+                # ----------------------------------------------------
+                if move_name == "StretchMove":
+                    if "a" not in move_config:
+                        raise KeyError(
+                            "`a` is missing for StretchMove."
+                        )
+
+                    move = emcee.moves.StretchMove(
+                        a=float(
+                            move_config["a"]
+                        )
+                    )
+
+                # ----------------------------------------------------
+                # DEMove
+                # ----------------------------------------------------
+                elif move_name == "DEMove":
+                    gamma0 = move_config.get(
+                        "gamma0",
+                        None,
+                    )
+
+                    move = emcee.moves.DEMove(
+                        gamma0=(
+                            None
+                            if gamma0 is None
+                            else float(gamma0)
+                        )
+                    )
+
+                # ----------------------------------------------------
+                # DESnookerMove
+                # ----------------------------------------------------
+                elif move_name == "DESnookerMove":
+                    move = (
+                        emcee.moves.DESnookerMove()
+                    )
+
+                # ----------------------------------------------------
+                # KDEMove
+                # ----------------------------------------------------
+                elif move_name == "KDEMove":
+                    move = emcee.moves.KDEMove()
+
+                else:
+                    raise ValueError(
+                        "Unknown emcee move type: "
+                        f"{move_name}"
+                    )
+
+                emcee_moves.append(
+                    (
+                        move,
+                        fraction,
+                    )
+                )
+
+            if not np.isclose(
+                    total_fraction,
+                    1.0,
+                    rtol=0.0,
+                    atol=1e-8,
+            ):
+                raise ValueError(
+                    "Saved move fractions must sum to 1. "
+                    f"Got {total_fraction:.12g}."
+                )
+
+            return emcee_moves
+
+        # ============================================================
+        # 1. Restore current_path first
+        # ============================================================
+        saved_current_path = config.get(
+            "current_path",
+            None,
+        )
+
+        if saved_current_path is not None:
+            obj.current_path = str(
+                saved_current_path
+            )
+
+            if os.path.isdir(
+                    obj.current_path
+            ):
+                os.chdir(
+                    obj.current_path
+                )
+
+            else:
+                raise FileNotFoundError(
+                    "The saved current_path does not exist: "
+                    f"{obj.current_path}"
+                )
+
+        # ============================================================
+        # 2. Restore attributes needed before set_method()
+        # ============================================================
         pre_set_method_keys = [
             "cluster",
             "sampling_variables_list",
@@ -876,13 +1513,33 @@ class Target:
 
         for key in pre_set_method_keys:
             if key in config:
-                setattr(obj, key, config[key])
+                setattr(
+                    obj,
+                    key,
+                    config[key],
+                )
 
-        # ------------------------------------------------------------
-        # 3. Get set_method inputs from saved config.
-        # ------------------------------------------------------------
-        required_set_method_keys = [
+        # ============================================================
+        # 3. Resolve set_method inputs
+        # ============================================================
+        saved_grids_path = config.get(
             "grids_path",
+            None,
+        )
+
+        # Fallback for old target files.
+        if saved_grids_path is None:
+            saved_grids_path = grids_path
+
+        if saved_grids_path is None:
+            raise KeyError(
+                "`grids_path` was not found in the saved target "
+                "configuration. This is probably an older target file.\n"
+                "Provide it explicitly:\n\n"
+                "Target.load(filename, grids_path='path/to/grid.npz')"
+            )
+
+        required_set_method_keys = [
             "grids_type",
             "METHOD",
         ]
@@ -890,35 +1547,74 @@ class Target:
         for key in required_set_method_keys:
             if key not in config:
                 raise KeyError(
-                    f"`{key}` is required to rebuild runtime objects with set_method(), "
-                    "but it was not found in the saved config."
+                    f"`{key}` is required to rebuild runtime "
+                    "objects with set_method(), but it was not "
+                    "found in the saved config."
                 )
 
         set_method_kwargs = {
-            "grids_path": config["grids_path"],
+            "grids_path": saved_grids_path,
             "grids_type": config["grids_type"],
             "METHOD": config["METHOD"],
-            "iso_name": config.get("iso_name", "PARSEC"),
-            "flag_64": config.get("flag_64", False),
+            "iso_name": config.get(
+                "iso_name",
+                "PARSEC",
+            ),
+            "flag_64": config.get(
+                "flag_64",
+                False,
+            ),
 
-            # PARS-related settings
-            "PARS_limb_darkening_path": config.get("PARS_limb_darkening_path", None),
-            "PARS_filters": config.get("PARS_filters", None),
-            "PARS_nz": config.get("PARS_nz", 100),
-            "PARS_MH_offset": config.get("PARS_MH_offset", -0.046),
+            # PARS settings
+            "PARS_limb_darkening_path": config.get(
+                "PARS_limb_darkening_path",
+                None,
+            ),
+            "PARS_filters": config.get(
+                "PARS_filters",
+                None,
+            ),
+            "PARS_nz": config.get(
+                "PARS_nz",
+                100,
+            ),
+            "PARS_MH_offset": config.get(
+                "PARS_MH_offset",
+                -0.046,
+            ),
         }
 
-        # ------------------------------------------------------------
-        # 4. Call set_method() to rebuild runtime-only objects.
-        # ------------------------------------------------------------
-        obj.set_method(**set_method_kwargs)
+        # ============================================================
+        # 4. Rebuild interpolation/runtime objects
+        # ============================================================
+        obj.set_method(
+            **set_method_kwargs
+        )
 
-        # ------------------------------------------------------------
-        # 5. Restore saved attributes again.
-        #    Saved file values are the source of truth.
-        # ------------------------------------------------------------
+        # ============================================================
+        # 5. Restore saved attributes and priors
+        # ============================================================
         restore_saved_attributes()
 
-        obj.load_flag = str(filename)
+        # Ensure fallback grid path is retained for old files.
+        obj.grids_path = str(
+            saved_grids_path
+        )
+
+        # ============================================================
+        # 6. Rebuild emcee move objects
+        # ============================================================
+        obj.emcee_move_config = config.get(
+            "emcee_move_config",
+            None,
+        )
+
+        obj.emcee_moves = build_emcee_moves(
+            obj.emcee_move_config
+        )
+
+        obj.load_flag = str(
+            filename
+        )
 
         return obj

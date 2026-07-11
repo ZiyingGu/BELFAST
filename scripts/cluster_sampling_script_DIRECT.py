@@ -18,7 +18,7 @@ from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
 
 print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-df_cluster = pd.read_csv(DATA_DIR / "clusters" / "targets_for_sampling_new.csv")
+df_cluster = pd.read_csv(DATA_DIR / "clusters" / "targets_for_sampling.csv")
 
 i_pleiades, i_praesepe, i_hyades = 0, 0, 0
 
@@ -92,7 +92,7 @@ for i in range(len(df_cluster)):
     extinction_err = float(df_i["A550_err"])
     extinction_type = "A_V"
 
-    A_V_err_floor = 0.02
+    A_V_err_floor = 0.01
 
     if (not np.isfinite(extinction_err)) or (extinction_err < A_V_err_floor):
         print(f"Too small extinction error, using floor error A_V_err = {A_V_err_floor:.3f} mag")
@@ -125,7 +125,7 @@ for i in range(len(df_cluster)):
                     )
 
     target.add_info(cluster=cluster,
-                    sampling_variables_list=['Mini', 'logAge', 'MH', 'omega_ini', 'Inclination', 'parallax'],
+                    sampling_variables_list=['Mini', 'Age', 'MH', 'omega_ini', 'Inclination', 'parallax'],
                     extinction=extinction,
                     extinction_err=extinction_err,
                     extinction_type=extinction_type
@@ -141,19 +141,19 @@ for i in range(len(df_cluster)):
     }
 
     if target_name in u_grid_targets:
-        grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_u_grids" / "regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
+        # grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_u_grids" / "regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
         grids_type = "u"
     else:
-        grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_Mini_grids" / "regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
+        # grids_path = DATA_DIR / "isochrones" / "regular_PARSECv2_Mini_grids" / "regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz"
         grids_type = "Mini"
 
-    target.set_method(grids_path=str(grids_path), grids_type=grids_type, METHOD="DIRECT")
+    target.set_method(grids_type=grids_type, METHOD="DIRECT")
 
     if cluster != 'Pleiades':
         target.interp_lower_limit[1] = np.log10(100) + 6
-    else:
-        print('****** cut grids < 10 Myr *****')
-        target.interp_lower_limit[1] = np.log10(10) + 6
+    # else:
+    #     print('****** cut grids < 10 Myr *****')
+    #     target.interp_lower_limit[1] = np.log10(10) + 6
 
     # if target_name in rerun_star_list:
     #     target.interp_lower_limit[1] = np.log10(10)+6
@@ -178,14 +178,18 @@ for i in range(len(df_cluster)):
     mcmc.target = target
     start_time = time.time()
 
+    # emcee_moves=[
+    #     (emcee.moves.StretchMove(a=2.0),  0.50),
+    #     (emcee.moves.DEMove(gamma0=0.4),  0.20),
+    #     (emcee.moves.DESnookerMove(),     0.15),
+    #     (emcee.moves.KDEMove(),           0.15),
+    # ]
     emcee_moves=[
-        (emcee.moves.StretchMove(a=2.0),  0.50),
-        (emcee.moves.DEMove(gamma0=0.4),  0.20),
-        (emcee.moves.DESnookerMove(),     0.15),
-        (emcee.moves.KDEMove(),           0.15),
+        (emcee.moves.StretchMove(a=2.0),  0.95),
+        (emcee.moves.KDEMove(),           0.05),
     ]
 
-    sampler_test = mcmc.run_test_sampling(use_tqdm=False, show_fig=False, n_steps_test=3000,
+    sampler_test, rough_mass = mcmc.run_test_sampling(use_tqdm=False, show_fig=False, n_steps_test=3000,
                                                       save_path=test_save_path,
                                                       emcee_moves=emcee_moves,
     )
@@ -197,8 +201,8 @@ for i in range(len(df_cluster)):
                                 n_processes=8, # the number of threads used for parallel sampling.
                                 use_tqdm=False,
                                 emcee_moves = emcee_moves,
-                                )
+    )
 
-    mcmc.save_chains_plot(sampler, show_fig=False, folder_suffix=folder_suffix, save_samples=True)
+    mcmc.save_and_plot(sampler, show_fig=False, folder_suffix=folder_suffix, save_samples=True)
 
     print('**********************************************************************************************************************')
