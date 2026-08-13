@@ -333,6 +333,7 @@ def summarize_cluster_age(
     # Step 6. Merge posterior summaries with target metadata
     # ------------------------------------------------------------------
     df_all = pd.merge(df_targets, df_post, on="posterior_name", how="left")
+    df_all = df_all.sort_values('mass', ascending=False).reset_index(drop=True)
 
     if save_name is not None:
         df_all.to_csv(save_name, index=False)
@@ -728,6 +729,7 @@ def plot_mass_age_rot90(
         outname = (title if title else f"Mass-Age relation of the {cluster}") + ".pdf"
         plt.savefig(outname, bbox_inches="tight")
     else:
+        print('TURE')
         plt.savefig(save_name, bbox_inches="tight")
 
     plt.show()
@@ -749,15 +751,14 @@ def plot_cluster_age(
 
     if rot90deg == True:
         save_path = Path(save_name)
-        save_stem = save_path.stem
-        save_suffix = save_path.suffix
+        new_save_path = save_path.with_name(f"{save_path.stem}_rot90deg{save_path.suffix}")
         plot_mass_age_rot90(
             cluster,
             df_summary_posterior,
             method,
             weight=weight,
             title=title,
-            save_name=save_stem + '_rot90deg' + save_suffix,
+            save_name=new_save_path,
             age_xlim=age_xlim,
             legend_loc=legend_loc,
         )

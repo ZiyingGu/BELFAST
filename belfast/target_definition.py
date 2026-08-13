@@ -3,13 +3,14 @@ import emcee
 import numpy as np
 from glob import glob
 from pathlib import Path
-
-from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
+import pandas as pd
+from belfast.paths import DATA_DIR, ISOCHRONE_DIR, KLD_DIR, PARS_FILTER_DIR
 from belfast.PARS_utils import extract_MH, make_limb_darkening_files
-from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction
+from belfast.target_utils import cal_abs_mag, cal_obs_mag, remove_extinction, classify_posterior_samples_safety
 from belfast.mcmc_utils import select_Vrot_prior_by_rough_mass, log_prior_Vrot_dict, _log_prior_mixture_maxwell_lagged_truncated
 from belfast.isochrone_utils import load_regularized_Mini_interpolator, load_regularized_u_interpolator, load_regularized_MIST_interpolator
-
+from belfast.isochrone_utils import load_default_regularized_PARSECv2_Mini_interpolator, load_default_regularized_PARSECv2_u_interpolator, load_default_regularized_MIST_Mini_interpolator
+# from belfast.isochrone_utils_new import load_regularized_Mini_interpolator#, load_regularized_u_interpolator, load_regularized_MIST_interpolator
 
 class Target:
     def __init__(self, name, bands_list, obs_mags, obs_err_mags,
@@ -213,59 +214,59 @@ class Target:
                 dtype=object,
             )
 
-
-    def set_method(self,
-                   # general setting
-                   grids_path=None,
-                   grids_type='Mini',
-                   METHOD='DIRECT',
-                   iso_name='PARSEC',
-                   correct_MIST_MH_zeropoint=False,
-                   MIST_MH_offset=0.018,
-                   flag_64=False,
-                    # PARS setting
-                   PARS_limb_darkening_path=DATA_DIR / 'Kurucz_limb_darkening' / 'i[pm]*k*.pck*',
-                   PARS_filters=DATA_DIR / 'PARS_filters' / '*.dat',
-                   PARS_nz=100,
-                   PARS_MH_offset=-0.046, # [M/H] zeropoint conversion from Caffau et. (2011) to Grevesse & Sauval (1998)
-                   # NN setting
-                   # NN_prepare_data=False,
-                   # NN_photo_err_scaler=40,
-                   ):
-
+    def set_method(
+            self,
+            grids_path=None,
+            grids_type='Mini',
+            METHOD='DIRECT',
+            iso_name='PARSEC',
+            label_list=None,
+            correct_MIST_MH_zeropoint=False,
+            MIST_MH_offset=0.018,
+            flag_64=False,
+            # PARS setting
+            PARS_limb_darkening_path=KLD_DIR / 'i[pm]*k*.pck*',
+            PARS_filters=PARS_FILTER_DIR / '*.dat',
+            PARS_nz=100,
+            PARS_MH_offset=-0.046,
+    ):
         iso_name = iso_name.upper()
         METHOD = METHOD.upper()
 
-        if grids_path is None:
-            if iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'DIRECT':
-                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
-            elif iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'PARS':
-                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
-            elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'DIRECT':
-                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
-            elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'PARS':
-                grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
-            elif iso_name == 'MIST' and grids_type == 'Mini' and METHOD == 'PARS':
-                grids_path = DATA_DIR / 'isochrones' / 'regular_MIST_Mini_grids' / 'regularized_MIST_Mini_grid.npz'
-            else:
-                raise ValueError('"iso_name" must be either "PARSEC" or "MIST".\n'
-                                 'If using PARSEC v2.0 isochrones, "grids_type" can be either "Mini" or "u" and "METHOD" can be either "DIRECT" or "PARS".\n'
-                                 'If using MIST v1.2 isochrones,  "grids_type" must be either "Mini" and "METHOD" must be "PARS".')
+        # Standardize grids_type
+        grids_type_map = {'mini': 'Mini', 'u': 'u'}
+        try:
+            grids_type = grids_type_map[grids_type.lower()]
+        except (AttributeError, KeyError):
+            raise ValueError('grids_type must be "Mini" or "u".')
 
-        if isinstance(grids_path, os.PathLike):
-            grids_path = str(grids_path)
+        # Basic checks
+        if iso_name not in {'PARSEC', 'MIST'}:
+            raise ValueError('iso_name must be "PARSEC" or "MIST".')
+
+        if METHOD not in {'DIRECT', 'PARS'}:
+            raise ValueError('METHOD must be "DIRECT" or "PARS".')
+
+        if iso_name == 'MIST' and (grids_type != 'Mini' or METHOD != 'PARS'):
+            raise ValueError(
+                'MIST only supports grids_type="Mini" with METHOD="PARS".'
+            )
+
+        if label_list is None:
+            label_list = [1]
+
+        # DIRECT requires inclination grids; PARS does not.
+        grid_type = 'with_inc' if METHOD == 'DIRECT' else 'without_inc'
+
         if isinstance(PARS_limb_darkening_path, os.PathLike):
             PARS_limb_darkening_path = str(PARS_limb_darkening_path)
+
         if isinstance(PARS_filters, os.PathLike):
             PARS_filters = str(PARS_filters)
 
-        if self.cluster != '':
-            self.cluster_name = '_' + self.cluster
-        else:
-            self.cluster_name = self.cluster
-
+        # Basic attributes
+        self.cluster_name = f'_{self.cluster}' if self.cluster else ''
         self.iso_name = iso_name
-        self.grids_path = grids_path
         self.grids_type = grids_type
         self.METHOD = METHOD
         self.PARS_limb_darkening_path = PARS_limb_darkening_path
@@ -273,87 +274,317 @@ class Target:
         self.correct_MIST_MH_zeropoint = correct_MIST_MH_zeropoint
         self.MIST_MH_offset = MIST_MH_offset
         self.flag_64 = flag_64
-        self.interp_upper_limit = []
-        self.interp_lower_limit = []
 
         print('*' * 100)
-        print(f'Using {iso_name} isochrones with {grids_type} grids and {METHOD} method.')
+        print(
+            f'Using {iso_name} isochrones with '
+            f'{grids_type} grids and {METHOD} method.'
+        )
         print('*' * 100)
 
-        if grids_type == 'Mini':
-            if iso_name.lower() == 'PARSEC'.lower():
-                interp_func, interp_u, interp_u_to_outputs, interp_u_bounds, interp_variables_list, interp_output_list, data \
-                    = load_regularized_Mini_interpolator(grids_path, force_float64=flag_64)
-                self.Model_interp = interp_func
-                self.interp_u = interp_u
-                self.interp_u_to_outputs = interp_u_to_outputs
-                self.interp_u_bounds = interp_u_bounds
-                self.interp_variables_list = interp_variables_list
-                self.interp_output_list = interp_output_list
-                self.data = data
-                for grid_i in [i + '_grid' for i in self.interp_variables_list]:
-                    self.interp_upper_limit.append(np.max(self.data[grid_i]))
-                    self.interp_lower_limit.append(np.min(self.data[grid_i]))
-            elif iso_name.lower() == 'MIST'.lower():
-                interp_func, interp_variables_list, interp_output_list, data = load_regularized_MIST_interpolator(grids_path, force_float64=flag_64)
-                self.Model_interp = interp_func
-                self.interp_variables_list = interp_variables_list
-                self.interp_output_list = interp_output_list
-                self.data = data
-                for grid_i in [i + '_grid' for i in self.interp_variables_list]:
-                    self.interp_upper_limit.append(np.max(self.data[grid_i]))
-                    self.interp_lower_limit.append(np.min(self.data[grid_i]))
+        # ============================================================
+        # Load grids
+        # ============================================================
 
-        elif grids_type == 'u':
-            interp_func, interp_u, interp_u_to_outputs, interp_u_bounds, interp_variables_list, interp_output_list, data \
-                = load_regularized_u_interpolator(grids_path, force_float64=flag_64)
-            self.Model_interp = interp_func
-            self.interp_u = interp_u
-            self.interp_u_to_outputs = interp_u_to_outputs
-            self.interp_u_bounds = interp_u_bounds
-            self.interp_variables_list = interp_variables_list
-            self.interp_output_list = interp_output_list
-            self.data = data
-            for grid_i in [i + '_grid' for i in self.interp_variables_list]:
-                if grid_i == 'Mini_grid':
-                    self.interp_upper_limit.append(np.nanmax(self.data['grid_bounds'][:, :, :, 1]))
-                    self.interp_lower_limit.append(np.nanmin(self.data['grid_bounds'][:, :, :, 0]))
-                else:
-                    self.interp_upper_limit.append(np.max(self.data[grid_i]))
-                    self.interp_lower_limit.append(np.min(self.data[grid_i]))
+        if iso_name == 'PARSEC':
 
-        self.interp_upper_limit = np.array(self.interp_upper_limit)
-        self.interp_lower_limit = np.array(self.interp_lower_limit)
+            loader = (
+                load_default_regularized_PARSECv2_Mini_interpolator
+                if grids_type == 'Mini'
+                else load_default_regularized_PARSECv2_u_interpolator
+            )
 
-        if METHOD == 'DIRECT':
-            if 'Inclination' not in self.interp_variables_list:
-                self.interp_variables_list.append('Inclination')
-        elif METHOD == 'PARS':
-            if 'Inclination' in self.interp_variables_list:
-                self.interp_variables_list.remove('Inclination')
+            (
+                self.Model_interp,
+                self.interp_u,
+                self.interp_u_to_outputs,
+                self.interp_u_bounds,
+                self.interp_variables_list,
+                self.interp_output_list,
+                self.data,
+            ) = loader(
+                npz_path=grids_path,
+                label_list=label_list,
+                grid_type=grid_type,
+                force_float64=flag_64,
+            )
+
+            # If grids_path is explicitly given, grid_type is read from the file.
+            # Check that it is compatible with METHOD.
+            actual_grid_type = str(self.data['grid_type'])
+
+            if actual_grid_type != grid_type:
+                raise ValueError(
+                    f'{METHOD} requires a "{grid_type}" grid, '
+                    f'but the loaded file is "{actual_grid_type}".'
+                )
+
+            # Use the actual labels stored in the file.
+            self.label_list = (
+                self.data['label_list'].tolist()
+                if 'label_list' in self.data.files
+                else list(label_list)
+            )
+
+        else:  # MIST
+
+            (
+                self.Model_interp,
+                self.interp_variables_list,
+                self.interp_output_list,
+                self.data,
+            ) = load_default_regularized_MIST_Mini_interpolator(
+                npz_path=grids_path,
+                force_float64=flag_64,
+            )
+
+            self.interp_u = None
+            self.interp_u_to_outputs = None
+            self.interp_u_bounds = None
+            self.label_list = None
+
+        # Save the actual loaded path if available
+        loaded_path = getattr(
+            getattr(self.data, 'zip', None),
+            'filename',
+            None,
+        )
+
+        self.grids_path = (
+            str(loaded_path or grids_path)
+            if (loaded_path or grids_path)
+            else None
+        )
+
+        # ============================================================
+        # Interpolation limits
+        # ============================================================
+
+        lower_limits = []
+        upper_limits = []
+
+        for var in self.interp_variables_list:
+
+            if grids_type == 'u' and var == 'Mini':
+                bounds = self.data['grid_bounds']
+
+                lower_limits.append(
+                    np.nanmin(bounds[..., 0])
+                )
+                upper_limits.append(
+                    np.nanmax(bounds[..., 1])
+                )
+
+            else:
+                grid = self.data[f'{var}_grid']
+
+                lower_limits.append(
+                    np.nanmin(grid)
+                )
+                upper_limits.append(
+                    np.nanmax(grid)
+                )
+
+        self.interp_lower_limit = np.asarray(lower_limits)
+        self.interp_upper_limit = np.asarray(upper_limits)
+
+        # ============================================================
+        # PARS
+        # ============================================================
+
+        if METHOD == 'PARS':
+
             if PARS_limb_darkening_path is None:
-                raise Exception('PARS_limb_darkening_path must be defined.')
-            if PARS_filters is None:
-                raise Exception('PARS_filters must be defined.')
+                raise ValueError(
+                    'PARS_limb_darkening_path must be defined.'
+                )
 
-            PARS_limb_darkening_filelist = glob(PARS_limb_darkening_path)
-            PARS_limb_darkening_filelist.sort()
-            limb_darkening_MH_dic = {file: extract_MH(file) for file in PARS_limb_darkening_filelist if extract_MH(file) is not None}
+            if PARS_filters is None:
+                raise ValueError(
+                    'PARS_filters must be defined.'
+                )
+
+            limb_darkening_MH_dic = {
+                file: mh
+                for file in sorted(glob(PARS_limb_darkening_path))
+                if (mh := extract_MH(file)) is not None
+            }
+
             print("Loading limb darkening files from Kurucz's model.")
+
             MH_index = self.interp_variables_list.index('MH')
-            PARS_MH_lower_limit = self.interp_lower_limit[MH_index] + PARS_MH_offset
-            PARS_MH_upper_limit = self.interp_upper_limit[MH_index] + PARS_MH_offset
-            made_limb_darkening_dict = make_limb_darkening_files(PARS_MH_lower_limit, PARS_MH_upper_limit, limb_darkening_MH_dic, PARS_filters, use_tqdm=True)
-            self.made_limb_darkening_dict = made_limb_darkening_dict
+
+            MH_lower = (
+                    self.interp_lower_limit[MH_index]
+                    + PARS_MH_offset
+            )
+
+            MH_upper = (
+                    self.interp_upper_limit[MH_index]
+                    + PARS_MH_offset
+            )
+
+            self.made_limb_darkening_dict = make_limb_darkening_files(
+                MH_lower,
+                MH_upper,
+                limb_darkening_MH_dic,
+                PARS_filters,
+                use_tqdm=True,
+            )
+
             self.PARS_nz = PARS_nz
             self.PARS_MH_offset = PARS_MH_offset
 
-        fixed_parameter_indices = []
-        for interp_var in self.interp_variables_list:
-            if interp_var not in self.sampling_variables_list:
-                fixed_parameter_index = self.interp_variables_list.index(interp_var)
-                fixed_parameter_indices.append(fixed_parameter_index)
-        self.fixed_parameter_indices = fixed_parameter_indices
+        # ============================================================
+        # Fixed parameters
+        # ============================================================
+
+        self.fixed_parameter_indices = [
+            i
+            for i, var in enumerate(self.interp_variables_list)
+            if var not in self.sampling_variables_list
+        ]
+
+    # def set_method(self,
+    #                # general setting
+    #                grids_path=None,
+    #                grids_type='Mini',
+    #                METHOD='DIRECT',
+    #                iso_name='PARSEC',
+    #                correct_MIST_MH_zeropoint=False,
+    #                MIST_MH_offset=0.018,
+    #                flag_64=False,
+    #                 # PARS setting
+    #                PARS_limb_darkening_path=DATA_DIR / 'Kurucz_limb_darkening' / 'i[pm]*k*.pck*',
+    #                PARS_filters=DATA_DIR / 'PARS_filters' / '*.dat',
+    #                PARS_nz=100,
+    #                PARS_MH_offset=-0.046, # [M/H] zeropoint conversion from Caffau et. (2011) to Grevesse & Sauval (1998)
+    #                # NN setting
+    #                # NN_prepare_data=False,
+    #                # NN_photo_err_scaler=40,
+    #                ):
+    #
+    #     iso_name = iso_name.upper()
+    #     METHOD = METHOD.upper()
+    #
+    #     if grids_path is None:
+    #         if iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'DIRECT':
+    #             grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+    #         elif iso_name == 'PARSEC' and grids_type == 'Mini' and METHOD == 'PARS':
+    #             grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_Mini_grids' / 'regularized_Mini_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
+    #         elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'DIRECT':
+    #             grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_with_inc.npz'
+    #         elif iso_name == 'PARSEC' and grids_type == 'u' and METHOD == 'PARS':
+    #             grids_path = DATA_DIR / 'isochrones' / 'regular_PARSECv2_u_grids' / 'regularized_u_grid_1e6_2001e6yr_step10e6_linear_isochrones_MS_without_inc.npz'
+    #         elif iso_name == 'MIST' and grids_type == 'Mini' and METHOD == 'PARS':
+    #             grids_path = DATA_DIR / 'isochrones' / 'regular_MIST_Mini_grids' / 'regularized_MIST_Mini_grid.npz'
+    #         else:
+    #             raise ValueError('"iso_name" must be either "PARSEC" or "MIST".\n'
+    #                              'If using PARSEC v2.0 isochrones, "grids_type" can be either "Mini" or "u" and "METHOD" can be either "DIRECT" or "PARS".\n'
+    #                              'If using MIST v1.2 isochrones,  "grids_type" must be either "Mini" and "METHOD" must be "PARS".')
+    #
+    #     if isinstance(grids_path, os.PathLike):
+    #         grids_path = str(grids_path)
+    #     if isinstance(PARS_limb_darkening_path, os.PathLike):
+    #         PARS_limb_darkening_path = str(PARS_limb_darkening_path)
+    #     if isinstance(PARS_filters, os.PathLike):
+    #         PARS_filters = str(PARS_filters)
+    #
+    #     if self.cluster != '':
+    #         self.cluster_name = '_' + self.cluster
+    #     else:
+    #         self.cluster_name = self.cluster
+    #
+    #     self.iso_name = iso_name
+    #     self.grids_path = grids_path
+    #     self.grids_type = grids_type
+    #     self.METHOD = METHOD
+    #     self.PARS_limb_darkening_path = PARS_limb_darkening_path
+    #     self.PARS_filters = PARS_filters
+    #     self.correct_MIST_MH_zeropoint = correct_MIST_MH_zeropoint
+    #     self.MIST_MH_offset = MIST_MH_offset
+    #     self.flag_64 = flag_64
+    #     self.interp_upper_limit = []
+    #     self.interp_lower_limit = []
+    #
+    #     print('*' * 100)
+    #     print(f'Using {iso_name} isochrones with {grids_type} grids and {METHOD} method.')
+    #     print('*' * 100)
+    #
+    #     if grids_type == 'Mini':
+    #         if iso_name.lower() == 'PARSEC'.lower():
+    #             interp_func, interp_u, interp_u_to_outputs, interp_u_bounds, interp_variables_list, interp_output_list, data \
+    #                 = load_regularized_Mini_interpolator(grids_path, force_float64=flag_64)
+    #             self.Model_interp = interp_func
+    #             self.interp_u = interp_u
+    #             self.interp_u_to_outputs = interp_u_to_outputs
+    #             self.interp_u_bounds = interp_u_bounds
+    #             self.interp_variables_list = interp_variables_list
+    #             self.interp_output_list = interp_output_list
+    #             self.data = data
+    #             for grid_i in [i + '_grid' for i in self.interp_variables_list]:
+    #                 self.interp_upper_limit.append(np.max(self.data[grid_i]))
+    #                 self.interp_lower_limit.append(np.min(self.data[grid_i]))
+    #         elif iso_name.lower() == 'MIST'.lower():
+    #             interp_func, interp_variables_list, interp_output_list, data = load_regularized_MIST_interpolator(grids_path, force_float64=flag_64)
+    #             self.Model_interp = interp_func
+    #             self.interp_variables_list = interp_variables_list
+    #             self.interp_output_list = interp_output_list
+    #             self.data = data
+    #             for grid_i in [i + '_grid' for i in self.interp_variables_list]:
+    #                 self.interp_upper_limit.append(np.max(self.data[grid_i]))
+    #                 self.interp_lower_limit.append(np.min(self.data[grid_i]))
+    #
+    #     elif grids_type == 'u':
+    #         interp_func, interp_u, interp_u_to_outputs, interp_u_bounds, interp_variables_list, interp_output_list, data \
+    #             = load_regularized_u_interpolator(grids_path, force_float64=flag_64)
+    #         self.Model_interp = interp_func
+    #         self.interp_u = interp_u
+    #         self.interp_u_to_outputs = interp_u_to_outputs
+    #         self.interp_u_bounds = interp_u_bounds
+    #         self.interp_variables_list = interp_variables_list
+    #         self.interp_output_list = interp_output_list
+    #         self.data = data
+    #         for grid_i in [i + '_grid' for i in self.interp_variables_list]:
+    #             if grid_i == 'Mini_grid':
+    #                 self.interp_upper_limit.append(np.nanmax(self.data['grid_bounds'][:, :, :, 1]))
+    #                 self.interp_lower_limit.append(np.nanmin(self.data['grid_bounds'][:, :, :, 0]))
+    #             else:
+    #                 self.interp_upper_limit.append(np.max(self.data[grid_i]))
+    #                 self.interp_lower_limit.append(np.min(self.data[grid_i]))
+    #
+    #     self.interp_upper_limit = np.array(self.interp_upper_limit)
+    #     self.interp_lower_limit = np.array(self.interp_lower_limit)
+    #
+    #     if METHOD == 'DIRECT':
+    #         if 'Inclination' not in self.interp_variables_list:
+    #             self.interp_variables_list.append('Inclination')
+    #     elif METHOD == 'PARS':
+    #         if 'Inclination' in self.interp_variables_list:
+    #             self.interp_variables_list.remove('Inclination')
+    #         if PARS_limb_darkening_path is None:
+    #             raise Exception('PARS_limb_darkening_path must be defined.')
+    #         if PARS_filters is None:
+    #             raise Exception('PARS_filters must be defined.')
+    #
+    #         PARS_limb_darkening_filelist = glob(PARS_limb_darkening_path)
+    #         PARS_limb_darkening_filelist.sort()
+    #         limb_darkening_MH_dic = {file: extract_MH(file) for file in PARS_limb_darkening_filelist if extract_MH(file) is not None}
+    #         print("Loading limb darkening files from Kurucz's model.")
+    #         MH_index = self.interp_variables_list.index('MH')
+    #         PARS_MH_lower_limit = self.interp_lower_limit[MH_index] + PARS_MH_offset
+    #         PARS_MH_upper_limit = self.interp_upper_limit[MH_index] + PARS_MH_offset
+    #         made_limb_darkening_dict = make_limb_darkening_files(PARS_MH_lower_limit, PARS_MH_upper_limit, limb_darkening_MH_dic, PARS_filters, use_tqdm=True)
+    #         self.made_limb_darkening_dict = made_limb_darkening_dict
+    #         self.PARS_nz = PARS_nz
+    #         self.PARS_MH_offset = PARS_MH_offset
+    #
+    #     fixed_parameter_indices = []
+    #     for interp_var in self.interp_variables_list:
+    #         if interp_var not in self.sampling_variables_list:
+    #             fixed_parameter_index = self.interp_variables_list.index(interp_var)
+    #             fixed_parameter_indices.append(fixed_parameter_index)
+    #     self.fixed_parameter_indices = fixed_parameter_indices
 
 
 
@@ -512,6 +743,22 @@ class Target:
             low_str = f"{low:.4f}" if np.isfinite(low) else "nan"
             high_str = f"{high:.4f}" if np.isfinite(high) else "nan"
             print(f"{name:<12} {low_str:>10} {high_str:>10}")
+
+
+    def check_risk(self, critical_boundary_path=None, return_flag=False):
+
+        if critical_boundary_path is None:
+            critical_boundary_path = DATA_DIR / 'critical_boundary.csv'
+        critical_boundary_df = pd.read_csv(critical_boundary_path)
+
+        path = self.posterior_path
+        data = np.load(path, allow_pickle=True)
+
+        result = classify_posterior_samples_safety(data, critical_boundary_df, batch_size=5000)
+
+        if return_flag:
+            return result
+
 
     def save(
             self,

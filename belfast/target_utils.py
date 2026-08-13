@@ -1,5 +1,10 @@
 import numpy as np
-
+import pandas as pd
+from tqdm import tqdm
+from scipy.interpolate import (
+    PchipInterpolator,
+    RegularGridInterpolator,
+)
 
 def cal_parsec(parallax):
     """
@@ -1661,7 +1666,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
         # numpy scalar
         try:
             if np.isscalar(x):
-                import pandas as pd
+
                 return bool(pd.isna(x))
         except Exception:
             pass
@@ -1720,7 +1725,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
     # -----------------------------
     def _ok_simbad(res):
         # res should be 10-tuple
-        import pandas as pd
+
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 10:
             return False
         # must have ids and coordinates (you can relax if needed)
@@ -1745,7 +1750,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
     # 2) Tycho-2 photometry (retry)
     # -----------------------------
     def _ok_tycho(res):
-        import pandas as pd
+
         # expect 4-tuple
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 4:
             return False
@@ -1768,7 +1773,7 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
     # 3) 2MASS photometry (retry)
     # -----------------------------
     def _ok_2mass(res):
-        import pandas as pd
+
         # expect 12-tuple
         if res is None or not isinstance(res, (list, tuple)) or len(res) != 12:
             return False
@@ -2007,7 +2012,6 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
         }
         if return_banyan_cols:
             row.update(banyan_cols)
-        import pandas as pd
 
         return pd.DataFrame([row])
 
@@ -2017,3 +2021,2348 @@ def query_data(target_name, max_retries=3, return_df=False, verbose=True, return
     return obs_mags, obs_err_mags, vsini_obs, vsini_obs_err, parallax_obs, parallax_obs_err, EBP_RP_obs, EBP_RP_obs_lower, EBP_RP_obs_upper, additional_info
 
 
+
+# ============================================================
+# Compact printing
+# ============================================================
+def _print_section(title, width=73):
+    print()
+    print(f"## {title}")
+    print()
+
+
+def _print_pair(
+    left_label,
+    left_value,
+    right_label,
+    right_value,
+    label_width=15,
+    value_width=19,
+):
+    print(
+        f"{left_label:<{label_width}}"
+        f"{str(left_value):>{value_width}}"
+        " | "
+        f"{right_label:<{label_width}}"
+        f"{str(right_value):>{value_width}}"
+    )
+
+
+# ============================================================
+# Build regular critical-boundary grid
+# ============================================================
+def build_regular_critical_boundary_grid(
+    critical_points_df,
+    samples_flat,
+    param_names,
+):
+    """
+    Build a regular critical-boundary grid in
+
+        (MH, omega_ini, Mini)
+
+    The Mini range is selected automatically from the posterior.
+
+    Internal settings
+    -----------------
+    Global allowed Mini range:
+        1.40 -- 5.00 Msun
+
+    Posterior Mini margin:
+        +/- 0.30 Msun
+
+    Mass-grid spacing:
+        ~0.01 Msun
+
+    Maximum low-mass extrapolation:
+        0.10 Msun
+    """
+
+    # ============================================================
+    # Internal constants
+    # ============================================================
+    GLOBAL_MASS_MIN = 1.40
+    GLOBAL_MASS_MAX = 5.00
+
+    MASS_MARGIN = 0.30
+    MASS_STEP = 0.01
+
+    MAX_LOW_MASS_EXTRAPOLATION = 0.10
+
+    required_columns = [
+        "MH",
+        "omega_ini",
+        "Mini",
+        "logTe",
+        "logL",
+    ]
+
+    missing = [
+        col
+        for col in required_columns
+        if col not in critical_points_df.columns
+    ]
+
+    if missing:
+        raise KeyError(
+            f"Missing critical-point columns: {missing}"
+        )
+
+    param_names = list(param_names)
+
+    for name in [
+        "Mini",
+        "MH",
+        "omega_ini",
+    ]:
+        if name not in param_names:
+            raise KeyError(
+                f"'{name}' not found in param_names."
+            )
+
+    mini_idx = param_names.index("Mini")
+    mh_idx = param_names.index("MH")
+    omega_idx = param_names.index("omega_ini")
+
+    # ============================================================
+    # Posterior parameter ranges
+    # ============================================================
+    sample_mini = np.asarray(
+        samples_flat[:, mini_idx],
+        dtype=float,
+    )
+
+    sample_mh = np.asarray(
+        samples_flat[:, mh_idx],
+        dtype=float,
+    )
+
+    sample_omega = np.asarray(
+        samples_flat[:, omega_idx],
+        dtype=float,
+    )
+
+    sample_mini = sample_mini[
+        np.isfinite(sample_mini)
+    ]
+
+    sample_mh = sample_mh[
+        np.isfinite(sample_mh)
+    ]
+
+    sample_omega = sample_omega[
+        np.isfinite(sample_omega)
+    ]
+
+    if sample_mini.size == 0:
+        raise ValueError(
+            "No finite posterior Mini samples."
+        )
+
+    if sample_mh.size == 0:
+        raise ValueError(
+            "No finite posterior MH samples."
+        )
+
+    if sample_omega.size == 0:
+        raise ValueError(
+            "No finite posterior omega_ini samples."
+        )
+
+    # ============================================================
+    # Clean critical-point table
+    # ============================================================
+    critical_df = (
+        critical_points_df[
+            required_columns
+        ]
+        .replace(
+            [np.inf, -np.inf],
+            np.nan,
+        )
+        .dropna()
+        .copy()
+    )
+
+    critical_df = critical_df[
+        critical_df["Mini"].between(
+            GLOBAL_MASS_MIN,
+            GLOBAL_MASS_MAX,
+            inclusive="both",
+        )
+    ].copy()
+
+    # Average duplicated points
+    critical_df = (
+        critical_df
+        .groupby(
+            [
+                "MH",
+                "omega_ini",
+                "Mini",
+            ],
+            as_index=False,
+        )[
+            ["logTe", "logL"]
+        ]
+        .mean()
+    )
+
+    # ============================================================
+    # Available MH / omega grids
+    # ============================================================
+    all_mh_grid = np.sort(
+        critical_df["MH"]
+        .unique()
+        .astype(float)
+    )
+
+    all_omega_grid = np.sort(
+        critical_df["omega_ini"]
+        .unique()
+        .astype(float)
+    )
+
+    if len(all_mh_grid) < 2:
+        raise ValueError(
+            "At least two MH grid points are required."
+        )
+
+    if len(all_omega_grid) < 2:
+        raise ValueError(
+            "At least two omega_ini grid points are required."
+        )
+
+    # ============================================================
+    # Select posterior-relevant grid with bracketing points
+    # ============================================================
+    def select_grid_with_brackets(
+        complete_grid,
+        value_min,
+        value_max,
+    ):
+        lower = (
+            np.searchsorted(
+                complete_grid,
+                value_min,
+                side="right",
+            )
+            - 1
+        )
+
+        upper = np.searchsorted(
+            complete_grid,
+            value_max,
+            side="left",
+        )
+
+        lower = max(
+            lower,
+            0,
+        )
+
+        upper = min(
+            upper,
+            len(complete_grid) - 1,
+        )
+
+        selected = complete_grid[
+            lower:upper + 1
+        ]
+
+        # If posterior sits exactly at an edge,
+        # retain a second point for interpolation.
+        if len(selected) == 1:
+
+            idx = np.where(
+                complete_grid == selected[0]
+            )[0][0]
+
+            if idx == 0:
+                selected = complete_grid[:2]
+
+            elif idx == len(complete_grid) - 1:
+                selected = complete_grid[-2:]
+
+        return selected
+
+    mh_grid = select_grid_with_brackets(
+        all_mh_grid,
+        sample_mh.min(),
+        sample_mh.max(),
+    )
+
+    omega_grid = select_grid_with_brackets(
+        all_omega_grid,
+        sample_omega.min(),
+        sample_omega.max(),
+    )
+
+    if len(mh_grid) < 2:
+        raise ValueError(
+            "At least two posterior-relevant MH "
+            "grid points are required."
+        )
+
+    if len(omega_grid) < 2:
+        raise ValueError(
+            "At least two posterior-relevant omega_ini "
+            "grid points are required."
+        )
+
+    critical_df = critical_df[
+        critical_df["MH"].isin(
+            mh_grid
+        )
+        & critical_df["omega_ini"].isin(
+            omega_grid
+        )
+    ].copy()
+
+    # ============================================================
+    # Determine common mass coverage of all selected
+    # (MH, omega_ini) combinations
+    # ============================================================
+    group_info = {}
+    failed_groups = []
+
+    for mh in mh_grid:
+
+        for omega_ini in omega_grid:
+
+            group = critical_df[
+                np.isclose(
+                    critical_df["MH"],
+                    mh,
+                    rtol=0.0,
+                    atol=1e-12,
+                )
+                & np.isclose(
+                    critical_df["omega_ini"],
+                    omega_ini,
+                    rtol=0.0,
+                    atol=1e-12,
+                )
+            ].sort_values(
+                "Mini"
+            )
+
+            if group.empty:
+                failed_groups.append({
+                    "MH": mh,
+                    "omega_ini": omega_ini,
+                    "reason":
+                        "missing combination",
+                })
+                continue
+
+            mini = group[
+                "Mini"
+            ].to_numpy(
+                dtype=float
+            )
+
+            mini = np.unique(
+                mini
+            )
+
+            if len(mini) < 2:
+                failed_groups.append({
+                    "MH": mh,
+                    "omega_ini": omega_ini,
+                    "reason":
+                        "fewer than two mass points",
+                })
+                continue
+
+            group_info[
+                (
+                    float(mh),
+                    float(omega_ini),
+                )
+            ] = {
+                "min": float(
+                    mini.min()
+                ),
+                "max": float(
+                    mini.max()
+                ),
+            }
+
+    if failed_groups:
+
+        failed_groups_df = pd.DataFrame(
+            failed_groups
+        )
+
+        raise ValueError(
+            "Some posterior-relevant "
+            "(MH, omega_ini) combinations "
+            "are missing.\n\n"
+            f"{failed_groups_df.to_string(index=False)}"
+        )
+
+    # ============================================================
+    # Common usable range
+    #
+    # Low-mass side allows at most 0.10 Msun extrapolation.
+    # High-mass side does not extrapolate.
+    # ============================================================
+    common_low = max(
+        info["min"]
+        - MAX_LOW_MASS_EXTRAPOLATION
+        for info in group_info.values()
+    )
+
+    common_high = min(
+        info["max"]
+        for info in group_info.values()
+    )
+
+    common_low = max(
+        common_low,
+        GLOBAL_MASS_MIN,
+    )
+
+    common_high = min(
+        common_high,
+        GLOBAL_MASS_MAX,
+    )
+
+    # ============================================================
+    # Make sure the actual posterior Mini values are covered
+    # ============================================================
+    posterior_mini_min = float(
+        sample_mini.min()
+    )
+
+    posterior_mini_max = float(
+        sample_mini.max()
+    )
+
+    if (
+        posterior_mini_min
+        < common_low - 1e-10
+    ):
+        raise ValueError(
+            "Posterior Mini extends below the reliable "
+            "critical-boundary coverage.\n"
+            f"Posterior Mini min : "
+            f"{posterior_mini_min:.3f}\n"
+            f"Reliable lower limit: "
+            f"{common_low:.3f}"
+        )
+
+    if (
+        posterior_mini_max
+        > common_high + 1e-10
+    ):
+        raise ValueError(
+            "Posterior Mini extends above the reliable "
+            "critical-boundary coverage.\n"
+            f"Posterior Mini max : "
+            f"{posterior_mini_max:.3f}\n"
+            f"Reliable upper limit: "
+            f"{common_high:.3f}"
+        )
+
+    # ============================================================
+    # Posterior-relevant mass range + margin
+    # ============================================================
+    desired_mass_min = max(
+        GLOBAL_MASS_MIN,
+        posterior_mini_min
+        - MASS_MARGIN,
+    )
+
+    desired_mass_max = min(
+        GLOBAL_MASS_MAX,
+        posterior_mini_max
+        + MASS_MARGIN,
+    )
+
+    mass_min = max(
+        desired_mass_min,
+        common_low,
+    )
+
+    mass_max = min(
+        desired_mass_max,
+        common_high,
+    )
+
+    if mass_max <= mass_min:
+        raise ValueError(
+            "No valid common Mini range remains "
+            "for the critical boundary."
+        )
+
+    # ============================================================
+    # Build common mass grid
+    #
+    # Keep approximately 0.01 Msun spacing while preserving
+    # the exact usable endpoints.
+    # ============================================================
+    n_full_steps = int(
+        np.floor(
+            (mass_max - mass_min)
+            / MASS_STEP
+        )
+    )
+
+    mass_grid = (
+        mass_min
+        + np.arange(
+            n_full_steps + 1
+        )
+        * MASS_STEP
+    )
+
+    if (
+        mass_max
+        - mass_grid[-1]
+        > 1e-10
+    ):
+        mass_grid = np.append(
+            mass_grid,
+            mass_max,
+        )
+
+    mass_grid = np.asarray(
+        mass_grid,
+        dtype=float,
+    )
+
+    n_mass = len(
+        mass_grid
+    )
+
+    # ============================================================
+    # Allocate regular grids
+    # ============================================================
+    grid_shape = (
+        len(mh_grid),
+        len(omega_grid),
+        n_mass,
+    )
+
+    logte_grid = np.full(
+        grid_shape,
+        np.nan,
+        dtype=float,
+    )
+
+    logl_grid = np.full(
+        grid_shape,
+        np.nan,
+        dtype=float,
+    )
+
+    regularized_rows = []
+    extrapolated_groups = []
+
+    # ============================================================
+    # Regularize every (MH, omega_ini) boundary
+    # ============================================================
+    for i_mh, mh in enumerate(
+        mh_grid
+    ):
+
+        for i_omega, omega_ini in enumerate(
+            omega_grid
+        ):
+
+            group = critical_df[
+                np.isclose(
+                    critical_df["MH"],
+                    mh,
+                    rtol=0.0,
+                    atol=1e-12,
+                )
+                & np.isclose(
+                    critical_df["omega_ini"],
+                    omega_ini,
+                    rtol=0.0,
+                    atol=1e-12,
+                )
+            ].sort_values(
+                "Mini"
+            )
+
+            mini = group[
+                "Mini"
+            ].to_numpy(
+                dtype=float
+            )
+
+            logte = group[
+                "logTe"
+            ].to_numpy(
+                dtype=float
+            )
+
+            logl = group[
+                "logL"
+            ].to_numpy(
+                dtype=float
+            )
+
+            # Remove duplicated masses
+            mini, unique_idx = np.unique(
+                mini,
+                return_index=True,
+            )
+
+            logte = logte[
+                unique_idx
+            ]
+
+            logl = logl[
+                unique_idx
+            ]
+
+            if (
+                mini.max()
+                < mass_grid[-1] - 1e-10
+            ):
+                raise ValueError(
+                    f"Upper Mini coverage insufficient at "
+                    f"MH={mh:.5f}, "
+                    f"omega={omega_ini:.3f}."
+                )
+
+            low_mass_gap = max(
+                0.0,
+                mini.min()
+                - mass_grid[0],
+            )
+
+            if (
+                low_mass_gap
+                > MAX_LOW_MASS_EXTRAPOLATION
+                + 1e-10
+            ):
+                raise ValueError(
+                    f"Low-mass extrapolation too large at "
+                    f"MH={mh:.5f}, "
+                    f"omega={omega_ini:.3f}: "
+                    f"{low_mass_gap:.3f} Msun."
+                )
+
+            regular_logte = np.full(
+                n_mass,
+                np.nan,
+                dtype=float,
+            )
+
+            regular_logl = np.full(
+                n_mass,
+                np.nan,
+                dtype=float,
+            )
+
+            # ====================================================
+            # PCHIP inside original mass coverage
+            #
+            # logTe and logL are interpolated together.
+            # ====================================================
+            y_values = np.column_stack(
+                (
+                    logte,
+                    logl,
+                )
+            )
+
+            pchip = PchipInterpolator(
+                mini,
+                y_values,
+                axis=0,
+                extrapolate=False,
+            )
+
+            inside = (
+                (mass_grid >= mini.min())
+                & (mass_grid <= mini.max())
+            )
+
+            values_inside = pchip(
+                mass_grid[
+                    inside
+                ]
+            )
+
+            regular_logte[
+                inside
+            ] = values_inside[
+                :,
+                0,
+            ]
+
+            regular_logl[
+                inside
+            ] = values_inside[
+                :,
+                1,
+            ]
+
+            # ====================================================
+            # Small low-mass extrapolation
+            # ====================================================
+            below = (
+                mass_grid
+                < mini.min()
+            )
+
+            if np.any(
+                below
+            ):
+
+                slope_logte = (
+                    logte[1]
+                    - logte[0]
+                ) / (
+                    mini[1]
+                    - mini[0]
+                )
+
+                slope_logl = (
+                    logl[1]
+                    - logl[0]
+                ) / (
+                    mini[1]
+                    - mini[0]
+                )
+
+                regular_logte[
+                    below
+                ] = (
+                    logte[0]
+                    + slope_logte
+                    * (
+                        mass_grid[
+                            below
+                        ]
+                        - mini[0]
+                    )
+                )
+
+                regular_logl[
+                    below
+                ] = (
+                    logl[0]
+                    + slope_logl
+                    * (
+                        mass_grid[
+                            below
+                        ]
+                        - mini[0]
+                    )
+                )
+
+                extrapolated_groups.append({
+                    "MH":
+                        float(mh),
+
+                    "omega_ini":
+                        float(
+                            omega_ini
+                        ),
+
+                    "original_min_mass":
+                        float(
+                            mini.min()
+                        ),
+
+                    "extrapolated_to":
+                        float(
+                            mass_grid[0]
+                        ),
+
+                    "gap":
+                        float(
+                            low_mass_gap
+                        ),
+                })
+
+            # ====================================================
+            # Final validity
+            # ====================================================
+            if (
+                not np.all(
+                    np.isfinite(
+                        regular_logte
+                    )
+                )
+                or not np.all(
+                    np.isfinite(
+                        regular_logl
+                    )
+                )
+            ):
+                raise ValueError(
+                    "Non-finite regularized boundary at "
+                    f"MH={mh:.5f}, "
+                    f"omega={omega_ini:.3f}."
+                )
+
+            logte_grid[
+                i_mh,
+                i_omega,
+                :,
+            ] = regular_logte
+
+            logl_grid[
+                i_mh,
+                i_omega,
+                :,
+            ] = regular_logl
+
+            regularized_rows.append(
+                pd.DataFrame({
+                    "MH":
+                        mh,
+
+                    "omega_ini":
+                        omega_ini,
+
+                    "Mini":
+                        mass_grid,
+
+                    "logTe":
+                        regular_logte,
+
+                    "logL":
+                        regular_logl,
+                })
+            )
+
+    regularized_df = pd.concat(
+        regularized_rows,
+        ignore_index=True,
+    )
+
+    extrapolated_groups_df = (
+        pd.DataFrame(
+            extrapolated_groups
+        )
+    )
+
+    # ============================================================
+    # One combined interpolator:
+    #
+    # (MH, omega, Mini)
+    #       ->
+    # (logTe, logL)
+    # ============================================================
+    boundary_values = np.stack(
+        (
+            logte_grid,
+            logl_grid,
+        ),
+        axis=-1,
+    )
+
+    interp_boundary = (
+        RegularGridInterpolator(
+            (
+                mh_grid,
+                omega_grid,
+                mass_grid,
+            ),
+            boundary_values,
+            method="linear",
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+    )
+
+    # Keep old interpolators for compatibility
+    interp_logte = (
+        RegularGridInterpolator(
+            (
+                mh_grid,
+                omega_grid,
+                mass_grid,
+            ),
+            logte_grid,
+            method="linear",
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+    )
+
+    interp_logl = (
+        RegularGridInterpolator(
+            (
+                mh_grid,
+                omega_grid,
+                mass_grid,
+            ),
+            logl_grid,
+            method="linear",
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+    )
+
+    # ============================================================
+    # Compact output
+    # ============================================================
+    _print_section(
+        "Boundary grid"
+    )
+
+    _print_pair(
+        "MH",
+        (
+            f"{mh_grid.min():.5f}"
+            f" -- "
+            f"{mh_grid.max():.5f}"
+        ),
+        "omega",
+        (
+            f"{omega_grid.min():.3f}"
+            f" -- "
+            f"{omega_grid.max():.3f}"
+        ),
+    )
+
+    _print_pair(
+        "MH grid",
+        f"N={len(mh_grid)}",
+        "omega grid",
+        f"N={len(omega_grid)}",
+    )
+
+    _print_pair(
+        "Posterior Mini",
+        (
+            f"{posterior_mini_min:.3f}"
+            f" -- "
+            f"{posterior_mini_max:.3f}"
+        ),
+        "Boundary Mini",
+        (
+            f"{mass_grid[0]:.3f}"
+            f" -- "
+            f"{mass_grid[-1]:.3f}"
+        ),
+    )
+
+    _print_pair(
+        "Mass grid",
+        f"N={len(mass_grid)}",
+        "Low-M extrap.",
+        f"N={len(extrapolated_groups_df)}",
+    )
+
+    return {
+        "mh_grid":
+            mh_grid,
+
+        "omega_grid":
+            omega_grid,
+
+        "mass_grid":
+            mass_grid,
+
+        "logte_grid":
+            logte_grid,
+
+        "logl_grid":
+            logl_grid,
+
+        "interp_boundary":
+            interp_boundary,
+
+        # compatibility
+        "interp_logte":
+            interp_logte,
+
+        "interp_logl":
+            interp_logl,
+
+        "regularized_df":
+            regularized_df,
+
+        "extrapolated_groups":
+            extrapolated_groups_df,
+
+        "posterior_mini_range":
+            (
+                posterior_mini_min,
+                posterior_mini_max,
+            ),
+
+        "boundary_mini_range":
+            (
+                float(
+                    mass_grid[0]
+                ),
+                float(
+                    mass_grid[-1]
+                ),
+            ),
+    }
+
+
+# ============================================================
+# Batch classify posterior samples
+# ============================================================
+def classify_samples_in_batches(
+    samples_flat,
+    blobs_flat,
+    param_names,
+    output_list,
+    boundary_grid,
+    batch_size=5000,
+):
+    """
+    Batch classification against the critical boundary.
+
+    safe_label:
+        1 = safe
+        0 = risky
+
+    Invalid samples are tracked separately through valid=False.
+    """
+
+    samples_flat = np.asarray(
+        samples_flat,
+        dtype=float,
+    )
+
+    blobs_flat = np.asarray(
+        blobs_flat,
+        dtype=float,
+    )
+
+    if (
+        len(samples_flat)
+        != len(blobs_flat)
+    ):
+        raise ValueError(
+            "samples_flat and blobs_flat must "
+            "have the same number of rows."
+        )
+
+    if (
+        not isinstance(
+            batch_size,
+            (int, np.integer),
+        )
+        or batch_size <= 0
+    ):
+        raise ValueError(
+            "batch_size must be a positive integer."
+        )
+
+    param_names = list(
+        param_names
+    )
+
+    output_list = list(
+        output_list
+    )
+
+    mh_idx = param_names.index(
+        "MH"
+    )
+
+    omega_idx = param_names.index(
+        "omega_ini"
+    )
+
+    logte_idx = output_list.index(
+        "logTe"
+    )
+
+    logl_idx = output_list.index(
+        "logL"
+    )
+
+    mh_grid = np.asarray(
+        boundary_grid[
+            "mh_grid"
+        ],
+        dtype=float,
+    )
+
+    omega_grid = np.asarray(
+        boundary_grid[
+            "omega_grid"
+        ],
+        dtype=float,
+    )
+
+    mass_grid = np.asarray(
+        boundary_grid[
+            "mass_grid"
+        ],
+        dtype=float,
+    )
+
+    interp_boundary = (
+        boundary_grid[
+            "interp_boundary"
+        ]
+    )
+
+    mh_min = mh_grid[0]
+    mh_max = mh_grid[-1]
+
+    omega_min = omega_grid[0]
+    omega_max = omega_grid[-1]
+
+    n_samples = len(
+        samples_flat
+    )
+
+    n_mass = len(
+        mass_grid
+    )
+
+    # ============================================================
+    # Posterior quantities
+    # ============================================================
+    all_mh = samples_flat[
+        :,
+        mh_idx,
+    ]
+
+    all_omega = samples_flat[
+        :,
+        omega_idx,
+    ]
+
+    all_logte = blobs_flat[
+        :,
+        logte_idx,
+    ]
+
+    all_logl = blobs_flat[
+        :,
+        logl_idx,
+    ]
+
+    # ============================================================
+    # Preallocate
+    # ============================================================
+    safe_labels = np.zeros(
+        n_samples,
+        dtype=np.int8,
+    )
+
+    valid_results = np.zeros(
+        n_samples,
+        dtype=bool,
+    )
+
+    signed_side_results = np.full(
+        n_samples,
+        np.nan,
+    )
+
+    distance_results = np.full(
+        n_samples,
+        np.nan,
+    )
+
+    nearest_mass_results = np.full(
+        n_samples,
+        np.nan,
+    )
+
+    nearest_logte_results = np.full(
+        n_samples,
+        np.nan,
+    )
+
+    nearest_logl_results = np.full(
+        n_samples,
+        np.nan,
+    )
+
+    reason_results = np.full(
+        n_samples,
+        "invalid",
+        dtype=object,
+    )
+
+    # ============================================================
+    # Standard tqdm
+    # ============================================================
+    with tqdm(
+        total=n_samples,
+        desc="Classifying samples",
+        unit="samples",
+    ) as pbar:
+
+        for start in range(
+            0,
+            n_samples,
+            batch_size,
+        ):
+
+            stop = min(
+                start + batch_size,
+                n_samples,
+            )
+
+            batch_idx = np.arange(
+                start,
+                stop,
+            )
+
+            mh = all_mh[
+                start:stop
+            ]
+
+            omega = all_omega[
+                start:stop
+            ]
+
+            point_logte = all_logte[
+                start:stop
+            ]
+
+            point_logl = all_logl[
+                start:stop
+            ]
+
+            finite = (
+                np.isfinite(mh)
+                & np.isfinite(omega)
+                & np.isfinite(
+                    point_logte
+                )
+                & np.isfinite(
+                    point_logl
+                )
+            )
+
+            inside_grid = (
+                (mh >= mh_min)
+                & (mh <= mh_max)
+                & (omega >= omega_min)
+                & (omega <= omega_max)
+            )
+
+            usable = (
+                finite
+                & inside_grid
+            )
+
+            reason_results[
+                batch_idx[
+                    ~finite
+                ]
+            ] = (
+                "non-finite value"
+            )
+
+            reason_results[
+                batch_idx[
+                    finite
+                    & ~inside_grid
+                ]
+            ] = (
+                "MH or omega_ini "
+                "outside boundary grid"
+            )
+
+            if not np.any(
+                usable
+            ):
+                pbar.update(
+                    stop - start
+                )
+                continue
+
+            global_idx = (
+                batch_idx[
+                    usable
+                ]
+            )
+
+            mh_valid = mh[
+                usable
+            ]
+
+            omega_valid = omega[
+                usable
+            ]
+
+            point_logte_valid = (
+                point_logte[
+                    usable
+                ]
+            )
+
+            point_logl_valid = (
+                point_logl[
+                    usable
+                ]
+            )
+
+            n_valid = len(
+                global_idx
+            )
+
+            # ====================================================
+            # All samples x all masses
+            # ====================================================
+            points = np.empty(
+                (
+                    n_valid,
+                    n_mass,
+                    3,
+                ),
+                dtype=float,
+            )
+
+            points[
+                :,
+                :,
+                0,
+            ] = (
+                mh_valid[
+                    :,
+                    None,
+                ]
+            )
+
+            points[
+                :,
+                :,
+                1,
+            ] = (
+                omega_valid[
+                    :,
+                    None,
+                ]
+            )
+
+            points[
+                :,
+                :,
+                2,
+            ] = (
+                mass_grid[
+                    None,
+                    :,
+                ]
+            )
+
+            points_flat = (
+                points.reshape(
+                    -1,
+                    3,
+                )
+            )
+
+            # ====================================================
+            # One interpolation call returns both logTe and logL
+            # ====================================================
+            boundary_xy = np.asarray(
+                interp_boundary(
+                    points_flat
+                ),
+                dtype=float,
+            ).reshape(
+                n_valid,
+                n_mass,
+                2,
+            )
+
+            boundary_logte = (
+                boundary_xy[
+                    :,
+                    :,
+                    0,
+                ]
+            )
+
+            boundary_logl = (
+                boundary_xy[
+                    :,
+                    :,
+                    1,
+                ]
+            )
+
+            boundary_valid = (
+                np.all(
+                    np.isfinite(
+                        boundary_logte
+                    ),
+                    axis=1,
+                )
+                & np.all(
+                    np.isfinite(
+                        boundary_logl
+                    ),
+                    axis=1,
+                )
+            )
+
+            reason_results[
+                global_idx[
+                    ~boundary_valid
+                ]
+            ] = (
+                "invalid interpolated boundary"
+            )
+
+            if not np.any(
+                boundary_valid
+            ):
+                pbar.update(
+                    stop - start
+                )
+                continue
+
+            current_idx = (
+                global_idx[
+                    boundary_valid
+                ]
+            )
+
+            x = boundary_logte[
+                boundary_valid
+            ]
+
+            y = boundary_logl[
+                boundary_valid
+            ]
+
+            px_raw = (
+                point_logte_valid[
+                    boundary_valid
+                ]
+            )
+
+            py_raw = (
+                point_logl_valid[
+                    boundary_valid
+                ]
+            )
+
+            n_current = len(
+                current_idx
+            )
+
+            # ====================================================
+            # Normalize each boundary independently
+            # ====================================================
+            x_min = np.min(
+                x,
+                axis=1,
+            )
+
+            x_max = np.max(
+                x,
+                axis=1,
+            )
+
+            y_min = np.min(
+                y,
+                axis=1,
+            )
+
+            y_max = np.max(
+                y,
+                axis=1,
+            )
+
+            x_scale = (
+                x_max
+                - x_min
+            )
+
+            y_scale = (
+                y_max
+                - y_min
+            )
+
+            x_scale[
+                (~np.isfinite(
+                    x_scale
+                ))
+                | (x_scale == 0)
+            ] = 1.0
+
+            y_scale[
+                (~np.isfinite(
+                    y_scale
+                ))
+                | (y_scale == 0)
+            ] = 1.0
+
+            x_center = np.mean(
+                x,
+                axis=1,
+            )
+
+            y_center = np.mean(
+                y,
+                axis=1,
+            )
+
+            xn = (
+                x
+                - x_center[
+                    :,
+                    None,
+                ]
+            ) / (
+                x_scale[
+                    :,
+                    None,
+                ]
+            )
+
+            yn = (
+                y
+                - y_center[
+                    :,
+                    None,
+                ]
+            ) / (
+                y_scale[
+                    :,
+                    None,
+                ]
+            )
+
+            px = (
+                px_raw
+                - x_center
+            ) / x_scale
+
+            py = (
+                py_raw
+                - y_center
+            ) / y_scale
+
+            # ====================================================
+            # Boundary segments
+            # ====================================================
+            start_x = xn[
+                :,
+                :-1,
+            ]
+
+            start_y = yn[
+                :,
+                :-1,
+            ]
+
+            segment_x = (
+                xn[
+                    :,
+                    1:,
+                ]
+                - start_x
+            )
+
+            segment_y = (
+                yn[
+                    :,
+                    1:,
+                ]
+                - start_y
+            )
+
+            segment_length2 = (
+                segment_x**2
+                + segment_y**2
+            )
+
+            valid_segment = (
+                segment_length2
+                > 0
+            )
+
+            safe_length2 = (
+                np.where(
+                    valid_segment,
+                    segment_length2,
+                    1.0,
+                )
+            )
+
+            dx = (
+                px[
+                    :,
+                    None,
+                ]
+                - start_x
+            )
+
+            dy = (
+                py[
+                    :,
+                    None,
+                ]
+                - start_y
+            )
+
+            fraction = (
+                dx * segment_x
+                + dy * segment_y
+            ) / safe_length2
+
+            fraction = np.clip(
+                fraction,
+                0.0,
+                1.0,
+            )
+
+            projected_x = (
+                start_x
+                + fraction
+                * segment_x
+            )
+
+            projected_y = (
+                start_y
+                + fraction
+                * segment_y
+            )
+
+            residual_x = (
+                px[
+                    :,
+                    None,
+                ]
+                - projected_x
+            )
+
+            residual_y = (
+                py[
+                    :,
+                    None,
+                ]
+                - projected_y
+            )
+
+            distance2 = (
+                residual_x**2
+                + residual_y**2
+            )
+
+            distance2[
+                ~valid_segment
+            ] = np.inf
+
+            # ====================================================
+            # Nearest boundary segment
+            # ====================================================
+            nearest_segment = (
+                np.argmin(
+                    distance2,
+                    axis=1,
+                )
+            )
+
+            rows = np.arange(
+                n_current
+            )
+
+            nearest_distance2 = (
+                distance2[
+                    rows,
+                    nearest_segment,
+                ]
+            )
+
+            has_segment = (
+                np.isfinite(
+                    nearest_distance2
+                )
+            )
+
+            reason_results[
+                current_idx[
+                    ~has_segment
+                ]
+            ] = (
+                "no valid boundary segment"
+            )
+
+            if not np.any(
+                has_segment
+            ):
+                pbar.update(
+                    stop - start
+                )
+                continue
+
+            result_rows = (
+                np.flatnonzero(
+                    has_segment
+                )
+            )
+
+            result_idx = (
+                current_idx[
+                    has_segment
+                ]
+            )
+
+            result_segment = (
+                nearest_segment[
+                    has_segment
+                ]
+            )
+
+            sx = segment_x[
+                result_rows,
+                result_segment,
+            ]
+
+            sy = segment_y[
+                result_rows,
+                result_segment,
+            ]
+
+            rx = residual_x[
+                result_rows,
+                result_segment,
+            ]
+
+            ry = residual_y[
+                result_rows,
+                result_segment,
+            ]
+
+            nearest_fraction = (
+                fraction[
+                    result_rows,
+                    result_segment,
+                ]
+            )
+
+            # ====================================================
+            # Side of boundary
+            # ====================================================
+            signed_side = (
+                sx * ry
+                - sy * rx
+            )
+
+            is_safe = (
+                signed_side
+                < 0
+            )
+
+            # ====================================================
+            # Nearest boundary position
+            # ====================================================
+            mass0 = mass_grid[
+                result_segment
+            ]
+
+            mass1 = mass_grid[
+                result_segment + 1
+            ]
+
+            nearest_mass = (
+                mass0
+                + nearest_fraction
+                * (
+                    mass1
+                    - mass0
+                )
+            )
+
+            x0 = x[
+                result_rows,
+                result_segment,
+            ]
+
+            x1 = x[
+                result_rows,
+                result_segment + 1,
+            ]
+
+            nearest_logte = (
+                x0
+                + nearest_fraction
+                * (
+                    x1
+                    - x0
+                )
+            )
+
+            y0 = y[
+                result_rows,
+                result_segment,
+            ]
+
+            y1 = y[
+                result_rows,
+                result_segment + 1,
+            ]
+
+            nearest_logl = (
+                y0
+                + nearest_fraction
+                * (
+                    y1
+                    - y0
+                )
+            )
+
+            # ====================================================
+            # Save
+            # ====================================================
+            safe_labels[
+                result_idx
+            ] = (
+                is_safe.astype(
+                    np.int8
+                )
+            )
+
+            valid_results[
+                result_idx
+            ] = True
+
+            signed_side_results[
+                result_idx
+            ] = signed_side
+
+            distance_results[
+                result_idx
+            ] = np.sqrt(
+                nearest_distance2[
+                    has_segment
+                ]
+            )
+
+            nearest_mass_results[
+                result_idx
+            ] = nearest_mass
+
+            nearest_logte_results[
+                result_idx
+            ] = nearest_logte
+
+            nearest_logl_results[
+                result_idx
+            ] = nearest_logl
+
+            reason_results[
+                result_idx[
+                    is_safe
+                ]
+            ] = "safe"
+
+            reason_results[
+                result_idx[
+                    ~is_safe
+                ]
+            ] = "risky"
+
+            pbar.update(
+                stop - start
+            )
+
+    # ============================================================
+    # Diagnostics
+    # ============================================================
+    diagnostics_df = pd.DataFrame({
+        "flat_index":
+            np.arange(
+                n_samples
+            ),
+
+        "MH":
+            all_mh,
+
+        "omega_ini":
+            all_omega,
+
+        "logTe":
+            all_logte,
+
+        "logL":
+            all_logl,
+
+        "safe_label":
+            safe_labels,
+
+        "is_safe":
+            (
+                valid_results
+                & (
+                    safe_labels
+                    == 1
+                )
+            ),
+
+        "valid":
+            valid_results,
+
+        "signed_side":
+            signed_side_results,
+
+        "boundary_distance":
+            distance_results,
+
+        "nearest_boundary_mass":
+            nearest_mass_results,
+
+        "nearest_boundary_logTe":
+            nearest_logte_results,
+
+        "nearest_boundary_logL":
+            nearest_logl_results,
+
+        "reason":
+            reason_results,
+    })
+
+    return (
+        diagnostics_df,
+        safe_labels,
+    )
+
+
+# ============================================================
+# Main public function
+# ============================================================
+def classify_posterior_samples_safety(
+    data,
+    critical_points_df,
+    batch_size=5000,
+):
+    """
+    Classify posterior samples as safe / risky.
+
+    The only performance control exposed here is batch_size.
+    """
+
+    required_keys = [
+        "samples",
+        "blobs",
+        "param_names",
+        "output_list",
+        "n_discard",
+    ]
+
+    missing = [
+        key
+        for key in required_keys
+        if key not in data.files
+    ]
+
+    if missing:
+        raise KeyError(
+            f"Missing keys in posterior data: {missing}"
+        )
+
+    if (
+        not isinstance(
+            batch_size,
+            (int, np.integer),
+        )
+        or batch_size <= 0
+    ):
+        raise ValueError(
+            "batch_size must be a positive integer."
+        )
+
+    # ============================================================
+    # Load
+    # ============================================================
+    samples = np.asarray(
+        data[
+            "samples"
+        ],
+        dtype=float,
+    )
+
+    blobs = np.asarray(
+        data[
+            "blobs"
+        ],
+        dtype=float,
+    )
+
+    param_names = [
+        str(x)
+        for x in data[
+            "param_names"
+        ]
+    ]
+
+    output_list = [
+        str(x)
+        for x in data[
+            "output_list"
+        ]
+    ]
+
+    n_discard = int(
+        np.asarray(
+            data[
+                "n_discard"
+            ]
+        ).item()
+    )
+
+    # ============================================================
+    # Validate
+    # ============================================================
+    if samples.ndim != 3:
+        raise ValueError(
+            "samples must have shape "
+            "(steps, walkers, parameters). "
+            f"Got {samples.shape}."
+        )
+
+    if blobs.ndim != 3:
+        raise ValueError(
+            "blobs must have shape "
+            "(steps, walkers, outputs). "
+            f"Got {blobs.shape}."
+        )
+
+    if (
+        samples.shape[:2]
+        != blobs.shape[:2]
+    ):
+        raise ValueError(
+            "samples and blobs have inconsistent "
+            "step/walker dimensions."
+        )
+
+    if (
+        samples.shape[-1]
+        != len(
+            param_names
+        )
+    ):
+        raise ValueError(
+            "samples dimension does not "
+            "match param_names."
+        )
+
+    if (
+        blobs.shape[-1]
+        != len(
+            output_list
+        )
+    ):
+        raise ValueError(
+            "blobs dimension does not "
+            "match output_list."
+        )
+
+    if not (
+        0
+        <= n_discard
+        < samples.shape[0]
+    ):
+        raise ValueError(
+            f"Invalid n_discard={n_discard}."
+        )
+
+    # ============================================================
+    # Discard and flatten
+    # ============================================================
+    samples_flat = (
+        samples[
+            n_discard:
+        ]
+        .reshape(
+            -1,
+            samples.shape[-1],
+        )
+    )
+
+    blobs_flat = (
+        blobs[
+            n_discard:
+        ]
+        .reshape(
+            -1,
+            blobs.shape[-1],
+        )
+    )
+
+    # ============================================================
+    # Compact output
+    # ============================================================
+    _print_section(
+        "Posterior"
+    )
+
+    _print_pair(
+        "Samples",
+        samples.shape,
+        "Blobs",
+        blobs.shape,
+    )
+
+    _print_pair(
+        "After discard",
+        f"{len(samples_flat):,}",
+        "Batch size",
+        f"{batch_size:,}",
+    )
+
+    # ============================================================
+    # Build dynamic boundary
+    # ============================================================
+    boundary_grid = (
+        build_regular_critical_boundary_grid(
+            critical_points_df=
+                critical_points_df,
+
+            samples_flat=
+                samples_flat,
+
+            param_names=
+                param_names,
+        )
+    )
+
+    # ============================================================
+    # Classify
+    # ============================================================
+    (
+        diagnostics_df,
+        safe_labels,
+    ) = (
+        classify_samples_in_batches(
+            samples_flat=
+                samples_flat,
+
+            blobs_flat=
+                blobs_flat,
+
+            param_names=
+                param_names,
+
+            output_list=
+                output_list,
+
+            boundary_grid=
+                boundary_grid,
+
+            batch_size=
+                batch_size,
+        )
+    )
+
+    # ============================================================
+    # Valid / safe / risky
+    # ============================================================
+    valid_mask = (
+        diagnostics_df[
+            "valid"
+        ]
+        .to_numpy(
+            dtype=bool
+        )
+    )
+
+    # Important:
+    # invalid samples are NOT counted as risky
+    safe_mask = (
+        valid_mask
+        & (
+            safe_labels
+            == 1
+        )
+    )
+
+    risky_mask = (
+        valid_mask
+        & (
+            safe_labels
+            == 0
+        )
+    )
+
+    samples_labeled = (
+        np.column_stack(
+            (
+                samples_flat,
+                safe_labels,
+            )
+        )
+    )
+
+    n_total = len(
+        safe_labels
+    )
+
+    n_valid = int(
+        np.count_nonzero(
+            valid_mask
+        )
+    )
+
+    n_invalid = int(
+        n_total
+        - n_valid
+    )
+
+    n_safe = int(
+        np.count_nonzero(
+            safe_mask
+        )
+    )
+
+    n_risky = int(
+        np.count_nonzero(
+            risky_mask
+        )
+    )
+
+    denominator = (
+        n_safe
+        + n_risky
+    )
+
+    if denominator > 0:
+
+        p_safe = (
+            n_safe
+            / denominator
+        )
+
+        p_risky = (
+            n_risky
+            / denominator
+        )
+
+    else:
+
+        p_safe = np.nan
+        p_risky = np.nan
+
+    summary = {
+        "N_total":
+            n_total,
+
+        "N_valid":
+            n_valid,
+
+        "N_invalid":
+            n_invalid,
+
+        "N_safe":
+            n_safe,
+
+        "N_risky":
+            n_risky,
+
+        "P_safe":
+            float(
+                p_safe
+            ),
+
+        "P_risky":
+            float(
+                p_risky
+            ),
+
+        "n_discard":
+            n_discard,
+
+        "batch_size":
+            int(
+                batch_size
+            ),
+    }
+
+    # ============================================================
+    # Final output
+    # ============================================================
+    _print_section(
+        "Classification"
+    )
+
+    _print_pair(
+        "Valid",
+        f"{n_valid:,}",
+        "Invalid",
+        f"{n_invalid:,}",
+    )
+
+    _print_pair(
+        "Safe",
+        f"{n_safe:,}",
+        "Risky",
+        f"{n_risky:,}",
+    )
+
+    _print_pair(
+        "P(safe)",
+        f"{p_safe:.5f}",
+        "P(risky)",
+        f"{p_risky:.5f}",
+    )
+
+    return {
+        "samples":
+            samples_flat,
+
+        "blobs":
+            blobs_flat,
+
+        "param_names":
+            param_names,
+
+        "output_list":
+            output_list,
+
+        "samples_labeled":
+            samples_labeled,
+
+        "samples_labeled_columns":
+            (
+                param_names
+                + [
+                    "safe_label"
+                ]
+            ),
+
+        "safe_labels":
+            safe_labels,
+
+        "safe_samples":
+            samples_flat[
+                safe_mask
+            ],
+
+        "risky_samples":
+            samples_flat[
+                risky_mask
+            ],
+
+        "safe_blobs":
+            blobs_flat[
+                safe_mask
+            ],
+
+        "risky_blobs":
+            blobs_flat[
+                risky_mask
+            ],
+
+        "diagnostics":
+            diagnostics_df,
+
+        "summary":
+            summary,
+
+        "critical_boundary_grid":
+            boundary_grid,
+    }

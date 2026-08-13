@@ -623,37 +623,81 @@ MODEL_OUTPUTS = [
     "G", "G_BP", "G_RP", "B_T", "V_T", "J", "H", "Ks"
 ]
 
-
 def eval_isochrone(
     model_interp,
     Mini_grid,
-    logAge,
+    Age,
     MH=0.01,
     omega_ini=0.0,
     Inclination=0.0,
+    interp_u=None,
 ):
+    Mini_grid = np.asarray(Mini_grid, dtype=float)
+    Age = float(Age)
+
     X = np.column_stack([
         Mini_grid,
-        np.full_like(Mini_grid, logAge, dtype=float),
+        np.full_like(Mini_grid, Age, dtype=float),
         np.full_like(Mini_grid, MH, dtype=float),
         np.full_like(Mini_grid, omega_ini, dtype=float),
         np.full_like(Mini_grid, Inclination, dtype=float),
     ])
 
-    Y = model_interp(X)
+    Y = np.asarray(model_interp(X), dtype=float)
 
-    iso = {}
-    for i, name in enumerate(MODEL_OUTPUTS):
-        iso[name] = Y[:, i]
+    if Y.ndim != 2:
+        raise ValueError(
+            "model_interp(X) must return a 2D array with shape "
+            f"(N, {len(MODEL_OUTPUTS)}), but got shape {Y.shape}."
+        )
+
+    if Y.shape[0] != len(Mini_grid):
+        raise ValueError(
+            "The number of outputs from model_interp does not match "
+            f"Mini_grid: {Y.shape[0]} != {len(Mini_grid)}."
+        )
+
+    if Y.shape[1] != len(MODEL_OUTPUTS):
+        raise ValueError(
+            f"model_interp(X) must return {len(MODEL_OUTPUTS)} outputs, "
+            f"but got {Y.shape[1]}."
+        )
+
+    iso = {
+        name: Y[:, i]
+        for i, name in enumerate(MODEL_OUTPUTS)
+    }
+
+    # Optionally evaluate evolutionary phase u
+    if interp_u is not None:
+        u_raw = np.asarray(interp_u(X), dtype=float)
+
+        # Accept either shape (N,) or (N, 1)
+        if u_raw.shape == (len(Mini_grid),):
+            u = u_raw
+
+        elif u_raw.shape == (len(Mini_grid), 1):
+            u = u_raw[:, 0]
+
+        else:
+            raise ValueError(
+                "interp_u(X) must return an array with shape "
+                f"({len(Mini_grid)},) or ({len(Mini_grid)}, 1), "
+                f"but got shape {u_raw.shape}."
+            )
+
+        iso["u"] = u
 
     iso["Mini"] = Mini_grid
-    iso["logAge"] = logAge
-    iso["age_Myr"] = 10 ** (logAge - 6)
+    iso["Age"] = Age
+    iso["logAge"] = np.log10(Age)
+    iso["age_Myr"] = Age / 1e6
     iso["MH"] = MH
     iso["omega_ini"] = omega_ini
     iso["Inclination"] = Inclination
 
     return iso
+
 
 
 def get_cmd_xy(iso, color="G_BP-G_RP", mag="G"):
@@ -688,14 +732,42 @@ def _alpha_from_inclination(
     return alpha_min + t * (alpha_max - alpha_min)
 
 
-def _interp_point_at_mass(iso, x, y, mass_value, mass_key="Mini"):
+def _interp_point_at_mass(
+    iso,
+    x,
+    y,
+    mass_value,
+    mass_key="Mini",
+    selection_mask=None,
+):
     mass_arr = np.asarray(iso[mass_key], dtype=float)
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if not (
+        mass_arr.shape == x.shape == y.shape
+    ):
+        raise ValueError(
+            "mass, x, and y must have the same shape, but got "
+            f"{mass_arr.shape}, {x.shape}, and {y.shape}."
+        )
 
     valid = (
         np.isfinite(mass_arr)
         & np.isfinite(x)
         & np.isfinite(y)
     )
+
+    if selection_mask is not None:
+        selection_mask = np.asarray(selection_mask, dtype=bool)
+
+        if selection_mask.shape != mass_arr.shape:
+            raise ValueError(
+                "selection_mask must have the same shape as mass_arr, "
+                f"but got {selection_mask.shape} and {mass_arr.shape}."
+            )
+
+        valid &= selection_mask
 
     mass_arr = mass_arr[valid]
     x_arr = x[valid]
@@ -709,7 +781,18 @@ def _interp_point_at_mass(iso, x, y, mass_value, mass_key="Mini"):
     x_arr = x_arr[order]
     y_arr = y_arr[order]
 
-    if mass_value < np.nanmin(mass_arr) or mass_value > np.nanmax(mass_arr):
+    # Remove duplicate mass values, since np.interp expects increasing x
+    mass_arr, unique_indices = np.unique(
+        mass_arr,
+        return_index=True,
+    )
+    x_arr = x_arr[unique_indices]
+    y_arr = y_arr[unique_indices]
+
+    if len(mass_arr) < 2:
+        return None
+
+    if mass_value < mass_arr[0] or mass_value > mass_arr[-1]:
         return None
 
     x_m = np.interp(mass_value, mass_arr, x_arr)
@@ -739,9 +822,14 @@ def plot_cmd_isochrones(
     inc_alpha_min=0.0,
     inc_alpha_max=1.57,
     grid_alpha=0.25,
+    legend_on=True,
     legend_fontsize=8,
     xlim=None,
     ylim=None,
+
+    # evolutionary-phase filtering
+    interp_u=None,
+    u_range=None,
 
     # mass marker settings
     mass_marks=(1.5, 2.0, 2.5, 3.0),
@@ -756,6 +844,36 @@ def plot_cmd_isochrones(
 
     save_name=None,
 ):
+    # interp_u and u_range must be supplied together
+    if (interp_u is None) != (u_range is None):
+        raise ValueError(
+            "interp_u and u_range must either both be provided "
+            "or both be None."
+        )
+
+    if u_range is not None:
+        u_range_arr = np.asarray(u_range, dtype=float)
+
+        if u_range_arr.shape != (2,):
+            raise ValueError(
+                "u_range must contain exactly two values: "
+                "(u_min, u_max)."
+            )
+
+        u_min, u_max = u_range_arr
+
+        if not np.isfinite(u_min) or not np.isfinite(u_max):
+            raise ValueError("Both values in u_range must be finite.")
+
+        if u_min > u_max:
+            raise ValueError(
+                f"u_range must satisfy u_min <= u_max, "
+                f"but got ({u_min}, {u_max})."
+            )
+    else:
+        u_min = None
+        u_max = None
+
     fig, ax = plt.subplots(figsize=figsize)
 
     ages_Myr = np.asarray(ages_Myr, dtype=float)
@@ -771,7 +889,6 @@ def plot_cmd_isochrones(
     plotted_isochrones = []
 
     for age_Myr in ages_sorted:
-        logAge = np.log10(age_Myr) + 6
         base_color = age_to_base_color[age_Myr]
 
         for omega_ini in omega_ini_list:
@@ -789,14 +906,40 @@ def plot_cmd_isochrones(
                 iso = eval_isochrone(
                     model_interp=interp_func,
                     Mini_grid=Mini_grid,
-                    logAge=logAge,
+                    Age=age_Myr,
                     MH=MH,
                     omega_ini=omega_ini,
                     Inclination=inc,
+                    interp_u=interp_u,
                 )
 
-                x, y = get_cmd_xy(iso, color=color, mag=mag)
-                valid = np.isfinite(x) & np.isfinite(y)
+                x, y = get_cmd_xy(
+                    iso,
+                    color=color,
+                    mag=mag,
+                )
+
+                x = np.asarray(x, dtype=float)
+                y = np.asarray(y, dtype=float)
+
+                plot_mask = (
+                    np.isfinite(x)
+                    & np.isfinite(y)
+                )
+
+                # Restrict the curve to the requested evolutionary phase
+                if u_range is not None:
+                    u = np.asarray(iso["u"], dtype=float)
+
+                    plot_mask &= (
+                        np.isfinite(u)
+                        & (u >= u_min)
+                        & (u <= u_max)
+                    )
+
+                # Skip this isochrone when no point lies inside u_range
+                if not np.any(plot_mask):
+                    continue
 
                 if np.isclose(omega_ini, 0.0):
                     plot_alpha = nonrot_alpha
@@ -809,6 +952,7 @@ def plot_cmd_isochrones(
                         alpha_min=alpha_min,
                         alpha_max=alpha_max,
                     )
+
                     label = (
                         f"{age_Myr:.0f} Myr, "
                         f"ωini={omega_ini:.2f}, "
@@ -816,9 +960,14 @@ def plot_cmd_isochrones(
                         f"α={plot_alpha:.2f}"
                     )
 
+                # NaN outside the selected region prevents Matplotlib
+                # from connecting separate parts of the curve.
+                x_plot = np.where(plot_mask, x, np.nan)
+                y_plot = np.where(plot_mask, y, np.nan)
+
                 ax.plot(
-                    x[valid],
-                    y[valid],
+                    x_plot,
+                    y_plot,
                     color=base_color,
                     lw=lw,
                     ls=linestyle,
@@ -836,13 +985,16 @@ def plot_cmd_isochrones(
                             y=y,
                             mass_value=m,
                             mass_key=mass_key,
+                            selection_mask=plot_mask,
                         )
 
                         if point is None:
                             continue
 
                         x_m, y_m = point
-                        marker = mass_marker_cycle[j % len(mass_marker_cycle)]
+                        marker = mass_marker_cycle[
+                            j % len(mass_marker_cycle)
+                        ]
 
                         ax.scatter(
                             x_m,
@@ -854,7 +1006,9 @@ def plot_cmd_isochrones(
                             zorder=5,
                         )
 
-                        mass_points.append((m, x_m, y_m, marker))
+                        mass_points.append(
+                            (m, x_m, y_m, marker)
+                        )
 
                 plotted_isochrones.append({
                     "age_Myr": age_Myr,
@@ -862,20 +1016,38 @@ def plot_cmd_isochrones(
                     "Inclination": inc,
                     "x": x,
                     "y": y,
+                    "u": iso.get("u"),
+                    "plot_mask": plot_mask,
                     "iso": iso,
                     "mass_points": mass_points,
                     "color": base_color,
                 })
 
-    if mass_text and mass_marks is not None and len(plotted_isochrones) > 0:
-        ref_iso = plotted_isochrones[mass_text_iso_index]
+    if (
+        mass_text
+        and mass_marks is not None
+        and len(plotted_isochrones) > 0
+    ):
+        try:
+            ref_iso = plotted_isochrones[mass_text_iso_index]
+        except IndexError as exc:
+            raise IndexError(
+                f"mass_text_iso_index={mass_text_iso_index} is invalid. "
+                f"Only {len(plotted_isochrones)} isochrones were plotted."
+            ) from exc
 
         for j, item in enumerate(ref_iso["mass_points"]):
             m, x_m, y_m, marker = item
 
             ax.text(
                 x_m + mass_text_dx,
-                y_m + mass_text_dy * (j - 0.5 * len(ref_iso["mass_points"])),
+                y_m
+                + mass_text_dy
+                * (
+                    j
+                    - 0.5
+                    * len(ref_iso["mass_points"])
+                ),
                 f"{m:.2f} $M_\\odot$",
                 color=ref_iso["color"],
                 fontsize=mass_text_fontsize,
@@ -889,7 +1061,10 @@ def plot_cmd_isochrones(
         obs_y = obs[mag]
 
         if obs_err is not None:
-            obs_xerr = np.sqrt(obs_err[c1] ** 2 + obs_err[c2] ** 2)
+            obs_xerr = np.sqrt(
+                obs_err[c1] ** 2
+                + obs_err[c2] ** 2
+            )
             obs_yerr = obs_err[mag]
         else:
             obs_xerr = None
@@ -908,13 +1083,58 @@ def plot_cmd_isochrones(
             zorder=10,
         )
 
-    # plt.scatter(0.642 - 0.456, 0.577, marker="*", s=100, color="black", alpha=0.5, label="Mock target (2.25 Msun)")
-    # plt.scatter(1.355 - 1.159, 1.287, marker="D", s=100, color="black", alpha=0.5, label="Mock target (2.00 Msun)")
-    # plt.scatter(2.11474257 - 1.90933357, 2.05340857, marker="D", s=100, color="black", alpha=0.5, label="HIP 8847")
+    METHOD = "DIRECT"
+    cluster = "hyades"
+
+    from belfast.paths import REPO_ROOT, RESULTS_DIR, DATA_DIR
+    df_post = pd.read_csv(DATA_DIR / f'clusters/praesepe_posterior_{METHOD}_summary.csv')
+
+
+    c = df_post["age"]
+    color_label = "Age (Myr)"
+
+    sc = ax.scatter(
+        df_post["MBP_MRP"],
+        df_post["MG"],
+        c=c,
+        cmap="viridis",
+        s=30,
+        alpha=0.8,
+        edgecolors="none",
+    )
+
+    x_line_hyades = 0.47
+
+    ax.axvline(
+        x=x_line_hyades,
+        linestyle=":",
+        color="green",
+        linewidth=2,
+        label=rf"$M_{{G_{{\mathrm{{BP}}}}}} - M_{{G_{{\mathrm{{RP}}}}}} = {x_line_hyades:.2f}$",
+    )
+
+    ax.grid(True, linestyle="--", alpha=0.6)
+
+    ax.set_xlabel(
+        r"$M_{G_\mathit{BP}} - M_{G_\mathit{RP}} \;(\mathrm{mag})$",
+        fontsize=18,
+    )
+
+    ax.set_ylabel(
+        r"$M_{\mathit{G}} \;(\mathrm{mag})$",
+        fontsize=18,
+    )
+
+    ax.tick_params(axis="both", labelsize=14)
+
+    cbar = plt.colorbar(sc, ax=ax)
+    cbar.set_label(color_label, fontsize=18)
+    cbar.ax.tick_params(labelsize=15)
 
     ax.invert_yaxis()
     ax.set_xlabel(color)
     ax.set_ylabel(mag)
+
     xmin, xmax = ax.get_xlim()
     xpad = 0.15 * (xmax - xmin)
     ax.set_xlim(xmin - xpad, xmax)
@@ -922,18 +1142,30 @@ def plot_cmd_isochrones(
     if title is None:
         title = f"CMD isochrones, [M/H]={MH}"
 
+        if u_range is not None:
+            title += f", {u_min:g} ≤ u ≤ {u_max:g}"
+
     ax.set_title(title)
-    ax.legend(fontsize=legend_fontsize)
+
+    if legend_on:
+        ax.legend(fontsize=legend_fontsize)
+
     ax.grid(alpha=grid_alpha)
 
     if xlim is not None:
-        plt.xlim(xlim)
-    if ylim is not None:
-        plt.ylim(ylim)
+        ax.set_xlim(xlim)
 
-    plt.tight_layout()
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+    fig.tight_layout()
+
     if save_name is not None:
-        plt.savefig(save_name)
+        fig.savefig(
+            save_name,
+            bbox_inches="tight",
+        )
+
     return fig, ax
 
 
@@ -966,13 +1198,13 @@ def evaluate_evolution_track(
     """
 
     age_Myr_grid = np.asarray(age_Myr_grid, dtype=float)
-    logAge_grid = np.log10(age_Myr_grid) + 6.0
+    # logAge_grid = np.log10(age_Myr_grid) + 6.0
 
     X = np.column_stack([
-        np.full_like(logAge_grid, Mini, dtype=float),
-        logAge_grid,
-        np.full_like(logAge_grid, MH, dtype=float),
-        np.full_like(logAge_grid, omega_ini, dtype=float),
+        np.full_like(age_Myr_grid, Mini, dtype=float),
+        age_Myr_grid,
+        np.full_like(age_Myr_grid, MH, dtype=float),
+        np.full_like(age_Myr_grid, omega_ini, dtype=float),
     ])
 
     Y = interp_func(X)
@@ -983,7 +1215,7 @@ def evaluate_evolution_track(
 
     track["Mini"] = np.full_like(age_Myr_grid, Mini, dtype=float)
     track["age_Myr"] = age_Myr_grid
-    track["logAge"] = logAge_grid
+    # track["logAge"] = age_Myr_grid
     track["MH"] = np.full_like(age_Myr_grid, MH, dtype=float)
     track["omega_ini"] = np.full_like(age_Myr_grid, omega_ini, dtype=float)
 

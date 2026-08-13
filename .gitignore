@@ -14,6 +14,7 @@ __pycache__/
 !/results/.gitkeep
 
 /scripts/*.txt
+/scripts/test_risk.py
 
 /belfast/nn/data/*
 !/belfast/nn/data/.gitkeep
@@ -29,8 +30,12 @@ __pycache__/
 
 /data/clusters/figures/*
 !/data/clusters/figures/.gitkeep
+/data/clusters/figures0/
 
 !/data/PARS_filters/.gitkeep
+
+/belfast/isochrone_utils1.py
+/belfast/mcmc_utils1.py
 
 /tutorials/*
 !/tutorials/01_preparation.ipynb
@@ -39,7 +44,7 @@ __pycache__/
 !/tutorials/03_plotting_figures.ipynb
 !/tutorials/04a_select_cluster_targets.ipynb
 !/tutorials/04b_Banyan_Sigma.ipynb
-!/tutorials/05_cluster age_estimation.ipynb
+!/tutorials/05_cluster_age_estimation.ipynb
 !/tutorials/06_Neural_Network_training.ipynb
 !/tutorials/vizier_J_A+A_628_A66
 !/tutorials/vizier_J_A+A_623_A35

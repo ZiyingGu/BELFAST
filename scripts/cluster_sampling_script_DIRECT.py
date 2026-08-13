@@ -85,6 +85,8 @@ for i in range(len(df_cluster)):
             elif isinstance(target_name, (int, float)):
                 target_name = str(int(target_name))
 
+    # if target_name not in ['HIP 42164', 'HD 73711']:
+    #     continue
 
     print(f'>>>>>>>>>> Now working on Target: {target_name}')
 
@@ -175,23 +177,24 @@ for i in range(len(df_cluster)):
                         extinction_prior = lambda x: norm.logpdf(x, loc=extinction, scale=extinction_err),
                         )
 
+
+    target.emcee_moves=[
+        (emcee.moves.StretchMove(a=2.0),  0.50),
+        (emcee.moves.DEMove(gamma0=0.4),  0.20),
+        (emcee.moves.DESnookerMove(),     0.15),
+        (emcee.moves.KDEMove(),           0.15),
+    ]
+    # emcee_moves=[
+    #     (emcee.moves.StretchMove(a=2.0),  0.95),
+    #     (emcee.moves.KDEMove(),           0.05),
+    # ]
+
     mcmc.target = target
     start_time = time.time()
 
-    # emcee_moves=[
-    #     (emcee.moves.StretchMove(a=2.0),  0.50),
-    #     (emcee.moves.DEMove(gamma0=0.4),  0.20),
-    #     (emcee.moves.DESnookerMove(),     0.15),
-    #     (emcee.moves.KDEMove(),           0.15),
-    # ]
-    emcee_moves=[
-        (emcee.moves.StretchMove(a=2.0),  0.95),
-        (emcee.moves.KDEMove(),           0.05),
-    ]
-
     sampler_test, rough_mass = mcmc.run_test_sampling(use_tqdm=False, show_fig=False, n_steps_test=3000,
                                                       save_path=test_save_path,
-                                                      emcee_moves=emcee_moves,
+                                                      # emcee_moves=emcee_moves,
     )
     end_time = time.time()
     print(f"This test took {end_time - start_time:.4f} seconds.")
@@ -200,7 +203,7 @@ for i in range(len(df_cluster)):
                                 max_hours=6, # if reaching max_hours, stop sampling anyway.
                                 n_processes=8, # the number of threads used for parallel sampling.
                                 use_tqdm=False,
-                                emcee_moves = emcee_moves,
+                                # emcee_moves = emcee_moves,
     )
 
     mcmc.save_and_plot(sampler, show_fig=False, folder_suffix=folder_suffix, save_samples=True)

@@ -341,7 +341,6 @@ def select_Vrot_prior_by_rough_mass(
     return best_key, log_prior_Vrot_dict[best_key]
 
 
-
 def log_prior(sampling_variables, verbose=False):
     """
     Compute the logarithm of the prior probability for a given set of sampling variables.
@@ -402,7 +401,10 @@ def log_prior(sampling_variables, verbose=False):
         MH = sampling_variables[MH_index]
         # print(f'MH = {MH}')
         if target.MH_prior == 'default':
-            MH_prior = norm.logpdf(MH, loc=-0.1127, scale=0.2582)  # non-informative prior from the GALAH survey (Buder et al. 2019) corrected solar abundance zeropoint from Grevesse+07 to Caffau+11
+            # (Caffua+2011) Fe = 7.52 ± 0.06; (Grevesse+2007) Fe = 7.45 ± 0.05
+            MH_prior = norm.logpdf(MH, loc=-0.106, scale=0.224)
+                # -0.036 +/- 0.210 Gaussian fit of GALAH survey (Buder et al. 2019) [Fe/H] of samples which are < 8 Gyr.
+            # MH_prior = norm.logpdf(MH, loc=-0.1127, scale=0.2582)  # non-informative prior from the GALAH survey (Buder et al. 2019) corrected solar abundance zeropoint from Grevesse+07 to Caffau+11
             # MH_prior = norm.logpdf(MH, loc=-0.0427, scale=0.2461) # non-informative prior from the GALAH survey (Buder et al. 2019) Wrong! Not correct solar abundance difference
             # MH_prior = norm.logpdf(MH, loc=0.072, scale=0.21) # narrower; young solar type star in the solar neighbourhood; data from Buder et al. 2019
         else:
@@ -467,9 +469,6 @@ def log_prior(sampling_variables, verbose=False):
         if verbose:
             print('Out of the parameter space of sampling!')
         return -np.inf
-
-
-
 
 
 def log_likelihood_INTERP(sampling_variables, verbose=False):
@@ -568,10 +567,10 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
     if np.isnan(y_interpolated).any():
         if verbose:
             print('Failed in interpolation.')
-        return -np.inf, np.ones(len(target.bands_list) + 11)*np.nan
+        return -np.inf, np.ones(len(target.bands_list) + 13)*np.nan
 
-    Mass, omega, Req, Rpol = y_interpolated[:4]
-    abs_mags_interpolated = y_interpolated[4:]
+    Mass, omega, logL, logTe, Req, Rpol = y_interpolated[:6]
+    abs_mags_interpolated = y_interpolated[6:]
 
 
     obs_mags_model = cal_obs_mag(abs_mags_interpolated, parallax)
@@ -629,6 +628,8 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
     blobs.append(vtaneq)
     blobs.append(Mass)
     blobs.append(omega)
+    blobs.append(logL)
+    blobs.append(logTe)
     blobs.append(Req)
     blobs.append(Rpol)
     blobs.append(lnL0)
@@ -645,7 +646,7 @@ def log_likelihood_INTERP(sampling_variables, verbose=False):
         if not np.isfinite(p_Vrot):
             if verbose:
                 print("Failed in Vrot_prior calculation.")
-            return -np.inf, np.ones(len(target.bands_list) + 11) * np.nan
+            return -np.inf, np.ones(len(target.bands_list) + 13) * np.nan
 
         lnL += p_Vrot
     else:
@@ -751,7 +752,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
 
     # logL, Req, Rpol = target.Model_interp(sampling_variables[:len(target.interp_variables_list)])[0]
     if target.iso_name.lower() == 'PARSEC'.lower():
-        Mass, omega, logL, Req, Rpol = target.Model_interp(sampling_variables[:len(target.interp_variables_list)]).flatten()
+        Mass, omega, logL, logTe, Req, Rpol = target.Model_interp(sampling_variables[:len(target.interp_variables_list)]).flatten()
         omega_angular = omega * np.sqrt(GM_SUN * Mass/(R_SUN * 1.5 * Rpol)**3)
         omega_keplerian = np.sqrt(GM_SUN * Mass / (R_SUN * Req)**3)
         omega_k = omega_angular / omega_keplerian
@@ -782,7 +783,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
         except:
             if verbose:
                 print('Failed in PARS calculation.')
-            return -np.inf, np.ones(len(target.bands_list) + 12)*np.nan
+            return -np.inf, np.ones(len(target.bands_list) + 13)*np.nan
     else:
         sorted_values = sorted(target.made_limb_darkening_dict.keys())
         lower_value = max((v for v in sorted_values if v < MH_PARS), default=None)
@@ -801,7 +802,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
             except:
                 if verbose:
                     print('Failed in PARS calculation.')
-                return -np.inf, np.ones(len(target.bands_list) + 12)*np.nan
+                return -np.inf, np.ones(len(target.bands_list) + 13)*np.nan
 
         interp_MH = interp1d(np.array(list(PARS_dict.keys())), np.array(list(PARS_dict.values())).T)
         obs_mags_model = interp_MH(MH_PARS)
@@ -855,9 +856,10 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
     blobs.append(vtaneq)
     blobs.append(Mass)
     blobs.append(omega)
+    blobs.append(logL)
+    blobs.append(logTe)
     blobs.append(Req)
     blobs.append(Rpol)
-    blobs.append(logL)
     blobs.append(lnL0)
     blobs.append(lnL)
     if target.iso_name == 'PARSEC':
@@ -874,7 +876,7 @@ def log_likelihood_PARS(sampling_variables, verbose=False):
         if not np.isfinite(p_Vrot):
             if verbose:
                 print("Failed in Vrot_prior calculation.")
-            return -np.inf, np.ones(len(target.bands_list) + 12) * np.nan
+            return -np.inf, np.ones(len(target.bands_list) + 13) * np.nan
 
         lnL += p_Vrot
     else:
@@ -913,22 +915,19 @@ def log_posterior(sampling_variables):
 
     if not np.isfinite(log_pr):
         if target.METHOD == "DIRECT":
-            blobs = np.ones(len(target.bands_list) + 11)*np.nan
+            blobs = np.ones(len(target.bands_list) + 13)*np.nan
         elif target.METHOD == "PARS":
-            blobs = np.ones(len(target.bands_list) + 12)*np.nan
+            blobs = np.ones(len(target.bands_list) + 13)*np.nan
         return -np.inf, blobs
 
-    if target.METHOD in ['DIRECT']:
+    if target.METHOD == 'DIRECT':
         log_lkh, blobs = log_likelihood_INTERP(sampling_variables)
     elif target.METHOD == "PARS":
         log_lkh, blobs = log_likelihood_PARS(sampling_variables)
-    # elif target.METHOD == "NN":
-    #     log_lkh, blobs = log_likelihood_NN(sampling_variables)
 
     log_prob = log_pr + log_lkh
 
     return log_prob, blobs
-
 
 
 def running_in_jupyter():
@@ -940,142 +939,185 @@ def running_in_jupyter():
         pass
 
 
+def _validate_emcee_moves(emcee_moves):
+    """Validate optional ``[(emcee_move, fraction), ...]`` configuration."""
+    if emcee_moves is None:
+        return None
+
+    import emcee
+
+    if not isinstance(emcee_moves, (list, tuple)) or not emcee_moves:
+        raise ValueError("target.emcee_moves must be None or a non-empty list/tuple of (move, fraction) pairs.")
+
+    total = 0.0
+    for i, item in enumerate(emcee_moves):
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"Invalid target.emcee_moves entry at index {i}: {item!r}")
+        move, fraction = item
+        if not isinstance(move, emcee.moves.Move):
+            raise TypeError(f"Entry {i} is not an emcee Move: {type(move).__name__}")
+        if not isinstance(fraction, (int, float, np.integer, np.floating)):
+            raise TypeError(f"Move fraction at index {i} must be numeric.")
+        fraction = float(fraction)
+        if not np.isfinite(fraction) or fraction < 0:
+            raise ValueError(f"Move fraction at index {i} must be finite and non-negative.")
+        total += fraction
+
+    if not np.isclose(total, 1.0, rtol=0.0, atol=1e-8):
+        raise ValueError(f"The fractions in target.emcee_moves must sum to 1. Got {total:.12g}.")
+    return emcee_moves
+
+
+def _validate_triplet(values, default, name, lower=None, upper=None):
+    arr = np.asarray(default if values is None else values, dtype=float)
+    if arr.shape != (3,) or not np.all(np.isfinite(arr)):
+        raise ValueError(f"{name} must contain exactly three finite values.")
+    if lower is not None and np.any(arr <= lower):
+        raise ValueError(f"All {name} values must be > {lower}.")
+    if upper is not None and np.any(arr >= upper):
+        raise ValueError(f"All {name} values must be < {upper}.")
+    return arr.tolist()
+
+
+def _validate_age_sampling():
+    variables = list(target.sampling_variables_list)
+    if "logAge" in variables or "Age" not in variables:
+        raise ValueError(f'Sampling must use "Age" in Myr, not "logAge". Got: {variables}')
+    age_unit = getattr(target, "age_unit", None)
+    if age_unit is not None and str(age_unit).lower() != "myr":
+        raise ValueError(f'The target age unit must be "Myr". Got: {age_unit!r}')
+
+
+def _estimate_late_tau(chain):
+    """Return conservative late-chain ACT and its 50%/30% stability difference."""
+    import emcee
+
+    n = len(chain)
+    tau_05 = emcee.autocorr.integrated_time(chain[int(0.5 * n):], tol=0)
+    tau_03 = emcee.autocorr.integrated_time(chain[int(0.7 * n):], tol=0)
+    t05 = np.nanmax(tau_05) if np.any(np.isfinite(tau_05)) else np.nan
+    t03 = np.nanmax(tau_03) if np.any(np.isfinite(tau_03)) else np.nan
+    tau = np.nanmax([t05, t03])
+    if not np.isfinite(tau) or tau <= 0:
+        raise ValueError("No finite ACT estimate.")
+    rel_diff = abs(t05 - t03) / max(t05, t03) if np.isfinite(t05) and np.isfinite(t03) else np.inf
+    return float(tau), float(t05), float(t03), float(rel_diff)
+
+
+def _next_check_steps(
+    tau, current_ratio, target_ratio, max_check_steps,
+    min_check_tau=10.0, seconds_per_step=None, max_check_minutes=None,
+    remaining_seconds=None,
+):
+    """Plan the next checkpoint from the remaining required number of ACTs."""
+    missing_tau = max(float(target_ratio) - float(current_ratio), 0.0)
+    planned_tau = max(float(min_check_tau), missing_tau)
+    requested = max(1, math.ceil(planned_tau * tau))
+    limits = [requested, int(max_check_steps)]
+
+    if seconds_per_step and seconds_per_step > 0:
+        if max_check_minutes is not None:
+            limits.append(max(1, int(max_check_minutes * 60 / seconds_per_step)))
+        if remaining_seconds is not None:
+            limits.append(max(1, int(remaining_seconds / seconds_per_step)))
+
+    return max(1, min(limits)), missing_tau, planned_tau, requested
+
 
 def runnning_in_pool(
     initial_steps, max_hours, emcee_moves, pool, dtype, use_tqdm,
-    min_length_ratio_list, max_tau_relative_difference_list
+    min_length_ratio_list, max_tau_relative_difference_list,
+    max_check_steps=10000, min_check_tau=10.0, max_check_minutes=30.0,
 ):
-    """
-    Adaptive MCMC sampling with convergence monitoring:
-      1) Tau stability: |tau_0.5 - tau_0.3| / max(tau_0.5, tau_0.3) < 15% (2 consecutive)
-      3) min(ESS) > 1000
-      Stops when either convergence or time limit (max_hours) reached.
-    """
+    """Run adaptive MCMC and check ACT stability plus usable chain length."""
     import emcee
-    sampler = emcee.EnsembleSampler(
-        target.n_walkers,
-        target.ndim,
-        log_posterior,
-        moves=emcee_moves,
-        pool=pool,
-        blobs_dtype=dtype,
-    )
 
-    # ----- Initial sampling -----
-    start_time_total = time.time()
+    sampler = emcee.EnsembleSampler(
+        target.n_walkers, target.ndim, log_posterior,
+        moves=emcee_moves, pool=pool, blobs_dtype=dtype,
+    )
+    start_total = time.time()
+    max_runtime = max_hours * 3600
+    stable_count = 0
+    previous_stage = None
+
     if not use_tqdm:
-        print(f"Starting Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("🔄 Starting initial sampling...")
+        print(f"Starting Time: {datetime.now():%Y-%m-%d %H:%M:%S}")
+    print(f"🔄 Initial sampling: {initial_steps} steps")
+    batch_start = time.time()
     sampler.run_mcmc(target.initial_states, initial_steps, progress=use_tqdm)
     if not use_tqdm:
-        elapsed = int(time.time() - start_time_total)
-        print(f"Sampling time: {elapsed//3600:02d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
-
-    # ===== Main adaptive loop =====
-    stable_tau_counter = 0
-    max_runtime = max_hours * 3600  # convert hours to seconds
-
-    prev_state = None
+        dt = int(time.time() - batch_start)
+        print(f"Sampling time: {dt//3600:02d}:{(dt%3600)//60:02d}:{dt%60:02d}")
 
     while True:
-        total_samples = sampler.iteration
-        elapsed_total = time.time() - start_time_total
+        total_steps = sampler.iteration
+        elapsed = time.time() - start_total
+        if elapsed >= max_runtime:
+            raise TimeoutError(f"⏰ Sampling exceeded {max_hours} hours limit.")
 
-        if elapsed_total > 2 * 3600:
-            min_length_ratio = min_length_ratio_list[2]
-            max_tau_relative_difference = max_tau_relative_difference_list[2]
-            if prev_state != "2h":
-                print(f"⏰ Runtime > 2h → Relaxing criteria 💤: "
-                      f"N/τ > {min_length_ratio}, τ_diff < {max_tau_relative_difference:.0%}")
-                prev_state = "2h"
+        stage = 2 if elapsed > 7200 else 1 if elapsed > 3600 else 0
+        min_ratio = min_length_ratio_list[stage]
+        max_tau_diff = max_tau_relative_difference_list[stage]
+        if stage != previous_stage:
+            labels = ("Standard", "Runtime > 1h", "Runtime > 2h")
+            print(f"🚀 {labels[stage]} criteria: usable N/τ ≥ {min_ratio:g}, τ_diff < {max_tau_diff:.0%}")
+            previous_stage = stage
 
-        elif elapsed_total > 1 * 3600:
-            min_length_ratio = min_length_ratio_list[1]
-            max_tau_relative_difference = max_tau_relative_difference_list[1]
-            if prev_state != "1h":
-                print(f"⌛ Runtime > 1h → Slightly relaxed criteria 😌: "
-                      f"N/τ > {min_length_ratio}, τ_diff < {max_tau_relative_difference:.0%}")
-                prev_state = "1h"
-
-        else:
-            min_length_ratio = min_length_ratio_list[0]
-            max_tau_relative_difference = max_tau_relative_difference_list[0]
-            if prev_state != "standard":
-                print(f"🚀 Standard criteria in use 💪: "
-                      f"N/τ > {min_length_ratio}, τ_diff < {max_tau_relative_difference:.0%}")
-                prev_state = "standard"
-
-        if elapsed_total > max_runtime:
-            raise TimeoutError(f"⏰ Sampling exceeded {max_hours} hours limit — stopping execution.")
-
-        chain = sampler.get_chain()  # shape: (steps, walkers, dims)
-
+        tau = None
         try:
-            # --- 1️⃣ Compute tau on the last 50% and 30% of samples ---
-            S = chain.shape[0]
-            start_50 = int(S * 0.5)
-            start_30 = int(S * 0.7)
+            tau, tau_05, tau_03, rel_diff = _estimate_late_tau(sampler.get_chain())
+            burnin = int(10 * tau)
+            length_ratio = (total_steps - burnin) / tau
+            stable_tau = rel_diff < max_tau_diff
+            length_ok = length_ratio >= min_ratio
+            stable_count = stable_count + 1 if stable_tau and length_ok else 0
 
-            tau_05 = emcee.autocorr.integrated_time(chain[start_50:], tol=0)
-            tau_03 = emcee.autocorr.integrated_time(chain[start_30:], tol=0)
+            h, m = int(elapsed // 3600), int((elapsed % 3600) // 60)
+            print(f"\n🔍 Checkpoint @ {total_steps} steps (elapsed {h}h {m}m)")
+            print(f"  τ₀․₅={tau_05:.1f}, τ₀․₃={tau_03:.1f}, τ_diff={rel_diff:.1%}")
+            print(f"  Usable N/τ after burn=10τ: {length_ratio:.1f} / {min_ratio:g}")
 
-            # --- robust tau_late computation ---
-            taus = [np.nanmax(t) for t in [tau_05, tau_03] if np.any(np.isfinite(t))]
-            tau_late = np.max(taus) if len(taus) > 0 else 1000  # fallback in case of NaNs
-
-            # --- relative difference, safe handling ---
-            tau05_max = np.nanmax(tau_05) if np.any(np.isfinite(tau_05)) else np.nan
-            tau03_max = np.nanmax(tau_03) if np.any(np.isfinite(tau_03)) else np.nan
-
-            if np.isfinite(tau05_max) and np.isfinite(tau03_max):
-                rel_diff = abs(tau05_max - tau03_max) / max(tau05_max, tau03_max)
-            else:
-                rel_diff = np.nan
-
-            # --- 2️⃣ ESS using ArviZ ---
-            n_dim = sampler.get_chain().shape[-1]
-            var_names = target.sampling_variables_list
-
-            burnin = int(10 * tau_late)
-            length_ratio = (total_samples - burnin) / tau_late
-
-            # idata = az.from_emcee(sampler)
-
-            # --- Display checkpoint summary ---
-            hours = int(elapsed_total // 3600)
-            minutes = int((elapsed_total % 3600) // 60)
-            print(f"\n🔍 Checkpoint @ {total_samples} samples (elapsed {hours}h {minutes}m)")
-            print(f"  τ₀․₅={np.max(tau_05):.1f}, τ₀․₃={np.max(tau_03):.1f}, rel_diff={rel_diff*100:.1f}%")
-            print(f"  Length ratio (after burn=10τ): {length_ratio:.2f} vs requirement {min_length_ratio}")
-
-            # --- 3️⃣ Convergence criteria ---
-            stable_tau = rel_diff < max_tau_relative_difference
-            length_ok = length_ratio >= min_length_ratio
-
-            if stable_tau and length_ok:
-                stable_tau_counter += 1
-            else:
-                stable_tau_counter = 0
-
-            if (stable_tau_counter >= 2) and length_ok:
-                print(f"✅ Converged: τ stable (2×) rel_diff < {max_tau_relative_difference}, N/τ > {min_length_ratio}")
+            if stable_count >= 2:
+                print(f"✅ Converged: τ stable for 2 checkpoints and usable N/τ ≥ {min_ratio:g}")
                 break
 
-        except emcee.autocorr.AutocorrError:
-            print("⚠️ ACT estimation failed, chain too short. Continuing...")
+        except (emcee.autocorr.AutocorrError, ValueError, FloatingPointError):
+            print("⚠️ ACT estimation failed; using a fallback checkpoint interval.")
+            length_ratio = -np.inf
 
-        # --- Continue sampling ---
+        elapsed = time.time() - start_total
+        seconds_per_step = elapsed / max(total_steps, 1)
+        remaining_seconds = max_runtime - elapsed
+
+        if tau is None or not np.isfinite(tau):
+            check_steps = min(initial_steps, max_check_steps)
+            if max_check_minutes is not None and seconds_per_step > 0:
+                check_steps = min(check_steps, max(1, int(max_check_minutes * 60 / seconds_per_step)))
+            missing_tau = planned_tau = requested = np.nan
+        else:
+            check_steps, missing_tau, planned_tau, requested = _next_check_steps(
+                tau, length_ratio, min_ratio, max_check_steps,
+                min_check_tau=min_check_tau,
+                seconds_per_step=seconds_per_step,
+                max_check_minutes=max_check_minutes,
+                remaining_seconds=remaining_seconds,
+            )
+
+        if np.isfinite(missing_tau):
+            cap_note = f"; capped from {requested}" if check_steps < requested else ""
+            print(
+                f"⏱ Next: {check_steps} steps "
+                f"(missing {missing_tau:.1f}τ, planned {planned_tau:.1f}τ{cap_note})"
+            )
+        else:
+            print(f"⏱ Next: {check_steps} steps (fallback)")
+
+        batch_start = time.time()
+        sampler.run_mcmc(None, check_steps, progress=use_tqdm)
         if not use_tqdm:
-            start_time = time.time()
-        check_interval = int(10 * tau_late)
-        check_interval = max(2000, min(check_interval, 20000))
-        if np.isnan(check_interval):
-            check_interval = 10000
-        print(f"⏱ Adaptive check_interval = {check_interval} (10×τ_late={10 * tau_late:.0f})")
-        sampler.run_mcmc(None, check_interval, progress=use_tqdm)
-        if not use_tqdm:
-            elapsed = int(time.time() - start_time)
-            print(f"Sampling time: {elapsed//3600:02d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
+            dt = int(time.time() - batch_start)
+            print(f"Sampling time: {dt//3600:02d}:{(dt%3600)//60:02d}:{dt%60:02d}")
 
     return sampler
 
@@ -1120,7 +1162,6 @@ def _normalize_blobs(blobs_in):
         )
 
     return arr
-
 
 
 def serialize_emcee_moves(emcee_moves):
@@ -1252,8 +1293,6 @@ def build_emcee_moves(emcee_move_config):
     return emcee_moves
 
 
-
-
 def run_test_sampling(
     n_steps_test=None,
     n_steps_evaluate=None,
@@ -1351,33 +1390,7 @@ def run_test_sampling(
             '"radian" or "degree".'
         )
 
-    if "logAge" in target.sampling_variables_list:
-        raise ValueError(
-            '"logAge" is no longer supported. '
-            'Use "Age" in Myr.'
-        )
-
-    if "Age" not in target.sampling_variables_list:
-        raise ValueError(
-            'The sampling variables must contain '
-            '"Age" in Myr. '
-            f"Got: {target.sampling_variables_list}"
-        )
-
-    age_unit = getattr(
-        target,
-        "age_unit",
-        None,
-    )
-
-    if (
-        age_unit is not None
-        and str(age_unit).lower() != "myr"
-    ):
-        raise ValueError(
-            'The target age unit must be "Myr". '
-            f"Got: {age_unit!r}"
-        )
+    _validate_age_sampling()
 
     quantiles = np.asarray(
         quantiles,
@@ -1402,95 +1415,7 @@ def run_test_sampling(
 
     quantiles = quantiles.tolist()
 
-    # ============================================================
-    # Read and validate sampler moves from target
-    # ============================================================
-    emcee_moves = getattr(
-        target,
-        "emcee_moves",
-        None,
-    )
-
-    if emcee_moves is not None:
-        if not isinstance(
-            emcee_moves,
-            (list, tuple),
-        ):
-            raise TypeError(
-                "target.emcee_moves must be None or a list/tuple "
-                "of (move_object, fraction) pairs."
-            )
-
-        if len(emcee_moves) == 0:
-            raise ValueError(
-                "target.emcee_moves cannot be an empty list."
-            )
-
-        total_fraction = 0.0
-
-        for move_index, item in enumerate(
-            emcee_moves
-        ):
-            if (
-                not isinstance(item, (list, tuple))
-                or len(item) != 2
-            ):
-                raise ValueError(
-                    "Each target.emcee_moves entry must be a "
-                    "(move_object, fraction) pair. "
-                    f"Invalid entry at index {move_index}: "
-                    f"{item!r}"
-                )
-
-            move, fraction = item
-
-            if not isinstance(
-                move,
-                emcee.moves.Move,
-            ):
-                raise TypeError(
-                    f"Entry {move_index} does not contain "
-                    "an emcee Move object. "
-                    f"Got: {type(move).__name__}"
-                )
-
-            if not isinstance(
-                fraction,
-                (
-                    int,
-                    float,
-                    np.integer,
-                    np.floating,
-                ),
-            ):
-                raise TypeError(
-                    f"Move fraction at index {move_index} "
-                    "must be numeric."
-                )
-
-            fraction = float(fraction)
-
-            if (
-                not np.isfinite(fraction)
-                or fraction < 0
-            ):
-                raise ValueError(
-                    f"Move fraction at index {move_index} "
-                    "must be finite and non-negative."
-                )
-
-            total_fraction += fraction
-
-        if not np.isclose(
-            total_fraction,
-            1.0,
-            rtol=0.0,
-            atol=1e-8,
-        ):
-            raise ValueError(
-                "The fractions in target.emcee_moves must sum to 1. "
-                f"Got {total_fraction:.12g}."
-            )
+    emcee_moves = _validate_emcee_moves(getattr(target, "emcee_moves", None))
 
     # ============================================================
     # Save path
@@ -1511,44 +1436,13 @@ def run_test_sampling(
     # ============================================================
     # Blob output names
     # ============================================================
-    output_list = target.bands_list.copy()
+    output_dict = get_blob_output_dict(
+        target
+    )
 
-    if target.METHOD == "DIRECT":
-        output_list += [
-            "vsini",
-            "chi_squared",
-            "vtaneq",
-            "Mass",
-            "omega",
-            "Req",
-            "Rpol",
-            "lnL0",
-            "lnL",
-            "u",
-            "p_Vrot",
-        ]
-
-    elif target.METHOD == "PARS":
-        output_list += [
-            "vsini",
-            "chi_squared",
-            "vtaneq",
-            "Mass",
-            "omega",
-            "Req",
-            "Rpol",
-            "logL",
-            "lnL0",
-            "lnL",
-            "u",
-            "p_Vrot",
-        ]
-
-    else:
-        raise ValueError(
-            f"Unknown target.METHOD: "
-            f"{target.METHOD}"
-        )
+    output_list = list(
+        output_dict.keys()
+    )
 
     # ============================================================
     # Helper: determine whether multiprocessing should be disabled
@@ -2052,6 +1946,7 @@ def run_test_sampling(
             f"{name_pre}_"
             f"steps{n_steps_test}.npz"
         )
+        target.posterior_path = posterior_path
 
         np.savez_compressed(
             posterior_path,
@@ -2170,8 +2065,6 @@ def run_test_sampling(
     return sampler_test, target
 
 
-
-
 def run_sampling(
     initial_steps=10000,
     use_tqdm=True,
@@ -2179,443 +2072,145 @@ def run_sampling(
     n_processes=8,
     min_length_ratio=None,
     max_tau_relative_difference=None,
+    max_check_steps=10000,
+    min_check_tau=10.0,
+    max_check_minutes=30.0,
 ):
     """
-    Run full MCMC sampling until convergence or until reaching ``max_hours``.
+    Run full MCMC sampling until convergence or ``max_hours``.
 
-    Notes
-    -----
-    - The emcee proposal configuration is read only from:
-
-          target.emcee_moves
-
-    - ``target.emcee_moves`` must be either:
-
-          None
-
-      or a list/tuple of:
-
-          [
-              (move_object, fraction),
-              ...
-          ]
-
-    - When ``target.emcee_moves`` is None or does not exist,
-      emcee uses its default move.
-    - Age is sampled directly as ``Age`` in Myr.
-
-    Parameters
-    ----------
-    initial_steps : int, default=10000
-        Number of MCMC steps between convergence checks.
-
-    use_tqdm : bool, default=True
-        Whether to display the progress bar.
-
-    max_hours : float, default=4
-        Maximum total sampling time in hours.
-
-    n_processes : int, default=8
-        Number of multiprocessing workers.
-
-    min_length_ratio : sequence of 3 floats, optional
-        Required N/ACT thresholds for the three convergence stages.
-
-        Default:
-
-            [70, 60, 50]
-
-    max_tau_relative_difference : sequence of 3 floats, optional
-        Maximum relative ACT differences allowed for the three
-        convergence stages.
-
-        Default:
-
-            [0.20, 0.25, 0.30]
-
-    Returns
-    -------
-    emcee.EnsembleSampler
-        Sampler containing the full MCMC chains and blobs.
+    After the initial run, the next checkpoint follows the ACT deficit:
+    usable N/τ=33 with a target of 70 requests another 37τ. Once the
+    deficit is < ``min_check_tau`` (default 10τ), checks stay 10τ apart,
+    subject to the per-batch step/time safety caps.
     """
-    import emcee
-
-    # ============================================================
-    # Validate general arguments
-    # ============================================================
-    if not isinstance(
-        initial_steps,
-        (int, np.integer),
-    ):
-        raise TypeError(
-            "initial_steps must be an integer."
-        )
-
     initial_steps = int(initial_steps)
-
-    if initial_steps <= 0:
-        raise ValueError(
-            "initial_steps must be greater than zero."
-        )
-
-    if not isinstance(
-        max_hours,
-        (
-            int,
-            float,
-            np.integer,
-            np.floating,
-        ),
-    ):
-        raise TypeError(
-            "max_hours must be numeric."
-        )
-
-    max_hours = float(max_hours)
-
-    if (
-        not np.isfinite(max_hours)
-        or max_hours <= 0
-    ):
-        raise ValueError(
-            "max_hours must be finite and greater than zero."
-        )
-
-    if not isinstance(
-        n_processes,
-        (int, np.integer),
-    ):
-        raise TypeError(
-            "n_processes must be an integer."
-        )
-
     n_processes = int(n_processes)
+    max_hours = float(max_hours)
+    max_check_steps = int(max_check_steps)
+    min_check_tau = float(min_check_tau)
 
-    if n_processes <= 0:
-        raise ValueError(
-            "n_processes must be greater than zero."
-        )
+    if initial_steps <= 0 or n_processes <= 0 or max_check_steps <= 0:
+        raise ValueError("initial_steps, n_processes, and max_check_steps must be > 0.")
+    if not np.isfinite(max_hours) or max_hours <= 0:
+        raise ValueError("max_hours must be finite and > 0.")
+    if not np.isfinite(min_check_tau) or min_check_tau <= 0:
+        raise ValueError("min_check_tau must be finite and > 0.")
+    if max_check_minutes is not None:
+        max_check_minutes = float(max_check_minutes)
+        if not np.isfinite(max_check_minutes) or max_check_minutes <= 0:
+            raise ValueError("max_check_minutes must be None or a finite value > 0.")
 
-    # ============================================================
-    # Validate Age/Myr interface
-    # ============================================================
-    sampling_variables = list(
-        target.sampling_variables_list
+    _validate_age_sampling()
+    min_length_ratio = _validate_triplet(
+        min_length_ratio, [70, 60, 50], "min_length_ratio", lower=0,
     )
-
-    if "logAge" in sampling_variables:
-        raise ValueError(
-            '"logAge" is no longer supported. '
-            'Use "Age" in Myr.'
-        )
-
-    if "Age" not in sampling_variables:
-        raise ValueError(
-            'target.sampling_variables_list must contain '
-            '"Age" in Myr. '
-            f"Got: {sampling_variables}"
-        )
-
-    age_unit = getattr(
-        target,
-        "age_unit",
-        None,
+    max_tau_relative_difference = _validate_triplet(
+        max_tau_relative_difference, [0.20, 0.25, 0.30],
+        "max_tau_relative_difference", lower=0, upper=1,
     )
-
-    if (
-        age_unit is not None
-        and str(age_unit).lower() != "myr"
-    ):
-        raise ValueError(
-            'The target age unit must be "Myr". '
-            f"Got: {age_unit!r}"
-        )
-
-    # ============================================================
-    # Validate convergence thresholds
-    # ============================================================
-    if min_length_ratio is None:
-        min_length_ratio = [
-            70.0,
-            60.0,
-            50.0,
-        ]
-
-    if not isinstance(
-        min_length_ratio,
-        (
-            list,
-            tuple,
-            np.ndarray,
-        ),
-    ):
-        raise TypeError(
-            "min_length_ratio must be a list, tuple, "
-            "or numpy array of length 3."
-        )
-
-    if len(min_length_ratio) != 3:
-        raise ValueError(
-            "min_length_ratio must contain exactly three values."
-        )
-
-    min_length_ratio = np.asarray(
-        min_length_ratio,
-        dtype=float,
-    )
-
-    if (
-        not np.all(
-            np.isfinite(min_length_ratio)
-        )
-        or np.any(min_length_ratio <= 0)
-    ):
-        raise ValueError(
-            "All min_length_ratio values must be finite "
-            "and greater than zero."
-        )
-
-    min_length_ratio = (
-        min_length_ratio.tolist()
-    )
-
-    if max_tau_relative_difference is None:
-        max_tau_relative_difference = [
-            0.20,
-            0.25,
-            0.30,
-        ]
-
-    if not isinstance(
-        max_tau_relative_difference,
-        (
-            list,
-            tuple,
-            np.ndarray,
-        ),
-    ):
-        raise TypeError(
-            "max_tau_relative_difference must be a list, "
-            "tuple, or numpy array of length 3."
-        )
-
-    if len(max_tau_relative_difference) != 3:
-        raise ValueError(
-            "max_tau_relative_difference must contain "
-            "exactly three values."
-        )
-
-    max_tau_relative_difference = np.asarray(
-        max_tau_relative_difference,
-        dtype=float,
-    )
-
-    if (
-        not np.all(
-            np.isfinite(
-                max_tau_relative_difference
-            )
-        )
-        or np.any(
-            max_tau_relative_difference <= 0
-        )
-        or np.any(
-            max_tau_relative_difference >= 1
-        )
-    ):
-        raise ValueError(
-            "All max_tau_relative_difference values must be "
-            "finite and between 0 and 1."
-        )
-
-    max_tau_relative_difference = (
-        max_tau_relative_difference.tolist()
-    )
-
     if min_length_ratio[2] < 50:
-        print(
-            'Warning: using a final convergence criterion '
-            'with "N/ACT < 50" is not recommended.'
-        )
+        print('Warning: final convergence criterion with usable N/ACT < 50 is not recommended.')
 
-    # ============================================================
-    # Read and validate emcee moves from target
-    # ============================================================
-    emcee_moves = getattr(
-        target,
-        "emcee_moves",
-        None,
-    )
+    emcee_moves = _validate_emcee_moves(getattr(target, "emcee_moves", None))
+    dtype = [("blob", np.ndarray)]
+    start = time.time()
+    disable_pool = target.METHOD == "NN" and platform.system() == "Linux" and running_in_jupyter()
 
-    if emcee_moves is not None:
-        if not isinstance(
-            emcee_moves,
-            (list, tuple),
-        ):
-            raise TypeError(
-                "target.emcee_moves must be None or a list/tuple "
-                "of (move_object, fraction) pairs."
-            )
-
-        if len(emcee_moves) == 0:
-            raise ValueError(
-                "target.emcee_moves cannot be an empty list."
-            )
-
-        total_fraction = 0.0
-
-        for move_index, item in enumerate(
-            emcee_moves
-        ):
-            if (
-                not isinstance(
-                    item,
-                    (list, tuple),
-                )
-                or len(item) != 2
-            ):
-                raise ValueError(
-                    "Each target.emcee_moves entry must be a "
-                    "(move_object, fraction) pair. "
-                    f"Invalid entry at index {move_index}: "
-                    f"{item!r}"
-                )
-
-            move, fraction = item
-
-            if not isinstance(
-                move,
-                emcee.moves.Move,
-            ):
-                raise TypeError(
-                    f"Entry {move_index} does not contain "
-                    "an emcee Move object. "
-                    f"Got: {type(move).__name__}"
-                )
-
-            if not isinstance(
-                fraction,
-                (
-                    int,
-                    float,
-                    np.integer,
-                    np.floating,
-                ),
-            ):
-                raise TypeError(
-                    f"Move fraction at index {move_index} "
-                    "must be numeric."
-                )
-
-            fraction = float(fraction)
-
-            if (
-                not np.isfinite(fraction)
-                or fraction < 0
-            ):
-                raise ValueError(
-                    f"Move fraction at index {move_index} "
-                    "must be finite and non-negative."
-                )
-
-            total_fraction += fraction
-
-        if not np.isclose(
-            total_fraction,
-            1.0,
-            rtol=0.0,
-            atol=1e-8,
-        ):
-            raise ValueError(
-                "The fractions in target.emcee_moves "
-                "must sum to 1. "
-                f"Got {total_fraction:.12g}."
-            )
-
-    # ============================================================
-    # Blob dtype
-    # ============================================================
-    dtype = [
-        (
-            "blob",
-            np.ndarray,
-        )
-    ]
-
-    # ============================================================
-    # Run full sampling
-    # ============================================================
-    start_time_final = time.time()
-
-    disable_pool = (
-        target.METHOD == "NN"
-        and platform.system() == "Linux"
-        and running_in_jupyter()
+    args = (
+        initial_steps, max_hours, emcee_moves, None, dtype, use_tqdm,
+        min_length_ratio, max_tau_relative_difference,
+        max_check_steps, min_check_tau, max_check_minutes,
     )
 
     if disable_pool:
-        sampler = runnning_in_pool(
-            initial_steps,
-            max_hours,
-            emcee_moves,
-            None,
-            dtype,
-            use_tqdm,
-            min_length_ratio,
-            max_tau_relative_difference,
-        )
-
+        sampler = runnning_in_pool(*args)
     else:
         import multiprocess as mp
+        with mp.Pool(processes=n_processes) as pool:
+            args = list(args)
+            args[3] = pool
+            sampler = runnning_in_pool(*args)
 
-        with mp.Pool(
-            processes=n_processes
-        ) as pool:
-            sampler = runnning_in_pool(
-                initial_steps,
-                max_hours,
-                emcee_moves,
-                pool,
-                dtype,
-                use_tqdm,
-                min_length_ratio,
-                max_tau_relative_difference,
-            )
-
-    # ============================================================
-    # Runtime summary
-    # ============================================================
-    elapsed_final = int(
-        time.time() - start_time_final
-    )
-
-    hours_final = (
-        elapsed_final // 3600
-    )
-
-    minutes_final = (
-        elapsed_final % 3600
-    ) // 60
-
-    seconds_final = (
-        elapsed_final % 60
-    )
-
-    print(
-        "Total sampling time: "
-        f"{hours_final:02d}:"
-        f"{minutes_final:02d}:"
-        f"{seconds_final:02d}"
-    )
-
-    print(
-        f"Total MCMC steps of each walker: "
-        f"{sampler.iteration}"
-    )
-
+    elapsed = int(time.time() - start)
+    print(f"Total sampling time: {elapsed//3600:02d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
+    print(f"Total MCMC steps of each walker: {sampler.iteration}")
     return sampler
 
 
+def get_blob_output_dict(target):
+    """
+    Return blob names and plotting labels.
+
+    The insertion order must exactly match the blob array
+    returned by log_posterior.
+    """
+    if target.METHOD not in {
+        "DIRECT",
+        "PARS",
+    }:
+        raise ValueError(
+            f"Unknown target.METHOD: {target.METHOD}"
+        )
+
+    photometric_label_map = {
+        # Gaia
+        "G": r"$G\ (\mathrm{mag})$",
+        "G_BP": r"$G_{\mathrm{BP}}\ (\mathrm{mag})$",
+        "G_RP": r"$G_{\mathrm{RP}}\ (\mathrm{mag})$",
+        "BP": r"$G_{\mathrm{BP}}\ (\mathrm{mag})$",
+        "RP": r"$G_{\mathrm{RP}}\ (\mathrm{mag})$",
+
+        # Tycho-2
+        "B_T": r"$B_{\mathrm{T}}\ (\mathrm{mag})$",
+        "V_T": r"$V_{\mathrm{T}}\ (\mathrm{mag})$",
+
+        # Johnson
+        "U": r"$U\ (\mathrm{mag})$",
+        "B": r"$B\ (\mathrm{mag})$",
+        "V": r"$V\ (\mathrm{mag})$",
+        "R": r"$R\ (\mathrm{mag})$",
+        "I": r"$I\ (\mathrm{mag})$",
+
+        # 2MASS
+        "J": r"$J\ (\mathrm{mag})$",
+        "H": r"$H\ (\mathrm{mag})$",
+        "Ks": r"$K_{\mathrm{s}}\ (\mathrm{mag})$",
+        "K_s": r"$K_{\mathrm{s}}\ (\mathrm{mag})$",
+    }
+
+    output_dict = {
+        band: photometric_label_map.get(
+            band,
+            rf"${band}\ (\mathrm{{mag}})$",
+        )
+        for band in target.bands_list
+    }
+
+    # DIRECT 和 PARS 使用完全相同的 blob 输出
+    output_dict.update({
+        "vsini": (
+            r"$v\sin i\ "
+            r"(\mathrm{km}\,\mathrm{s}^{-1})$"
+        ),
+        "chi_squared": r"$\chi^2$",
+        "vtaneq": (
+            r"$v_{\mathrm{eq}}\ "
+            r"(\mathrm{km}\,\mathrm{s}^{-1})$"
+        ),
+        "Mass": r"$M\ (M_\odot)$",
+        "omega": r"$\omega$",
+        "logL": r"$\log_{10}(L/L_\odot)$",
+        "logTe": r"$\log_{10}(T_{\mathrm{eff}}/\mathrm{K})$",
+        "Req": r"$R_{\mathrm{eq}}\ (R_\odot)$",
+        "Rpol": r"$R_{\mathrm{pol}}\ (R_\odot)$",
+        "lnL0": r"$\ln \mathcal{L}_0$",
+        "lnL": r"$\ln \mathcal{L}$",
+        "u": r"$u$",
+        "p_Vrot": r"$\ln p(v_{\mathrm{eq}})$",
+    })
+
+    return output_dict
 
 def save_and_plot(
     sampler,
@@ -3015,7 +2610,8 @@ def save_and_plot(
 
         tau05_max = np.nanmax(tau_05) if np.ndim(tau_05) > 0 else float(tau_05)
         tau03_max = np.nanmax(tau_03) if np.ndim(tau_03) > 0 else float(tau_03)
-        tau_late = np.nanmax([tau05_max, tau03_max])
+        # tau_late = np.nanmax([tau05_max, tau03_max])
+        tau_late = np.maximum(tau05_max, tau03_max)
 
         n_discard = int(burnin_ACT * tau_late)
         print(
@@ -3199,81 +2795,21 @@ def save_and_plot(
 
     print(f"True values: {true_values}")
 
-    # ``output_dict`` preserves insertion order:
-    #     key   -> raw machine-readable blob name
-    #     value -> human-facing LaTeX plot label
-    #
-    # ``output_list`` is still derived from the dictionary keys for indexing
-    # and saved metadata, so the blob-column order is unchanged.
-    photometric_label_map = {
-        # Gaia
-        "G": r"$G\ (\mathrm{mag})$",
-        "G_BP": r"$G_{\mathrm{BP}}\ (\mathrm{mag})$",
-        "G_RP": r"$G_{\mathrm{RP}}\ (\mathrm{mag})$",
-        "BP": r"$G_{\mathrm{BP}}\ (\mathrm{mag})$",
-        "RP": r"$G_{\mathrm{RP}}\ (\mathrm{mag})$",
+    # -------------------------
+    # Blob names and plotting labels
+    # -------------------------
+    output_dict = get_blob_output_dict(
+        target
+    )
 
-        # Tycho-2
-        "B_T": r"$B_{\mathrm{T}}\ (\mathrm{mag})$",
-        "V_T": r"$V_{\mathrm{T}}\ (\mathrm{mag})$",
+    output_list = list(
+        output_dict.keys()
+    )
 
-        # Johnson / common optical bands
-        "U": r"$U\ (\mathrm{mag})$",
-        "B": r"$B\ (\mathrm{mag})$",
-        "V": r"$V\ (\mathrm{mag})$",
-        "R": r"$R\ (\mathrm{mag})$",
-        "I": r"$I\ (\mathrm{mag})$",
+    output_label_list = list(
+        output_dict.values()
+    )
 
-        # 2MASS
-        "J": r"$J\ (\mathrm{mag})$",
-        "H": r"$H\ (\mathrm{mag})$",
-        "Ks": r"$K_{\mathrm{s}}\ (\mathrm{mag})$",
-        "K_s": r"$K_{\mathrm{s}}\ (\mathrm{mag})$",
-    }
-
-    output_dict = {
-        band: photometric_label_map.get(
-            band,
-            rf"${band}\ (\mathrm{{mag}})$",
-        )
-        for band in target.bands_list
-    }
-
-    common_output_dict = {
-        "vsini": r"$v\sin i\ (\mathrm{km}\,\mathrm{s}^{-1})$",
-        # "parallax": r"$\varpi\ (\mathrm{mas})$",
-        "chi_squared": r"$\chi^2$",
-        "vtaneq": r"$v_{\mathrm{eq}}\ (\mathrm{km}\,\mathrm{s}^{-1})$",
-        "Mass": r"$M\ (M_\odot)$",
-        "omega": r"$\omega$",
-        "Req": r"$R_{\mathrm{eq}}\ (R_\odot)$",
-        "Rpol": r"$R_{\mathrm{pol}}\ (R_\odot)$",
-    }
-
-    if target.METHOD == "DIRECT":
-        output_dict.update(common_output_dict)
-        output_dict.update({
-            "lnL0": r"$\ln \mathcal{L}_0$",
-            "lnL": r"$\ln \mathcal{L}$",
-            "u": r"$u$",
-            "p_Vrot": r"$\ln p(v_{\mathrm{eq}})$",
-        })
-
-    elif target.METHOD == "PARS":
-        output_dict.update(common_output_dict)
-        output_dict.update({
-            "logL": r"$\log_{10}(L/L_\odot)$",
-            "lnL0": r"$\ln \mathcal{L}_0$",
-            "lnL": r"$\ln \mathcal{L}$",
-            "u": r"$u$",
-            "p_Vrot": r"$\ln p(v_{\mathrm{eq}})$",
-        })
-
-    else:
-        raise ValueError(f"Unknown target.METHOD: {target.METHOD}")
-
-    output_list = list(output_dict.keys())
-    output_label_list = list(output_dict.values())
     output_label_map = output_dict
 
     # -------------------------
@@ -4011,10 +3547,11 @@ def save_and_plot(
             target.sampling_variables_list.copy()
         )
 
-        out_npz = Path(new_folder_path) / "posterior.npz"
+        posterior_path = Path(new_folder_path) / "posterior.npz"
+        target.posterior_path = posterior_path
 
         np.savez_compressed(
-            out_npz,
+            posterior_path,
             samples=samples_full,
             log_prob=lnprob_full,
             param_names=param_names,
@@ -4321,4 +3858,4 @@ def save_and_plot(
         except Exception:
             pass
 
-    # return new_folder_path
+    return target

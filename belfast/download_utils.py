@@ -23,7 +23,7 @@ from pathlib import Path
 import tarfile
 from urllib.request import urlretrieve
 
-from belfast.paths import DATA_DIR
+from belfast.paths import DATA_DIR, ISOCHRONE_DIR, KLD_DIR
 
 
 
@@ -408,11 +408,11 @@ def download_PARSECv2_isochrones(
     metallicity_end=None,
     metallicity_interval=None,
     wait_time=600,
-    overwrite=True,
+    overwrite=False,
     unzip_flag=False
 ):
     if download_dir is None:
-        download_dir = DATA_DIR / "isochrones" / "PARSEC_v2"
+        download_dir = ISOCHRONE_DIR / "PARSEC_v2"
 
     download_dir = _as_dir_string(download_dir)
 
@@ -455,9 +455,9 @@ def download_PARSECv2_isochrones(
             for metal in metallicity_list:
                 download_isochrone(
                     download_dir=download_dir,
-                    name_suffix='gaia dr3',
+                    name_suffix='gaia_dr3',
                     filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
-                    # name_suffix='2mass & tycho2',
+                    # name_suffix='2mass_tycho2',
                     # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
                     omega_ini=omega_ini,
                     age_type=age_type,
@@ -474,9 +474,9 @@ def download_PARSECv2_isochrones(
                 )
                 download_isochrone(
                     download_dir=download_dir,
-                    # name_suffix='gaia dr3',
+                    # name_suffix='gaia_dr3',
                     # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
-                    name_suffix='2mass & tycho2',
+                    name_suffix='2mass_tycho2',
                     filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
                     omega_ini=omega_ini,
                     age_type=age_type,
@@ -495,9 +495,9 @@ def download_PARSECv2_isochrones(
         for omega_ini in omega_ini_list:
             download_isochrone(
                     download_dir=download_dir,
-                    name_suffix='gaia dr3',
+                    name_suffix='gaia_dr3',
                     filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
-                    # name_suffix='2mass & tycho2',
+                    # name_suffix='2mass_tycho2',
                     # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
                     omega_ini=omega_ini,
                     age_type=age_type,
@@ -514,9 +514,9 @@ def download_PARSECv2_isochrones(
                 )
             download_isochrone(
                     download_dir=download_dir,
-                    # name_suffix='gaia dr3',
+                    # name_suffix='gaia_dr3',
                     # filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat",
-                    name_suffix='2mass & tycho2',
+                    name_suffix='2mass_tycho2',
                     filter_variable="YBC_tab_mag_odfnew/tab_mag_gaiaDR2_tycho2_2mass.dat",
                     omega_ini=omega_ini,
                     age_type=age_type,
@@ -578,7 +578,7 @@ def download_MIST_isochrones(
     """
 
     if output_dir is None:
-        output_dir = DATA_DIR / "isochrones" / "MIST"
+        output_dir = ISOCHRONE_DIR / "MIST"
 
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
