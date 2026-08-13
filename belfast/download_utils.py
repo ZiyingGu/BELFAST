@@ -615,3 +615,78 @@ def download_MIST_isochrones(
                     print(f"[removed archive] {archive_path}")
 
     return archive_paths
+
+
+from pathlib import Path
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from belfast.paths import DATA_DIR
+
+
+def download_kurucz_limb_darkening(
+    output_dir=None,
+    max_workers=5,
+    overwrite=False,
+):
+    """
+    Download Kurucz limb-darkening files.
+
+    Default output:
+        REPO_ROOT/data/Kurucz_limb_darkening
+    """
+
+    if output_dir is None:
+        output_dir = DATA_DIR / "Kurucz_limb_darkening"
+
+    output_dir = Path(output_dir).expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    urls = [
+        "http://kurucz.harvard.edu/grids/gridm01/im01k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm02/im02k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm03/im03k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm05/im05k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm10/im10k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm15/im15k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm20/im20k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm25/im25k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm30/im30k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm35/im35k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm40/im40k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm45/im45k2.pck",
+        "http://kurucz.harvard.edu/grids/gridm50/im50k2.pck",
+        "http://kurucz.harvard.edu/grids/gridp00/ip00k2.pck19",
+        # "http://kurucz.harvard.edu/grids/gridp01/ip01k2.pck",
+        "http://kurucz.harvard.edu/grids/gridp02/ip02k2.pck",
+        "http://kurucz.harvard.edu/grids/gridp03/ip03k2.pck",
+        "http://kurucz.harvard.edu/grids/gridp05/ip05k2.pck",
+        "http://kurucz.harvard.edu/grids/gridp10/ip10k2.pck",
+    ]
+
+    def download_one(url):
+        filename = url.split("/")[-1]
+        output_path = output_dir / filename
+
+        if output_path.exists() and not overwrite:
+            return f"[skip] {output_path}"
+
+        try:
+            print(f"[download] {url}")
+            urllib.request.urlretrieve(url, output_path)
+            return f"[saved] {output_path}"
+
+        except Exception as e:
+            return f"[failed] {url}: {e}"
+
+    results = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(download_one, url) for url in urls]
+
+        for future in as_completed(futures):
+            message = future.result()
+            print(message)
+            results.append(message)
+
+    # return results
