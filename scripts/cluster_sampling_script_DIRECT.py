@@ -203,6 +203,7 @@ for i in range(len(df_cluster)):
                                 max_hours=6, # if reaching max_hours, stop sampling anyway.
                                 n_processes=8, # the number of threads used for parallel sampling.
                                 use_tqdm=False,
+                                max_check_steps=100000,
                                 # emcee_moves = emcee_moves,
     )
 
