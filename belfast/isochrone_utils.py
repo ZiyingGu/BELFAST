@@ -10,6 +10,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
+from pathlib import Path
 import astropy.units as u
 import astropy.constants as ct
 from tqdm import tqdm
@@ -752,6 +753,7 @@ def _estimate_age_group_spacing(ages, age_break=20.0, age_step_low=1.0, age_step
     if len(diffs) == 0:
         return np.inf
     return float(np.median(diffs))
+
 
 def _build_merged_age_grid(age_groups, age_break=20.0, age_step_low=1.0, age_step_high=10.0, age_jitter_fraction=0.01, age_jitter_abs=1e-06, verbose=True):
     """
@@ -2223,139 +2225,260 @@ def load_default_regularized_PARSECv2_u_interpolator(npz_path=None, age_initial=
         raise FileNotFoundError(f'Regularized PARSEC v2 u grid not found: {npz_path}')
     return load_regularized_u_interpolator(npz_path=npz_path, force_float64=force_float64)
 
-def MIST_read_isos(file_path, add_iso_index=True):
-    file_path = Path(file_path)
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-        lines = f.readlines()
-    blocks = []
-    current_block = None
-    for line in lines:
-        s = line.strip()
-        if s.startswith('# number of EEPs, cols'):
-            if current_block is not None and len(current_block) > 0:
-                blocks.append(current_block)
-            current_block = [line]
-        elif current_block is not None:
-            current_block.append(line)
-    if current_block is not None and len(current_block) > 0:
-        blocks.append(current_block)
-    dfs = []
-    for i, block in enumerate(blocks):
-        columns = None
-        data = []
-        data_started = False
-        for line in block:
-            s = line.strip()
-            if not s:
-                continue
-            if s.startswith('# EEP'):
-                columns = s[1:].strip().split()
-                data_started = True
-                continue
-            if not data_started:
-                continue
-            if s.startswith('#'):
-                continue
-            parts = s.split()
-            if parts:
-                data.append(parts)
-        if columns is None or len(data) == 0:
-            continue
-        df = pd.DataFrame(data, columns=columns)
-        for col in df.columns:
-            try:
-                df[col] = pd.to_numeric(df[col])
-            except Exception:
-                pass
-        if add_iso_index:
-            df['iso_index'] = i
-        dfs.append(df)
-    if len(dfs) == 0:
-        return pd.DataFrame()
-    df_all = pd.concat(dfs, ignore_index=True)
-    return df_all
-
-def MIST_read_phot(file_path, omega_col='omega_ini', strict_omega=False):
+def MIST_read_isos(
+    file_path,
+    add_iso_index=True,
+    add_initial_params=False,
+    omega_col='omega_ini',
+    feh_col='[Fe/H]_ini',
+    strict_omega=False,
+    strict_feh=False,
+):
     """
-    Read a MIST .iso.cmd photometry file and return a combined DataFrame.
-
-    The function also parses vvcrit from the filename, e.g.
-    MIST_v1.2_feh_p0.00_afe_p0.0_vvcrit0.4_UBVRIplus.iso.cmd
-    and adds it as the last column named omega_ini.
+    Read a MIST isochrone file and return a combined DataFrame.
 
     Parameters
     ----------
     file_path : str or pathlib.Path
-        Path to the MIST .iso.cmd file.
+        Path to the MIST isochrone file.
+
+    add_iso_index : bool
+        If True, add an iso_index column for each isochrone block.
+
+    add_initial_params : bool
+        If True, read v/vcrit and [Fe/H] from the MIST header and add
+        them as omega_ini and [Fe/H]_ini columns.
+        Default is False.
 
     omega_col : str
-        Name of the column used to store vvcrit / omega_ini.
+        Column name for the initial rotation.
+
+    feh_col : str
+        Column name for the initial metallicity.
 
     strict_omega : bool
-        If True, raise ValueError when vvcrit cannot be parsed.
-        If False, set omega_ini to np.nan when vvcrit cannot be parsed.
+        If True, raise ValueError when v/vcrit cannot be parsed.
 
-    Returns
-    -------
-    df_all : pandas.DataFrame
-        Combined DataFrame from all MIST blocks.
+    strict_feh : bool
+        If True, raise ValueError when [Fe/H] cannot be parsed.
     """
+
     file_path = Path(file_path)
-    match = re.search('vvcrit([0-9]*\\.?[0-9]+)', str(file_path))
-    if match is not None:
-        omega_ini = float(match.group(1))
-    else:
-        if strict_omega:
-            raise ValueError(f'Cannot parse vvcrit from file path: {file_path}')
-        omega_ini = np.nan
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+
+    with open(
+        file_path,
+        'r',
+        encoding='utf-8',
+        errors='replace',
+    ) as f:
         lines = f.readlines()
+
+    # ============================================================
+    # Read initial parameters from MIST header
+    # ============================================================
+    if add_initial_params:
+
+        omega_ini = np.nan
+        feh_ini = np.nan
+
+        for i, line in enumerate(lines):
+
+            s = line.strip()
+
+            if '[Fe/H]' not in s and 'v/vcrit' not in s:
+                continue
+
+            header = s.lstrip('#').split()
+
+            # Search following comment lines for corresponding values
+            for j in range(i + 1, len(lines)):
+
+                value_line = lines[j].strip()
+
+                if not value_line:
+                    continue
+
+                if not value_line.startswith('#'):
+                    break
+
+                values = value_line.lstrip('#').split()
+
+                if len(values) != len(header):
+                    continue
+
+                # [Fe/H]
+                if '[Fe/H]' in header:
+                    try:
+                        idx = header.index('[Fe/H]')
+                        feh_ini = float(values[idx])
+                    except (ValueError, IndexError):
+                        pass
+
+                # v/vcrit
+                if 'v/vcrit' in header:
+                    try:
+                        idx = header.index('v/vcrit')
+                        omega_ini = float(values[idx])
+                    except (ValueError, IndexError):
+                        pass
+
+                break
+
+            if (
+                np.isfinite(omega_ini)
+                and np.isfinite(feh_ini)
+            ):
+                break
+
+        if strict_omega and not np.isfinite(omega_ini):
+            raise ValueError(
+                f'Cannot parse v/vcrit from MIST header: {file_path}'
+            )
+
+        if strict_feh and not np.isfinite(feh_ini):
+            raise ValueError(
+                f'Cannot parse [Fe/H] from MIST header: {file_path}'
+            )
+
+    # ============================================================
+    # Split isochrone blocks
+    # ============================================================
     blocks = []
-    current_block = []
+    current_block = None
+
     for line in lines:
-        if line.strip().startswith('# MIST version number'):
+
+        s = line.strip()
+
+        if s.startswith('# number of EEPs, cols'):
+
             if current_block:
                 blocks.append(current_block)
+
             current_block = [line]
-        else:
+
+        elif current_block is not None:
+
             current_block.append(line)
+
     if current_block:
         blocks.append(current_block)
+
+    # ============================================================
+    # Read blocks
+    # ============================================================
     dfs = []
-    for block in blocks:
+
+    for i, block in enumerate(blocks):
+
         columns = None
         data = []
         data_started = False
+
         for line in block:
+
             s = line.strip()
+
             if not s:
                 continue
+
+            # Column names
             if s.startswith('# EEP'):
+
                 columns = s[1:].strip().split()
                 data_started = True
+
                 continue
+
             if not data_started:
                 continue
+
             if s.startswith('#'):
                 continue
+
             parts = s.split()
-            if len(parts) == 0:
-                continue
-            if columns is not None and len(parts) == len(columns):
+
+            if (
+                columns is not None
+                and len(parts) == len(columns)
+            ):
                 data.append(parts)
+
         if columns is None or len(data) == 0:
             continue
-        df = pd.DataFrame(data, columns=columns)
-        for col in df.columns:
-            try:
-                df[col] = pd.to_numeric(df[col])
-            except (ValueError, TypeError):
-                pass
+
+        # ========================================================
+        # Important optimization:
+        # Convert the entire block to float at once.
+        #
+        # Avoid:
+        #
+        # for col in df.columns:
+        #     df[col] = pd.to_numeric(...)
+        #
+        # which causes DataFrame fragmentation.
+        # ========================================================
+        data_array = np.asarray(
+            data,
+            dtype=np.float64,
+        )
+
+        df = pd.DataFrame(
+            data_array,
+            columns=columns,
+        )
+
+        # A single assignment does not cause the fragmentation
+        # problem seen with hundreds of column assignments.
+        if add_iso_index:
+            df['iso_index'] = i
+
         dfs.append(df)
+
     if len(dfs) == 0:
         return pd.DataFrame()
-    df_all = pd.concat(dfs, ignore_index=True)
-    df_all[omega_col] = omega_ini
+
+    # ============================================================
+    # Combine all blocks
+    # ============================================================
+    df_all = pd.concat(
+        dfs,
+        ignore_index=True,
+        copy=False,
+    )
+
+    # ============================================================
+    # Add initial parameters
+    #
+    # Add both columns at once rather than repeatedly inserting
+    # into the existing DataFrame.
+    # ============================================================
+    if add_initial_params:
+
+        initial_params = pd.DataFrame(
+            {
+                omega_col: np.full(
+                    len(df_all),
+                    omega_ini,
+                    dtype=float,
+                ),
+                feh_col: np.full(
+                    len(df_all),
+                    feh_ini,
+                    dtype=float,
+                ),
+            }
+        )
+
+        df_all = pd.concat(
+            [
+                df_all.reset_index(drop=True),
+                initial_params,
+            ],
+            axis=1,
+            copy=False,
+        )
+
     return df_all
 
 def MIST_merge_isos_phot(df_isos, df_phot, check_order=True):

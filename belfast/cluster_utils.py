@@ -228,19 +228,23 @@ def summarize_cluster_age(
     # Step 1. Iterate over posterior files and extract summaries
     # ------------------------------------------------------------------
     for path in glob(samples_glob):
-        basename = os.path.basename(path)
-
-        # Skip unrelated files early
-        if "posterior" not in basename or cluster_key not in basename:
-            continue
-
-        # Extract object name from filename:
-        # posterior_<NAME>_<CLUSTER>.npz  ->  <NAME>
-        name_start = basename.index("posterior_") + len("posterior_")
-        name_end = basename.index(cluster_key)
-        posterior_name = basename[name_start:name_end].replace("_", " ").strip()
-
         data = np.load(path, allow_pickle=True)
+        run_name = str(data["run_name"])
+        model_idx = min(
+            i for i in [
+                run_name.find("_PARSEC"),
+                run_name.find("_MIST"),
+            ]
+            if i != -1
+        )
+        name_cluster = run_name[:model_idx]
+        posterior_name = (
+            name_cluster
+            .rsplit("_", 1)[0]
+            .replace("_", " ")
+            .strip()
+        )
+
         samples = data["samples"]  # shape: (n_steps, n_walkers, n_params)
         blobs = data["blobs"]
 
@@ -276,7 +280,7 @@ def summarize_cluster_age(
         records.append(
             {
                 "posterior_name": posterior_name,
-                "posterior_path": os.path.relpath(path),
+                "posterior_path": os.path.abspath(path),
                 "mass": mass_med,
                 "mass_upper_uncertainty": mass_up,
                 "mass_lower_uncertainty": mass_low,

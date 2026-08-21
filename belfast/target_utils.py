@@ -3930,7 +3930,6 @@ def classify_samples_in_batches(
         safe_labels,
     )
 
-
 # ============================================================
 # Main public function
 # ============================================================
@@ -3938,12 +3937,51 @@ def classify_posterior_samples_safety(
     data,
     critical_points_df,
     batch_size=5000,
+    ignore_out_of_range_mini=False,
 ):
     """
     Classify posterior samples as safe / risky.
 
-    The only performance control exposed here is batch_size.
+    Parameters
+    ----------
+    data
+        np.load(..., allow_pickle=True) result.
+
+    critical_points_df : pandas.DataFrame
+        Critical-boundary data.
+
+    batch_size : int, default=5000
+        Number of posterior samples processed per batch.
+
+    ignore_out_of_range_mini : bool, default=False
+        If False:
+            Keep all posterior samples after burn-in.
+            If Mini extends outside the reliable critical-boundary
+            range (1.4--5.0 Msun), boundary construction will raise
+            an error as before.
+
+        If True:
+            Remove posterior samples with
+
+                Mini < 1.4
+                Mini > 5.0
+
+            before building the critical boundary and performing
+            safety classification.
+
+    Notes
+    -----
+    The valid Mini range is consistent with the critical-boundary
+    definition:
+
+        1.4 <= Mini <= 5.0 Msun
     """
+
+    # ============================================================
+    # Internal Mini limits
+    # ============================================================
+    MINI_MIN = 1.40
+    MINI_MAX = 5.00
 
     required_keys = [
         "samples",
@@ -3973,6 +4011,14 @@ def classify_posterior_samples_safety(
     ):
         raise ValueError(
             "batch_size must be a positive integer."
+        )
+
+    if not isinstance(
+        ignore_out_of_range_mini,
+        (bool, np.bool_),
+    ):
+        raise TypeError(
+            "ignore_out_of_range_mini must be bool."
         )
 
     # ============================================================
@@ -4071,6 +4117,15 @@ def classify_posterior_samples_safety(
             f"Invalid n_discard={n_discard}."
         )
 
+    if "Mini" not in param_names:
+        raise KeyError(
+            "'Mini' not found in param_names."
+        )
+
+    mini_idx = param_names.index(
+        "Mini"
+    )
+
     # ============================================================
     # Discard and flatten
     # ============================================================
@@ -4095,6 +4150,78 @@ def classify_posterior_samples_safety(
     )
 
     # ============================================================
+    # Record sample number BEFORE optional Mini filtering
+    # ============================================================
+    n_total_before_mini_cut = len(
+        samples_flat
+    )
+
+    # Default: nothing removed
+    n_removed_mini_cut = 0
+    p_removed_mini_cut = 0.0
+
+    # ============================================================
+    # Optional Mini filtering
+    # ============================================================
+    if ignore_out_of_range_mini:
+
+        mini_values = samples_flat[
+            :,
+            mini_idx,
+        ]
+
+        mini_keep_mask = (
+            np.isfinite(
+                mini_values
+            )
+            & (
+                mini_values
+                >= MINI_MIN
+            )
+            & (
+                mini_values
+                <= MINI_MAX
+            )
+        )
+
+        n_removed_mini_cut = int(
+            np.count_nonzero(
+                ~mini_keep_mask
+            )
+        )
+
+        if (
+            n_total_before_mini_cut
+            > 0
+        ):
+            p_removed_mini_cut = (
+                n_removed_mini_cut
+                / n_total_before_mini_cut
+            )
+        else:
+            p_removed_mini_cut = np.nan
+
+        # --------------------------------------------------------
+        # IMPORTANT:
+        # samples and blobs must be filtered identically
+        # --------------------------------------------------------
+        samples_flat = samples_flat[
+            mini_keep_mask
+        ]
+
+        blobs_flat = blobs_flat[
+            mini_keep_mask
+        ]
+
+        if len(samples_flat) == 0:
+            raise ValueError(
+                "No posterior samples remain after "
+                "applying Mini range "
+                f"{MINI_MIN:.2f} <= Mini <= "
+                f"{MINI_MAX:.2f}."
+            )
+
+    # ============================================================
     # Compact output
     # ============================================================
     _print_section(
@@ -4110,10 +4237,33 @@ def classify_posterior_samples_safety(
 
     _print_pair(
         "After discard",
-        f"{len(samples_flat):,}",
+        f"{n_total_before_mini_cut:,}",
         "Batch size",
         f"{batch_size:,}",
     )
+
+    # ============================================================
+    # Mini filtering information
+    # ============================================================
+    if ignore_out_of_range_mini:
+
+        _print_pair(
+            "Mini cut",
+            (
+                f"{MINI_MIN:.2f}"
+                f" -- "
+                f"{MINI_MAX:.2f}"
+            ),
+            "Removed",
+            f"{n_removed_mini_cut:,}",
+        )
+
+        _print_pair(
+            "Removed frac.",
+            f"{p_removed_mini_cut:.6f}",
+            "Samples used",
+            f"{len(samples_flat):,}",
+        )
 
     # ============================================================
     # Build dynamic boundary
@@ -4247,7 +4397,46 @@ def classify_posterior_samples_safety(
         p_safe = np.nan
         p_risky = np.nan
 
+    # ============================================================
+    # Summary
+    # ============================================================
     summary = {
+        # --------------------------------------------------------
+        # Before optional Mini filtering
+        # --------------------------------------------------------
+        "N_total_before_Mini_cut":
+            int(
+                n_total_before_mini_cut
+            ),
+
+        "ignore_out_of_range_Mini":
+            bool(
+                ignore_out_of_range_mini
+            ),
+
+        "Mini_min":
+            float(
+                MINI_MIN
+            ),
+
+        "Mini_max":
+            float(
+                MINI_MAX
+            ),
+
+        "N_removed_Mini_cut":
+            int(
+                n_removed_mini_cut
+            ),
+
+        "P_removed_Mini_cut":
+            float(
+                p_removed_mini_cut
+            ),
+
+        # --------------------------------------------------------
+        # Samples actually entering classification
+        # --------------------------------------------------------
         "N_total":
             n_total,
 
