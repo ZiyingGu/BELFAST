@@ -15,6 +15,7 @@ __pycache__/
 
 /data/isochrones/*
 /data/Kurucz_limb_darkening/*
+/data/clusters/reference_isochrones/*
 /data/clusters/figures/*
 /data/BELFAST_mock_Mini_Age_grid.csv
 
