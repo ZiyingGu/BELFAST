@@ -2,7 +2,7 @@
 
 BELFAST is a software package for estimating the ages of early-type stars, including B-, A-, and early-F-type stars, which often exhibit rapid rotation. Rapid rotation changes the stellar evolution and surface temperature distribution, causing the observed magnitudes to depend on the inclination angle. In this package, we adopt PARSEC V2.0 as the theoretical reference model for comparison with observations.
 
-By combining photometric observations, parallax, and projected rotational velocity (v \sin i), BELFAST performs joint sampling over six parameters: stellar mass, Age, metallicity (M/H), rotational rate (\omega_k), inclination, and parallax. Optionally, one uncertainty-scaling parameter and one extinction parameter can also be included in the sampling.
+By combining photometric observations, parallax, and projected rotational velocity (v sin i), BELFAST performs joint sampling over six parameters: stellar mass, Age, metallicity (M/H), rotational rate (omega_ini), inclination, and parallax. Optionally, one uncertainty-inflation parameter and one extinction parameter can also be included in the sampling.
 
 ## Environment Setup
 
