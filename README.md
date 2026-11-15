@@ -2,7 +2,7 @@
 
 BELFAST is a software package for estimating the ages of early-type stars, including B-, A-, and early-F-type stars, which often exhibit rapid rotation. Rapid rotation changes the stellar evolution and surface temperature distribution, causing the observed magnitudes to depend on the inclination angle. In this package, we adopt PARSEC v2.0 as the theoretical reference model for comparison with observations.
 
-By combining photometric observations, parallax, and projected rotational velocity ($v\sin i$), BELFAST performs joint sampling over six parameters: initial stellar mass ($M_{\rm ini}$), age ($\tau$), metallicity ($\rm [M/H]$), initial rotation rate ($\omega_{\rm ini}$), inclination ($i$), and parallax ($\varpi$). Optionally, an extinction parameter ($A_V$, $E(B-V)$, or $E(G_{\rm BP}-G_{\rm RP})$) and an uncertainty-inflation parameter ($\sigma_{\rm adjust}$) can also be included in the sampling.
+By combining photometric observations, parallax, and projected rotational velocity ($v\sin i$), BELFAST performs joint sampling over six parameters: initial stellar mass ($M_{\rm ini}$), age ($\tau$), metallicity ($\rm [M/H]$), initial rotation rate ($\omega_{\rm ini}$), inclination ($i$), and parallax ($\varpi$). Optionally, an extinction parameter ($A_V$, $E(B-V)$, or $`E(G_{\rm BP}-G_{\rm RP})`$) and an uncertainty-inflation parameter ($\sigma_{\rm adjust}$) can also be included in the sampling.
 
 ## Environment Setup
 
@@ -51,7 +51,7 @@ To install BELFAST, run the following command in the root directory of this repo
 pip install -e .
 ```
 
-## Tutorials and Data Preparation
+## Tutorials and Prerequisites
 
 Please follow the tutorials to download the necessary files and generate the regularized grids before running the sampling procedure.
 
