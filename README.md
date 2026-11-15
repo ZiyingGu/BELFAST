@@ -1,8 +1,8 @@
 # BELFAST
 
-BELFAST is a software package for estimating the ages of early-type stars, including B-, A-, and early-F-type stars, which often exhibit rapid rotation. Rapid rotation changes the stellar evolution and surface temperature distribution, causing the observed magnitudes to depend on the inclination angle. In this package, we adopt PARSEC V2.0 as the theoretical reference model for comparison with observations.
+BELFAST is a software package for estimating the ages of early-type stars, including B-, A-, and early-F-type stars, which often exhibit rapid rotation. Rapid rotation changes the stellar evolution and surface temperature distribution, causing the observed magnitudes to depend on the inclination angle. In this package, we adopt PARSEC v2.0 as the theoretical reference model for comparison with observations.
 
-By combining photometric observations, parallax, and projected rotational velocity (v sin i), BELFAST performs joint sampling over six parameters: stellar mass, Age, metallicity (M/H), rotational rate (omega_ini), inclination, and parallax. Optionally, one uncertainty-inflation parameter and one extinction parameter can also be included in the sampling.
+By combining photometric observations, parallax, and projected rotational velocity ($v\sin i$), BELFAST performs joint sampling over six parameters: stellar mass ($M$), age ($\tau$), metallicity ($[\mathrm{M/H}]$), initial rotation rate ($\omega_{\rm ini}$), inclination ($i$), and parallax ($\varpi$). Optionally, an uncertainty-inflation parameter and an extinction parameter can also be included in the sampling.
 
 ## Environment Setup
 
@@ -16,13 +16,15 @@ pip install notebook
 
 ## PARS Installation
 
-As a prerequisite, please download the PARS package:
+BELFAST uses the **PARS** package (*Paint the Atmospheres of Rotating Stars*) to model the inclination-dependent photometric properties of rotating stars. PARS was developed by [Lipatov & Brandt (2020)](https://iopscience.iop.org/article/10.3847/1538-4357/aba8f5) and is available on [GitHub](https://github.com/mlipatov/paint_atmospheres).
+
+First, clone the PARS repository:
 
 ```bash
 git clone https://github.com/mlipatov/paint_atmospheres.git
 ```
 
-PARS was originally developed with older package versions, and some files need to be updated for compatibility. In the directory 'others/updated_PARS_functions', four modified files are provided. Please replace the corresponding files in PARS with the modified versions:
+PARS was originally developed with older package versions, and some files need to be updated for compatibility. Four modified files are provided in `others/updated_PARS_functions`. Please replace the corresponding files in PARS with the modified versions:
 
 ```text
 pa/lib/limbdark.py
@@ -36,6 +38,10 @@ After applying these modifications, install PARS in editable mode from the root 
 ```bash
 pip install -e . --config-settings editable_mode=compat
 ```
+
+### Reference
+
+Lipatov, M., & Brandt, T. D. (2020). *Synthetic Spectra of Rotating Stars*. The Astrophysical Journal, **901**, 100. [https://doi.org/10.3847/1538-4357/aba8f5](https://doi.org/10.3847/1538-4357/aba8f5)
 
 ## BELFAST Installation
 
