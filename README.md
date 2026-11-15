@@ -55,4 +55,4 @@ pip install .
 
 Please follow the tutorials to download the necessary files and generate the regularized grids before running the sampling procedure.
 
-When generating regularized grids, please pay attention to the required memory usage. The grid size can become large depending on the selected parameter steps. If needed, adjust the grid step sizes to reduce memory consumption.
+When generating remapped regular grids, please be mindful of memory usage. The grid size can become very large depending on the selected parameter step sizes. If necessary, increase the step sizes to reduce memory consumption.
