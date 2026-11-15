@@ -33,10 +33,10 @@ pa/usr/08_vega_spectrum_comparison.py
 pa/usr/spectra_colormag.py
 ```
 
-After applying these modifications, install PARS in editable mode from the root directory of the PARS repository:
+After applying these modifications, install PARS from the root directory of the PARS repository:
 
 ```bash
-pip install -e . --config-settings editable_mode=compat
+pip install .
 ```
 
 ### Reference
@@ -48,7 +48,7 @@ Lipatov, M., & Brandt, T. D. (2020). *Synthetic Spectra of Rotating Stars*. The 
 To install BELFAST, run the following command in the root directory of this repository:
 
 ```bash
-pip install -e .
+pip install .
 ```
 
 ## Tutorials and Prerequisites
